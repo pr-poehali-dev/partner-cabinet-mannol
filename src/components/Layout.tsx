@@ -26,6 +26,7 @@ const Layout = ({ children }: LayoutProps) => {
     { icon: "ShoppingCart", label: "Создать заказ", path: "/order/new" },
     { icon: "FileText", label: "Мои заказы", path: "/orders" },
     { icon: "Calendar", label: "График отгрузок", path: "/schedule" },
+    { icon: "Bell", label: "Уведомления", path: "/notifications" },
     { icon: "BarChart3", label: "Аналитика", path: "/analytics" },
     { icon: "Settings", label: "Настройки", path: "/settings" },
   ];
@@ -89,16 +90,18 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="relative text-[#27265C] hover:bg-gray-100"
-              >
-                <Icon name="Bell" size={20} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </Button>
+              <Link to="/notifications">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative text-[#27265C] hover:bg-gray-100"
+                >
+                  <Icon name="Bell" size={20} />
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    3
+                  </span>
+                </Button>
+              </Link>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
