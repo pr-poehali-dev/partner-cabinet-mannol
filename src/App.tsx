@@ -11,6 +11,7 @@ import OrderNew from "./pages/OrderNew";
 import Orders from "./pages/Orders";
 import Schedule from "./pages/Schedule";
 import Notifications from "./pages/Notifications";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/orders" element={<Orders />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

@@ -20,6 +20,37 @@ interface Notification {
 }
 
 const Notifications = () => {
+  const [dismissedPromotions, setDismissedPromotions] = useState<string[]>([]);
+
+  const promotions = [
+    {
+      id: "promo-banner-1",
+      title: "🎉 Спецпредложение: Скидка 15% на моторные масла",
+      description: "Оформите заказ на моторные масла MANNOL и получите скидку 15% на весь ассортимент! Минимальный заказ: 100 литров.",
+      validUntil: "31.12.2024",
+      link: "/catalog",
+      color: "bg-gradient-to-r from-purple-500 to-pink-500"
+    },
+    {
+      id: "promo-banner-2",
+      title: "🚚 Бесплатная доставка при заказе от 50 000₽",
+      description: "Сделайте заказ на сумму от 50 000 рублей и получите бесплатную доставку по Москве и МО.",
+      validUntil: "25.12.2024",
+      link: "/order/new",
+      color: "bg-gradient-to-r from-blue-500 to-cyan-500"
+    },
+    {
+      id: "promo-banner-3",
+      title: "⭐ Акция: 3 по цене 2 на автохимию",
+      description: "При покупке 3 единиц автохимии, третья в подарок! Акция действует на все позиции раздела.",
+      validUntil: "20.12.2024",
+      link: "/catalog",
+      color: "bg-gradient-to-r from-orange-500 to-red-500"
+    }
+  ];
+
+  const activePromotions = promotions.filter(p => !dismissedPromotions.includes(p.id));
+
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: "1",
@@ -163,9 +194,9 @@ const Notifications = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Уведомления</h1>
+          <h1 className="text-3xl font-bold text-[#27265C]">Уведомления и акции</h1>
           <p className="text-gray-600 mt-1">
-            У вас {unreadCount} {unreadCount === 1 ? 'непрочитанное уведомление' : 'непрочитанных уведомлений'}
+            Активных акций: {activePromotions.length} • Непрочитанных: {unreadCount}
           </p>
         </div>
         <div className="flex gap-2">
@@ -179,6 +210,61 @@ const Notifications = () => {
             Прочитать все
           </Button>
         </div>
+      </div>
+
+      {activePromotions.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Icon name="Sparkles" size={20} className="text-yellow-500" />
+            <h2 className="text-lg font-bold text-[#27265C]">Закреплённые акции</h2>
+          </div>
+          {activePromotions.map(promo => (
+            <Card key={promo.id} className={`border-2 ${promo.color} text-white overflow-hidden hover:shadow-xl transition-all animate-fade-in`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon name="Gift" size={24} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2">{promo.title}</h3>
+                        <p className="text-white/90 text-sm leading-relaxed">{promo.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 pt-2">
+                      <div className="flex items-center gap-2 bg-white/20 backdrop-blur px-3 py-1.5 rounded-full">
+                        <Icon name="Clock" size={16} />
+                        <span className="text-sm font-semibold">Действует до {promo.validUntil}</span>
+                      </div>
+                      <Link to={promo.link}>
+                        <Button className="bg-white text-[#27265C] hover:bg-white/90 font-semibold">
+                          <Icon name="ArrowRight" size={16} className="mr-2" />
+                          Подробнее
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDismissedPromotions([...dismissedPromotions, promo.id])}
+                    className="text-white hover:bg-white/20 flex-shrink-0"
+                    title="Скрыть на этот сеанс"
+                  >
+                    <Icon name="X" size={18} />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Separator className="my-6" />
+
+      <div>
+        <h2 className="text-lg font-bold text-[#27265C] mb-4">Обычные уведомления</h2>
       </div>
 
       <Card>

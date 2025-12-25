@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import DebtBanner from "@/components/DebtBanner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +82,8 @@ const Layout = ({ children }: LayoutProps) => {
       <div
         className={`transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-20"}`}
       >
+        <DebtBanner />
+        
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
           <div className="flex items-center justify-between px-8 py-4">
             <div className="flex items-center gap-4">

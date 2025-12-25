@@ -16,73 +16,67 @@ const Catalog = () => {
       id: "MAN-001",
       name: "MANNOL 5W-30 API SN/CF",
       category: "Моторные масла",
-      warehouse1: 150,
-      warehouse2: 89,
+      stock: 239,
       rating: 4.8,
       price: "₽1,250",
       isNew: true,
       isPopular: true,
-      status: "В наличии"
+      availability: "Много"
     },
     {
       id: "MAN-002",
       name: "MANNOL ATF AG52",
       category: "Трансмиссионные масла",
-      warehouse1: 45,
-      warehouse2: 12,
+      stock: 18,
       rating: 4.6,
       price: "₽980",
       isNew: false,
       isPopular: true,
-      status: "Мало"
+      availability: "Мало"
     },
     {
       id: "MAN-003",
       name: "MANNOL Radiator Cleaner",
       category: "Автохимия",
-      warehouse1: 0,
-      warehouse2: 5,
+      stock: 0,
       rating: 4.9,
       price: "₽450",
       isNew: false,
       isPopular: false,
-      status: "Склад 2"
+      availability: "Под заказ"
     },
     {
       id: "MAN-004",
       name: "MANNOL 10W-40 EXTRA",
       category: "Моторные масла",
-      warehouse1: 230,
-      warehouse2: 156,
+      stock: 386,
       rating: 4.7,
       price: "₽1,100",
       isNew: true,
       isPopular: true,
-      status: "В наличии"
+      availability: "Много"
     },
     {
       id: "MAN-005",
       name: "MANNOL Brake Fluid DOT4",
       category: "Тормозные жидкости",
-      warehouse1: 78,
-      warehouse2: 45,
+      stock: 123,
       rating: 4.5,
       price: "₽320",
       isNew: false,
       isPopular: false,
-      status: "В наличии"
+      availability: "Много"
     },
     {
       id: "MAN-006",
       name: "MANNOL Antifreeze AG13",
       category: "Антифризы",
-      warehouse1: 5,
-      warehouse2: 0,
+      stock: 12,
       rating: 4.8,
       price: "₽680",
       isNew: true,
       isPopular: true,
-      status: "Мало"
+      availability: "Мало"
     },
   ];
 
@@ -139,11 +133,15 @@ const Catalog = () => {
         </Badge>
         <Badge variant="outline" className="border-green-600 text-green-600">
           <Icon name="CheckCircle" size={14} className="mr-1" />
-          {products.filter(p => p.status === "В наличии").length} в наличии
+          {products.filter(p => p.availability === "Много").length} много
         </Badge>
         <Badge variant="outline" className="border-yellow-600 text-yellow-600">
           <Icon name="AlertTriangle" size={14} className="mr-1" />
-          {products.filter(p => p.status === "Мало").length} мало на складе
+          {products.filter(p => p.availability === "Мало").length} мало
+        </Badge>
+        <Badge variant="outline" className="border-blue-600 text-blue-600">
+          <Icon name="Clock" size={14} className="mr-1" />
+          {products.filter(p => p.availability === "Под заказ").length} под заказ
         </Badge>
       </div>
 
@@ -181,38 +179,36 @@ const Catalog = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Склад 1 (Москва)</p>
-                      <div className="flex items-center gap-2">
-                        <Icon name="Package" size={16} className={product.warehouse1 > 50 ? "text-green-600" : product.warehouse1 > 0 ? "text-yellow-600" : "text-red-600"} />
-                        <span className="font-bold text-[#27265C]">{product.warehouse1} шт</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Склад 2 (СПб)</p>
-                      <div className="flex items-center gap-2">
-                        <Icon name="Package" size={16} className={product.warehouse2 > 50 ? "text-green-600" : product.warehouse2 > 0 ? "text-yellow-600" : "text-red-600"} />
-                        <span className="font-bold text-[#27265C]">{product.warehouse2} шт</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Статус</p>
+                      <p className="text-xs text-gray-500 mb-1">Наличие</p>
                       <Badge className={
-                        product.status === "В наличии" ? "bg-green-100 text-green-700" :
-                        product.status === "Мало" ? "bg-yellow-100 text-yellow-700" :
+                        product.availability === "Много" ? "bg-green-100 text-green-700" :
+                        product.availability === "Мало" ? "bg-yellow-100 text-yellow-700" :
                         "bg-blue-100 text-blue-700"
                       }>
-                        {product.status}
+                        {product.availability}
                       </Badge>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Категория</p>
+                      <span className="text-sm font-semibold text-[#27265C]">{product.category}</span>
                     </div>
                   </div>
 
-                  {(product.warehouse1 < 20 || product.warehouse2 < 20) && (
+                  {product.availability === "Мало" && (
                     <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <Icon name="AlertCircle" size={18} className="text-yellow-600" />
-                      <span className="text-sm text-yellow-800">
-                        <strong>Рекомендация:</strong> Низкий остаток на складе. Рекомендуем пополнить запас.
+                      <Icon name="AlertTriangle" size={16} className="text-yellow-600" />
+                      <span className="text-sm text-yellow-700 font-medium">
+                        Товар заканчивается! Рекомендуем пополнить запас.
+                      </span>
+                    </div>
+                  )}
+                  {product.availability === "Под заказ" && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <Icon name="Info" size={16} className="text-blue-600" />
+                      <span className="text-sm text-blue-700 font-medium">
+                        Товара нет в наличии. Доступен предзаказ с обязательством выкупа.
                       </span>
                     </div>
                   )}
@@ -225,10 +221,21 @@ const Catalog = () => {
                       Подробнее
                     </Button>
                   </Link>
-                  <Button className="flex-1 bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
-                    <Icon name="ShoppingCart" size={16} className="mr-2" />
-                    В заказ
-                  </Button>
+                  {product.availability === "Под заказ" ? (
+                    <Link to={`/preorder/${product.id}`} className="flex-1">
+                      <Button className="w-full bg-blue-500 text-white hover:bg-blue-600 font-semibold">
+                        <Icon name="Clock" size={16} className="mr-2" />
+                        Предзаказ
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/order/new" className="flex-1">
+                      <Button className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
+                        <Icon name="ShoppingCart" size={16} className="mr-2" />
+                        В заказ
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </CardContent>
