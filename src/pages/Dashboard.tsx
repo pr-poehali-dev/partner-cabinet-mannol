@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const stats = [
-    { title: "Активные заказы", value: "12", icon: "ShoppingCart", trend: "+2 сегодня" },
-    { title: "На складе позиций", value: "847", icon: "Package", trend: "95% в наличии" },
-    { title: "Сумма заказов", value: "₽2.4М", icon: "TrendingUp", trend: "+18% к прошлому месяцу" },
-    { title: "Новинки", value: "23", icon: "Sparkles", trend: "Добавлено за неделю" },
+    { title: "Активные заказы", value: "12", icon: "ShoppingCart", trend: "+2 сегодня", link: "/orders" },
+    { title: "На складе позиций", value: "847", icon: "Package", trend: "95% в наличии", link: "/catalog" },
+    { title: "Сумма заказов", value: "₽2.4М", icon: "TrendingUp", trend: "+18% к прошлому месяцу", link: "/analytics" },
+    { title: "Новинки", value: "23", icon: "Sparkles", trend: "Добавлено за неделю", link: "/catalog" },
   ];
 
   const recentOrders = [
@@ -18,9 +18,9 @@ const Dashboard = () => {
   ];
 
   const recommendations = [
-    { product: "MANNOL 5W-30 API SN/CF", stock: 5, reason: "Низкий остаток", action: "Пополнить" },
-    { product: "MANNOL ATF AG52", stock: 12, reason: "Популярный товар", action: "Заказать" },
-    { product: "MANNOL Radiator Cleaner", stock: 0, reason: "Закончился", action: "Срочно" },
+    { product: "MANNOL 5W-30 API SN/CF", stock: 5, reason: "Низкий остаток", action: "Пополнить", link: "/order/new" },
+    { product: "MANNOL ATF AG52", stock: 12, reason: "Популярный товар", action: "Заказать", link: "/order/new" },
+    { product: "MANNOL Radiator Cleaner", stock: 0, reason: "Закончился", action: "Срочно", link: "/order/new" },
   ];
 
   const quickActions = [
@@ -39,18 +39,20 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => (
-          <Card key={idx} className="hover-scale">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-              <div className="w-10 h-10 rounded-lg bg-[#27265C] flex items-center justify-center">
-                <Icon name={stat.icon as any} className="text-white" size={20} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-[#27265C]">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-2">{stat.trend}</p>
-            </CardContent>
-          </Card>
+          <Link key={idx} to={stat.link}>
+            <Card className="hover-scale cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                <div className="w-10 h-10 rounded-lg bg-[#27265C] flex items-center justify-center">
+                  <Icon name={stat.icon as any} className="text-white" size={20} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-[#27265C]">{stat.value}</div>
+                <p className="text-xs text-gray-500 mt-2">{stat.trend}</p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -76,22 +78,24 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {recentOrders.map((order, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-[#27265C]">{order.id}</p>
-                    <p className="text-sm text-gray-500">{order.date}</p>
+                <Link key={idx} to={`/order/${order.id}`}>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-[#27265C]">{order.id}</p>
+                      <p className="text-sm text-gray-500">{order.date}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <p className="font-bold text-[#27265C]">{order.amount}</p>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        order.status === "Доставлен" ? "bg-green-100 text-green-700" :
+                        order.status === "Отгружен" ? "bg-blue-100 text-blue-700" :
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-bold text-[#27265C]">{order.amount}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === "Доставлен" ? "bg-green-100 text-green-700" :
-                      order.status === "Отгружен" ? "bg-blue-100 text-blue-700" :
-                      "bg-yellow-100 text-yellow-700"
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
+                </Link>
               ))}
               <Link to="/orders">
                 <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
@@ -116,12 +120,14 @@ const Dashboard = () => {
                     <p className="font-semibold text-[#27265C] text-sm">{rec.product}</p>
                     <p className="text-xs text-gray-500">Остаток: {rec.stock} шт • {rec.reason}</p>
                   </div>
-                  <Button 
-                    size="sm" 
-                    className={`${rec.stock === 0 ? 'bg-red-500 hover:bg-red-600' : 'bg-[#FCC71E] hover:bg-[#FCC71E]/90'} text-[#27265C] font-semibold`}
-                  >
-                    {rec.action}
-                  </Button>
+                  <Link to={rec.link}>
+                    <Button 
+                      size="sm" 
+                      className={`${rec.stock === 0 ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C]'} font-semibold`}
+                    >
+                      {rec.action}
+                    </Button>
+                  </Link>
                 </div>
               ))}
               <Link to="/catalog">
