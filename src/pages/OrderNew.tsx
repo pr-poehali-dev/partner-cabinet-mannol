@@ -15,8 +15,10 @@ import { ru } from "date-fns/locale";
 
 const OrderNew = () => {
   const [cartItems, setCartItems] = useState([
-    { id: "MAN-001", name: "MANNOL 5W-30 API SN/CF", quantity: 50, price: 1250, warehouse: "Склад 1" },
-    { id: "MAN-004", name: "MANNOL 10W-40 EXTRA", quantity: 30, price: 1100, warehouse: "Склад 1" },
+    { id: "MAN-001", name: "MANNOL 5W-30 API SN/CF", quantity: 50, price: 1250, warehouse: "Склад 1", inStock: true },
+    { id: "MAN-004", name: "MANNOL 10W-40 EXTRA", quantity: 30, price: 1100, warehouse: "Склад 1", inStock: true },
+    { id: "MAN-003", name: "MANNOL Radiator Cleaner", quantity: 20, price: 450, warehouse: "Под заказ", inStock: false },
+    { id: "MAN-006", name: "MANNOL Antifreeze AG13", quantity: 15, price: 680, warehouse: "Под заказ", inStock: false },
   ]);
 
   const [deliveryDate, setDeliveryDate] = useState<Date>();
@@ -34,8 +36,15 @@ const OrderNew = () => {
     setCartItems(items => items.filter(item => item.id !== id));
   };
 
+  const itemsInStock = cartItems.filter(item => item.inStock);
+  const itemsPreorder = cartItems.filter(item => !item.inStock);
+
   const totalAmount = cartItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const totalInStock = itemsInStock.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const totalPreorder = itemsPreorder.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  
   const minOrderAmount = 50000;
 
   return (
@@ -84,6 +93,12 @@ const OrderNew = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-gray-500">#{idx + 1}</span>
                         <h4 className="font-bold text-[#27265C]">{item.name}</h4>
+                        {!item.inStock && (
+                          <Badge className="bg-blue-100 text-blue-700">
+                            <Icon name="Clock" size={12} className="mr-1" />
+                            Предзаказ
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600">Артикул: {item.id} • {item.warehouse}</p>
                       <p className="text-sm font-semibold text-[#27265C]">Цена: ₽{item.price.toLocaleString()} за шт</p>
@@ -304,6 +319,33 @@ const OrderNew = () => {
             <CardTitle className="text-[#27265C]">Итоги заказа</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {itemsInStock.length > 0 && itemsPreorder.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon name="Info" size={18} className="text-blue-600" />
+                  <span className="font-semibold text-blue-800">Заказ будет разделен на 2 части</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="bg-white rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon name="Package" size={14} className="text-green-600" />
+                      <p className="text-xs font-semibold text-gray-600">Основной заказ (в наличии)</p>
+                    </div>
+                    <p className="text-xl font-bold text-[#27265C]">₽{totalInStock.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{itemsInStock.length} позиц. • Отправка сразу</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon name="Clock" size={14} className="text-blue-600" />
+                      <p className="text-xs font-semibold text-gray-600">Предзаказ (под заказ)</p>
+                    </div>
+                    <p className="text-xl font-bold text-blue-600">₽{totalPreorder.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{itemsPreorder.length} позиц. • После поступления</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Позиций в заказе:</span>
