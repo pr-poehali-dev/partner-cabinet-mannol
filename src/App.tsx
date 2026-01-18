@@ -11,6 +11,7 @@ import ProductDetails from "./pages/ProductDetails";
 import OrderNew from "./pages/OrderNew";
 import OrderDetails from "./pages/OrderDetails";
 import Orders from "./pages/Orders";
+import Backorders from "./pages/Backorders";
 import Schedule from "./pages/Schedule";
 import Notifications from "./pages/Notifications";
 import Analytics from "./pages/Analytics";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/order/new" element={<OrderNew />} />
             <Route path="/order/:orderId" element={<OrderDetails />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/backorders" element={<Backorders />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/analytics" element={<Analytics />} />

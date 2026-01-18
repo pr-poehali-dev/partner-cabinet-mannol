@@ -26,6 +26,7 @@ const Layout = ({ children }: LayoutProps) => {
     { icon: "Package", label: "Каталог", path: "/catalog" },
     { icon: "ShoppingCart", label: "Создать заказ", path: "/order/new" },
     { icon: "FileText", label: "Мои заказы", path: "/orders" },
+    { icon: "PackageX", label: "Недопоставки", path: "/backorders" },
     { icon: "Calendar", label: "График отгрузок", path: "/schedule" },
     { icon: "Bell", label: "Уведомления", path: "/notifications" },
     { icon: "BarChart3", label: "Аналитика", path: "/analytics" },

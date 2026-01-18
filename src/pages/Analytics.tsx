@@ -1,11 +1,101 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Icon from "@/components/ui/icon";
 import { Link } from "react-router-dom";
 
 const Analytics = () => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const skuRating = {
+    totalSKU: 450,
+    orderedSKU: 287,
+    percentage: 64,
+    rank: 12,
+    totalPartners: 45
+  };
+
+  const neverOrderedCategories = [
+    {
+      id: "synthetic",
+      name: "Синтетические масла",
+      count: 12,
+      products: [
+        { id: "MAN-101", name: "MANNOL 0W-20 Longlife", viscosity: "0W-20", price: 1450 },
+        { id: "MAN-102", name: "MANNOL 5W-20 Elite", viscosity: "5W-20", price: 1380 },
+        { id: "MAN-103", name: "MANNOL 0W-30 Racing", viscosity: "0W-30", price: 1550 }
+      ]
+    },
+    {
+      id: "semi-synthetic",
+      name: "Полусинтетические масла",
+      count: 8,
+      products: [
+        { id: "MAN-201", name: "MANNOL 10W-40 Classic", viscosity: "10W-40", price: 890 },
+        { id: "MAN-202", name: "MANNOL 5W-40 Diesel", viscosity: "5W-40", price: 980 }
+      ]
+    },
+    {
+      id: "transmission",
+      name: "Трансмиссионные масла",
+      count: 15,
+      products: [
+        { id: "MAN-301", name: "MANNOL ATF WS", viscosity: "ATF", price: 1120 },
+        { id: "MAN-302", name: "MANNOL Gear 75W-90", viscosity: "75W-90", price: 850 }
+      ]
+    },
+    {
+      id: "filters",
+      name: "Фильтры",
+      count: 25,
+      products: [
+        { id: "MAN-401", name: "Фильтр воздушный A1234", viscosity: "-", price: 450 },
+        { id: "MAN-402", name: "Фильтр салонный C5678", viscosity: "-", price: 380 }
+      ]
+    }
+  ];
+
+  const longTimeNoOrderCategories = [
+    {
+      id: "synthetic-old",
+      name: "Синтетические масла",
+      count: 7,
+      products: [
+        { id: "MAN-501", name: "MANNOL 5W-30 API SN/CF", lastOrder: "05.09.2024", daysAgo: 107, price: 1250 },
+        { id: "MAN-502", name: "MANNOL 0W-40 Premium", lastOrder: "12.08.2024", daysAgo: 131, price: 1580 }
+      ]
+    },
+    {
+      id: "transmission-old",
+      name: "Трансмиссионные масла",
+      count: 5,
+      products: [
+        { id: "MAN-601", name: "MANNOL ATF AG52", lastOrder: "20.09.2024", daysAgo: 92, price: 980 },
+        { id: "MAN-602", name: "MANNOL CVT Fluid", lastOrder: "01.09.2024", daysAgo: 111, price: 1150 }
+      ]
+    },
+    {
+      id: "coolants-old",
+      name: "Антифризы",
+      count: 3,
+      products: [
+        { id: "MAN-701", name: "MANNOL Antifreeze AG13", lastOrder: "15.08.2024", daysAgo: 128, price: 650 }
+      ]
+    }
+  ];
+
+  const topProducts = [
+    { id: "MAN-001", name: "MANNOL 5W-30 API SN/CF", orders: 45, liters: 2250, revenue: "₽2,812,500" },
+    { id: "MAN-004", name: "MANNOL 10W-40 EXTRA", orders: 38, liters: 1900, revenue: "₽2,090,000" },
+    { id: "MAN-002", name: "MANNOL ATF AG52", orders: 32, liters: 1280, revenue: "₽1,254,400" },
+    { id: "MAN-005", name: "MANNOL Antifreeze AG11", orders: 28, liters: 1120, revenue: "₽728,000" },
+    { id: "MAN-003", name: "MANNOL Radiator Cleaner", orders: 24, liters: 480, revenue: "₽216,000" }
+  ];
+
   const salesPlan = {
     currentMonth: {
       planLiters: 5000,
@@ -224,6 +314,242 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-l-4 border-l-[#FCC71E]">
+        <CardHeader>
+          <CardTitle className="text-[#27265C] flex items-center gap-2">
+            <Icon name="Award" size={24} />
+            Рейтинг по SKU
+          </CardTitle>
+          <CardDescription>Процент охвата товарного ассортимента</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-[#27265C] to-[#3d3b7c] text-white rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="Package" size={20} />
+                  <span className="text-sm opacity-90">Всего SKU</span>
+                </div>
+                <p className="text-4xl font-bold">{skuRating.totalSKU}</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="CheckCircle" size={20} />
+                  <span className="text-sm opacity-90">Заказано SKU</span>
+                </div>
+                <p className="text-4xl font-bold">{skuRating.orderedSKU}</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-[#FCC71E] to-[#fdb91e] text-[#27265C] rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="TrendingUp" size={20} />
+                  <span className="text-sm opacity-90">Охват</span>
+                </div>
+                <p className="text-4xl font-bold">{skuRating.percentage}%</p>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-gray-600">Прогресс охвата ассортимента</span>
+                <span className="font-bold text-[#27265C]">{skuRating.orderedSKU} из {skuRating.totalSKU}</span>
+              </div>
+              <Progress value={skuRating.percentage} className="h-4" />
+            </div>
+
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+              <div className="flex items-start gap-3">
+                <Icon name="Info" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-blue-900 mb-1">Ваша позиция в рейтинге</p>
+                  <p className="text-sm text-blue-800">
+                    Вы занимаете <span className="font-bold">{skuRating.rank} место</span> из {skuRating.totalPartners} партнеров по охвату SKU. 
+                    Закажите товары из раздела "Не брал совсем" чтобы повысить рейтинг!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-[#27265C] flex items-center gap-2">
+              <Icon name="XCircle" size={20} className="text-red-600" />
+              Не брал совсем
+            </CardTitle>
+            <CardDescription>Товары, которые вы ещё не заказывали</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="AlertTriangle" size={18} className="text-red-600" />
+                <span className="font-semibold text-red-900">Расширьте ассортимент</span>
+              </div>
+              <p className="text-sm text-red-800">
+                {neverOrderedCategories.reduce((sum, cat) => sum + cat.count, 0)} товаров в каталоге, 
+                которые вы ещё ни разу не заказывали
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              {neverOrderedCategories.map((category) => (
+                <AccordionItem key={category.id} value={category.id}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <span className="font-semibold text-[#27265C]">{category.name}</span>
+                      <Badge variant="outline" className="border-red-500 text-red-600">
+                        {category.count} позиций
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      {category.products.map((product) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-1">
+                            <p className="font-semibold text-[#27265C] text-sm">{product.name}</p>
+                            <p className="text-xs text-gray-600">{product.viscosity} • ₽{product.price.toLocaleString()}/л</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link to={`/product/${product.id}`}>
+                              <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                                <Icon name="Eye" size={14} className="mr-1" />
+                                Смотреть
+                              </Button>
+                            </Link>
+                            <Link to="/order/new">
+                              <Button size="sm" className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
+                                <Icon name="Plus" size={14} className="mr-1" />
+                                Заказать
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-[#27265C] flex items-center gap-2">
+              <Icon name="Clock" size={20} className="text-orange-600" />
+              Давно не заказывал
+            </CardTitle>
+            <CardDescription>Товары, не заказанные более 2 месяцев</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="AlertCircle" size={18} className="text-orange-600" />
+                <span className="font-semibold text-orange-900">Возобновите закупки</span>
+              </div>
+              <p className="text-sm text-orange-800">
+                {longTimeNoOrderCategories.reduce((sum, cat) => sum + cat.count, 0)} товаров, 
+                которые вы не заказывали более 2 месяцев
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              {longTimeNoOrderCategories.map((category) => (
+                <AccordionItem key={category.id} value={category.id}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <span className="font-semibold text-[#27265C]">{category.name}</span>
+                      <Badge variant="outline" className="border-orange-500 text-orange-600">
+                        {category.count} позиций
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      {category.products.map((product) => (
+                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-1">
+                            <p className="font-semibold text-[#27265C] text-sm">{product.name}</p>
+                            <p className="text-xs text-gray-600">
+                              Последний заказ: {product.lastOrder} ({product.daysAgo} дней назад)
+                            </p>
+                            <p className="text-xs text-gray-600">₽{product.price.toLocaleString()}/л</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link to={`/product/${product.id}`}>
+                              <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                                <Icon name="Eye" size={14} className="mr-1" />
+                                Смотреть
+                              </Button>
+                            </Link>
+                            <Link to="/order/new">
+                              <Button size="sm" className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
+                                <Icon name="Plus" size={14} className="mr-1" />
+                                Заказать
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-[#27265C] flex items-center gap-2">
+            <Icon name="TrendingUp" size={20} className="text-green-600" />
+            Топ покупаемых товаров
+          </CardTitle>
+          <CardDescription>Ваши самые популярные позиции за год</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {topProducts.map((product, idx) => (
+              <div key={product.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
+                  idx === 0 ? "bg-yellow-500" :
+                  idx === 1 ? "bg-gray-400" :
+                  idx === 2 ? "bg-orange-600" :
+                  "bg-[#27265C]"
+                }`}>
+                  {idx === 0 && "🏆"}
+                  {idx === 1 && "🥈"}
+                  {idx === 2 && "🥉"}
+                  {idx > 2 && (idx + 1)}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-[#27265C]">{product.name}</h4>
+                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                    <span>{product.orders} заказов</span>
+                    <span>•</span>
+                    <span>{product.liters} л</span>
+                    <span>•</span>
+                    <span className="font-semibold text-green-600">{product.revenue}</span>
+                  </div>
+                </div>
+                <Link to={`/product/${product.id}`}>
+                  <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                    <Icon name="Eye" size={14} className="mr-2" />
+                    Детали
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
