@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,28 @@ interface DebtInfo {
 }
 
 const DebtBanner = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isVisible, setIsVisible] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.pathname === '/debt-details/modal') {
+      setIsModalOpen(true);
+    } else {
+      setIsModalOpen(false);
+    }
+  }, [location]);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    navigate('/debt-details/modal');
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    navigate(-1);
+  };
   
   const debtInfo: DebtInfo = {
     amount: 124500,
@@ -97,17 +118,18 @@ const DebtBanner = () => {
               </Button>
             </Link>
 
-            <Dialog>
+            <Dialog open={isModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
                   className="text-white hover:bg-white/20 border-2 border-white font-semibold"
+                  onClick={handleOpenModal}
                 >
                   <Icon name="Info" size={18} className="mr-2" />
                   Подробнее
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onEscapeKeyDown={handleCloseModal}>
                 <DialogHeader>
                   <DialogTitle className="text-2xl text-red-600 flex items-center gap-3">
                     <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">

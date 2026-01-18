@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,8 @@ interface Order {
 }
 
 const Orders = () => {
+  const navigate = useNavigate();
+  const { orderId } = useParams();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const orders: Order[] = [
@@ -82,6 +84,25 @@ const Orders = () => {
       type: "Обычный"
     },
   ];
+
+  useEffect(() => {
+    if (orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        setSelectedOrder(order);
+      }
+    }
+  }, [orderId]);
+
+  const handleOpenModal = (order: Order) => {
+    setSelectedOrder(order);
+    navigate(`/orders/${order.id}/details`);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedOrder(null);
+    navigate('/orders');
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -194,18 +215,18 @@ const Orders = () => {
                   </div>
 
                   <div className="flex lg:flex-col gap-2 lg:w-48">
-                    <Dialog>
+                    <Dialog open={selectedOrder?.id === order.id} onOpenChange={(open) => !open && handleCloseModal()}>
                       <DialogTrigger asChild>
                         <Button 
                           variant="outline" 
                           className="flex-1 border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white"
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => handleOpenModal(order)}
                         >
                           <Icon name="Eye" size={16} className="mr-2" />
                           Подробнее
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onEscapeKeyDown={handleCloseModal}>
                         {selectedOrder && (
                           <>
                             <DialogHeader>

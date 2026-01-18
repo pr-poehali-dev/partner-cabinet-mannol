@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,28 @@ interface PromotionBannerProps {
 }
 
 const PromotionBanner = ({ promotions, onDismiss }: PromotionBannerProps) => {
+  const navigate = useNavigate();
+  const { promoId } = useParams();
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
+
+  useEffect(() => {
+    if (promoId) {
+      const promo = promotions.find(p => p.id === promoId);
+      if (promo) {
+        setSelectedPromotion(promo);
+      }
+    }
+  }, [promoId, promotions]);
+
+  const handleOpenModal = (promo: Promotion) => {
+    setSelectedPromotion(promo);
+    navigate(`/notifications/${promo.id}`);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPromotion(null);
+    navigate('/notifications');
+  };
   
   if (promotions.length === 0) return null;
 
@@ -58,17 +79,17 @@ const PromotionBanner = ({ promotions, onDismiss }: PromotionBannerProps) => {
                     <Icon name="Clock" size={16} />
                     <span className="text-sm font-semibold">Действует до {promo.validUntil}</span>
                   </div>
-                  <Dialog>
+                  <Dialog open={selectedPromotion?.id === promo.id} onOpenChange={(open) => !open && handleCloseModal()}>
                     <DialogTrigger asChild>
                       <Button 
                         className="bg-white text-[#27265C] hover:bg-white/90 font-semibold"
-                        onClick={() => setSelectedPromotion(promo)}
+                        onClick={() => handleOpenModal(promo)}
                       >
                         <Icon name="Info" size={16} className="mr-2" />
                         Подробнее
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl" onEscapeKeyDown={handleCloseModal}>
                       <DialogHeader>
                         <DialogTitle className="text-2xl text-[#27265C] flex items-center gap-3">
                           <div className={`w-12 h-12 ${promo.color} rounded-lg flex items-center justify-center`}>
