@@ -225,19 +225,41 @@ const DebtBanner = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Link to="/payments" className="flex-1">
-                    <Button className="w-full bg-red-600 text-white hover:bg-red-700 font-semibold">
-                      <Icon name="CreditCard" size={18} className="mr-2" />
-                      Перейти к оплате
-                    </Button>
-                  </Link>
-                  <Link to="/debt-details" className="flex-1">
-                    <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                      <Icon name="FileText" size={18} className="mr-2" />
-                      Полная история
-                    </Button>
-                  </Link>
+                <div className="space-y-3 pt-4">
+                  <div className="flex gap-2">
+                    <Link to="/payments" className="flex-1">
+                      <Button className="w-full bg-red-600 text-white hover:bg-red-700 font-semibold">
+                        <Icon name="CreditCard" size={18} className="mr-2" />
+                        Перейти к оплате
+                      </Button>
+                    </Link>
+                    <Link to="/debt-details" className="flex-1">
+                      <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                        <Icon name="FileText" size={18} className="mr-2" />
+                        Полная история
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Link to="/orders">
+                      <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                        <Icon name="Package" size={16} className="mr-2" />
+                        Заказы
+                      </Button>
+                    </Link>
+                    <Link to="/analytics">
+                      <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                        <Icon name="BarChart3" size={16} className="mr-2" />
+                        Аналитика
+                      </Button>
+                    </Link>
+                    <Link to="/catalog">
+                      <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+                        <Icon name="ShoppingCart" size={16} className="mr-2" />
+                        Каталог
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>

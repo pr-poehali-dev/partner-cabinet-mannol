@@ -155,6 +155,18 @@ const PromotionBanner = ({ promotions, onDismiss }: PromotionBannerProps) => {
                             Перейти в каталог
                           </Button>
                         </Link>
+                        <Link to="/orders" className="flex-1">
+                          <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                            <Icon name="Package" size={18} className="mr-2" />
+                            Мои заказы
+                          </Button>
+                        </Link>
+                        <Link to="/notifications">
+                          <Button variant="ghost" className="border border-gray-300 hover:bg-gray-50">
+                            <Icon name="Bell" size={18} className="mr-2" />
+                            Все акции
+                          </Button>
+                        </Link>
                       </div>
                     </DialogContent>
                   </Dialog>

@@ -354,17 +354,45 @@ const Orders = () => {
                               </div>
                             </div>
 
-                            <div className="flex gap-2 pt-4">
-                              <Link to={`/order/${selectedOrder.id}`} className="flex-1">
-                                <Button className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
-                                  <Icon name="FileText" size={18} className="mr-2" />
-                                  Полная информация
+                            <div className="space-y-3 pt-4">
+                              <div className="flex gap-2">
+                                <Link to={`/order/${selectedOrder.id}`} className="flex-1">
+                                  <Button className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
+                                    <Icon name="FileText" size={18} className="mr-2" />
+                                    Полная информация
+                                  </Button>
+                                </Link>
+                                <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                                  <Icon name="Printer" size={18} className="mr-2" />
+                                  Печать
                                 </Button>
-                              </Link>
-                              <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                                <Icon name="Printer" size={18} className="mr-2" />
-                                Печать
-                              </Button>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                <Link to="/catalog">
+                                  <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
+                                    <Icon name="ShoppingCart" size={14} className="mr-1" />
+                                    Каталог
+                                  </Button>
+                                </Link>
+                                <Link to="/backorders">
+                                  <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
+                                    <Icon name="PackageX" size={14} className="mr-1" />
+                                    Недопоставки
+                                  </Button>
+                                </Link>
+                                <Link to="/analytics">
+                                  <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
+                                    <Icon name="BarChart3" size={14} className="mr-1" />
+                                    Аналитика
+                                  </Button>
+                                </Link>
+                                <Link to="/payments">
+                                  <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
+                                    <Icon name="CreditCard" size={14} className="mr-1" />
+                                    Платежи
+                                  </Button>
+                                </Link>
+                              </div>
                             </div>
                           </>
                         )}
