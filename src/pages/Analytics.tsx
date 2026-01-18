@@ -375,56 +375,57 @@ const Analytics = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="border-l-4 border-l-red-500">
           <CardHeader>
             <CardTitle className="text-[#27265C] flex items-center gap-2">
               <Icon name="XCircle" size={20} className="text-red-600" />
               Не брал совсем
             </CardTitle>
-            <CardDescription>Товары, которые вы ещё не заказывали</CardDescription>
+            <CardDescription>SKU, которые вы ещё не заказывали</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="AlertTriangle" size={18} className="text-red-600" />
-                <span className="font-semibold text-red-900">Расширьте ассортимент</span>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="AlertTriangle" size={16} className="text-red-600" />
+                <span className="font-semibold text-red-900 text-sm">Расширьте ассортимент</span>
               </div>
-              <p className="text-sm text-red-800">
-                {neverOrderedCategories.reduce((sum, cat) => sum + cat.count, 0)} товаров в каталоге, 
-                которые вы ещё ни разу не заказывали
+              <p className="text-xs text-red-800">
+                {neverOrderedCategories.reduce((sum, cat) => sum + cat.count, 0)} SKU в каталоге
               </p>
             </div>
 
             <Accordion type="single" collapsible className="w-full">
               {neverOrderedCategories.map((category) => (
                 <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="hover:no-underline">
+                  <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center justify-between w-full pr-4">
-                      <span className="font-semibold text-[#27265C]">{category.name}</span>
-                      <Badge variant="outline" className="border-red-500 text-red-600">
-                        {category.count} позиций
+                      <span className="font-semibold text-[#27265C] text-sm">{category.name}</span>
+                      <Badge variant="outline" className="border-red-500 text-red-600 text-xs">
+                        {category.count}
                       </Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 pt-2">
                       {category.products.map((product) => (
-                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                          <div className="flex-1">
-                            <p className="font-semibold text-[#27265C] text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-600">{product.viscosity} • ₽{product.price.toLocaleString()}/л</p>
+                        <div key={product.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[#27265C] text-xs truncate">{product.name}</p>
+                              <p className="text-xs text-gray-600">{product.viscosity} • ₽{product.price.toLocaleString()}</p>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Link to={`/product/${product.id}`}>
-                              <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                                <Icon name="Eye" size={14} className="mr-1" />
-                                Смотреть
+                          <div className="flex gap-1">
+                            <Link to={`/product/${product.id}`} className="flex-1">
+                              <Button size="sm" variant="outline" className="w-full h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                                <Icon name="Eye" size={12} className="mr-1" />
+                                Карточка
                               </Button>
                             </Link>
-                            <Link to="/order/new">
-                              <Button size="sm" className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
-                                <Icon name="Plus" size={14} className="mr-1" />
+                            <Link to="/order/new" className="flex-1">
+                              <Button size="sm" className="w-full h-7 text-xs bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
+                                <Icon name="Plus" size={12} className="mr-1" />
                                 Заказать
                               </Button>
                             </Link>
@@ -439,58 +440,59 @@ const Analytics = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader>
             <CardTitle className="text-[#27265C] flex items-center gap-2">
               <Icon name="Clock" size={20} className="text-orange-600" />
               Давно не заказывал
             </CardTitle>
-            <CardDescription>Товары, не заказанные более 2 месяцев</CardDescription>
+            <CardDescription>Не заказывались более 2 месяцев</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="AlertCircle" size={18} className="text-orange-600" />
-                <span className="font-semibold text-orange-900">Возобновите закупки</span>
+            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="AlertCircle" size={16} className="text-orange-600" />
+                <span className="font-semibold text-orange-900 text-sm">Возобновите закупки</span>
               </div>
-              <p className="text-sm text-orange-800">
-                {longTimeNoOrderCategories.reduce((sum, cat) => sum + cat.count, 0)} товаров, 
-                которые вы не заказывали более 2 месяцев
+              <p className="text-xs text-orange-800">
+                {longTimeNoOrderCategories.reduce((sum, cat) => sum + cat.count, 0)} SKU давно не заказывались
               </p>
             </div>
 
             <Accordion type="single" collapsible className="w-full">
               {longTimeNoOrderCategories.map((category) => (
                 <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="hover:no-underline">
+                  <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center justify-between w-full pr-4">
-                      <span className="font-semibold text-[#27265C]">{category.name}</span>
-                      <Badge variant="outline" className="border-orange-500 text-orange-600">
-                        {category.count} позиций
+                      <span className="font-semibold text-[#27265C] text-sm">{category.name}</span>
+                      <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">
+                        {category.count}
                       </Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 pt-2">
                       {category.products.map((product) => (
-                        <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                          <div className="flex-1">
-                            <p className="font-semibold text-[#27265C] text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-600">
-                              Последний заказ: {product.lastOrder} ({product.daysAgo} дней назад)
-                            </p>
-                            <p className="text-xs text-gray-600">₽{product.price.toLocaleString()}/л</p>
+                        <div key={product.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[#27265C] text-xs truncate">{product.name}</p>
+                              <p className="text-xs text-gray-600">
+                                {product.lastOrder} ({product.daysAgo}д)
+                              </p>
+                              <p className="text-xs text-gray-600">₽{product.price.toLocaleString()}</p>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Link to={`/product/${product.id}`}>
-                              <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                                <Icon name="Eye" size={14} className="mr-1" />
-                                Смотреть
+                          <div className="flex gap-1">
+                            <Link to={`/product/${product.id}`} className="flex-1">
+                              <Button size="sm" variant="outline" className="w-full h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                                <Icon name="Eye" size={12} className="mr-1" />
+                                Карточка
                               </Button>
                             </Link>
-                            <Link to="/order/new">
-                              <Button size="sm" className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
-                                <Icon name="Plus" size={14} className="mr-1" />
+                            <Link to="/order/new" className="flex-1">
+                              <Button size="sm" className="w-full h-7 text-xs bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
+                                <Icon name="Plus" size={12} className="mr-1" />
                                 Заказать
                               </Button>
                             </Link>
@@ -504,52 +506,50 @@ const Analytics = () => {
             </Accordion>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[#27265C] flex items-center gap-2">
-            <Icon name="TrendingUp" size={20} className="text-green-600" />
-            Топ покупаемых товаров
-          </CardTitle>
-          <CardDescription>Ваши самые популярные позиции за год</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {topProducts.map((product, idx) => (
-              <div key={product.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
-                  idx === 0 ? "bg-yellow-500" :
-                  idx === 1 ? "bg-gray-400" :
-                  idx === 2 ? "bg-orange-600" :
-                  "bg-[#27265C]"
-                }`}>
-                  {idx === 0 && "🏆"}
-                  {idx === 1 && "🥈"}
-                  {idx === 2 && "🥉"}
-                  {idx > 2 && (idx + 1)}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-[#27265C]">{product.name}</h4>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                    <span>{product.orders} заказов</span>
-                    <span>•</span>
-                    <span>{product.liters} л</span>
-                    <span>•</span>
-                    <span className="font-semibold text-green-600">{product.revenue}</span>
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader>
+            <CardTitle className="text-[#27265C] flex items-center gap-2">
+              <Icon name="TrendingUp" size={20} className="text-green-600" />
+              Топ покупаемых
+            </CardTitle>
+            <CardDescription>Самые популярные за год</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {topProducts.map((product, idx) => (
+                <div key={product.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
+                    idx === 0 ? "bg-yellow-500" :
+                    idx === 1 ? "bg-gray-400" :
+                    idx === 2 ? "bg-orange-600" :
+                    "bg-[#27265C]"
+                  }`}>
+                    {idx === 0 && "🏆"}
+                    {idx === 1 && "🥈"}
+                    {idx === 2 && "🥉"}
+                    {idx > 2 && (idx + 1)}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-[#27265C] text-xs truncate">{product.name}</h4>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span>{product.orders} зак.</span>
+                      <span>•</span>
+                      <span>{product.liters} л</span>
+                    </div>
+                    <p className="text-xs font-semibold text-green-600">{product.revenue}</p>
+                  </div>
+                  <Link to={`/product/${product.id}`}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                      <Icon name="Eye" size={12} />
+                    </Button>
+                  </Link>
                 </div>
-                <Link to={`/product/${product.id}`}>
-                  <Button size="sm" variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                    <Icon name="Eye" size={14} className="mr-2" />
-                    Детали
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
