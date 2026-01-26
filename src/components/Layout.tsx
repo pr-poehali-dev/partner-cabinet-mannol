@@ -1,9 +1,15 @@
-import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { ReactNode, useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import DebtBanner from "@/components/DebtBanner";
+import NotificationPanel from "@/components/NotificationPanel";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +25,59 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+
+  const notifications = [
+    {
+      id: "1",
+      type: "order" as const,
+      title: "Заказ #ORD-2024-1247 подтвержден",
+      message: "Ваш заказ на 1,248 товаров успешно обработан и передан на склад",
+      time: "2 часа назад",
+      isRead: false,
+      link: "/orders/ORD-2024-1247/details"
+    },
+    {
+      id: "2",
+      type: "payment" as const,
+      title: "Платеж получен",
+      message: "Оплата по счету #INV-2024-5689 на сумму 124,500₽ зачислена",
+      time: "5 часов назад",
+      isRead: false,
+      link: "/orders"
+    },
+    {
+      id: "3",
+      type: "promotion" as const,
+      title: "Новая акция: Весенняя распродажа",
+      message: "Скидки до 30% на моторные масла. Успейте воспользоваться!",
+      time: "1 день назад",
+      isRead: false,
+      link: "/notifications/PROMO-001"
+    },
+  ];
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  useEffect(() => {
+    if (location.pathname === '/notifications/panel') {
+      setIsNotificationPanelOpen(true);
+    } else {
+      setIsNotificationPanelOpen(false);
+    }
+  }, [location]);
+
+  const handleOpenNotificationPanel = () => {
+    setIsNotificationPanelOpen(true);
+    navigate('/notifications/panel');
+  };
+
+  const handleCloseNotificationPanel = () => {
+    setIsNotificationPanelOpen(false);
+    navigate(-1);
+  };
 
   const menuItems = [
     { icon: "LayoutDashboard", label: "Главная", path: "/" },
@@ -94,18 +152,26 @@ const Layout = ({ children }: LayoutProps) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <Link to="/notifications">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="relative text-[#27265C] hover:bg-gray-100"
-                >
-                  <Icon name="Bell" size={20} />
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    3
-                  </span>
-                </Button>
-              </Link>
+              <Sheet open={isNotificationPanelOpen} onOpenChange={(open) => !open && handleCloseNotificationPanel()}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative text-[#27265C] hover:bg-gray-100"
+                    onClick={handleOpenNotificationPanel}
+                  >
+                    <Icon name="Bell" size={20} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-md p-0">
+                  <NotificationPanel notifications={notifications} />
+                </SheetContent>
+              </Sheet>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -130,23 +196,31 @@ const Layout = ({ children }: LayoutProps) => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Icon name="User" size={16} className="mr-2" />
-                    Профиль
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Icon name="Settings" size={16} className="mr-2" />
-                    Настройки
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Icon name="HelpCircle" size={16} className="mr-2" />
-                    Помощь
-                  </DropdownMenuItem>
+                  <Link to="/profile">
+                    <DropdownMenuItem>
+                      <Icon name="User" size={16} className="mr-2" />
+                      Профиль
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link to="/settings">
+                    <DropdownMenuItem>
+                      <Icon name="Settings" size={16} className="mr-2" />
+                      Настройки
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link to="/help">
+                    <DropdownMenuItem>
+                      <Icon name="HelpCircle" size={16} className="mr-2" />
+                      Помощь
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600">
-                    <Icon name="LogOut" size={16} className="mr-2" />
-                    Выйти
-                  </DropdownMenuItem>
+                  <Link to="/login">
+                    <DropdownMenuItem className="text-red-600">
+                      <Icon name="LogOut" size={16} className="mr-2" />
+                      Выйти
+                    </DropdownMenuItem>
+                  </Link>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
