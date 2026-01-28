@@ -4,586 +4,542 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from "@/components/ui/icon";
 import { Link } from "react-router-dom";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const Analytics = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [periodFilter, setPeriodFilter] = useState("year");
 
-  const skuRating = {
-    totalSKU: 450,
-    orderedSKU: 287,
-    percentage: 64,
-    rank: 12,
-    totalPartners: 45
-  };
-
-  const neverOrderedCategories = [
-    {
-      id: "synthetic",
-      name: "Синтетические масла",
-      count: 12,
-      products: [
-        { id: "MAN-101", name: "MANNOL 0W-20 Longlife", viscosity: "0W-20", price: 1450 },
-        { id: "MAN-102", name: "MANNOL 5W-20 Elite", viscosity: "5W-20", price: 1380 },
-        { id: "MAN-103", name: "MANNOL 0W-30 Racing", viscosity: "0W-30", price: 1550 }
-      ]
-    },
-    {
-      id: "semi-synthetic",
-      name: "Полусинтетические масла",
-      count: 8,
-      products: [
-        { id: "MAN-201", name: "MANNOL 10W-40 Classic", viscosity: "10W-40", price: 890 },
-        { id: "MAN-202", name: "MANNOL 5W-40 Diesel", viscosity: "5W-40", price: 980 }
-      ]
-    },
-    {
-      id: "transmission",
-      name: "Трансмиссионные масла",
-      count: 15,
-      products: [
-        { id: "MAN-301", name: "MANNOL ATF WS", viscosity: "ATF", price: 1120 },
-        { id: "MAN-302", name: "MANNOL Gear 75W-90", viscosity: "75W-90", price: 850 }
-      ]
-    },
-    {
-      id: "filters",
-      name: "Фильтры",
-      count: 25,
-      products: [
-        { id: "MAN-401", name: "Фильтр воздушный A1234", viscosity: "-", price: 450 },
-        { id: "MAN-402", name: "Фильтр салонный C5678", viscosity: "-", price: 380 }
-      ]
-    }
+  const monthlyOrders = [
+    { month: "Янв", orders: 45, revenue: 2450000, plan: 2000000 },
+    { month: "Фев", orders: 52, revenue: 2680000, plan: 2000000 },
+    { month: "Мар", orders: 48, revenue: 2520000, plan: 2000000 },
+    { month: "Апр", orders: 55, revenue: 2850000, plan: 2500000 },
+    { month: "Май", orders: 62, revenue: 3120000, plan: 2500000 },
+    { month: "Июн", orders: 58, revenue: 2980000, plan: 2500000 },
+    { month: "Июл", orders: 51, revenue: 2650000, plan: 2500000 },
+    { month: "Авг", orders: 60, revenue: 3080000, plan: 2500000 },
+    { month: "Сен", orders: 57, revenue: 2920000, plan: 2500000 },
+    { month: "Окт", orders: 64, revenue: 3250000, plan: 3000000 },
+    { month: "Ноя", orders: 59, revenue: 3050000, plan: 3000000 },
+    { month: "Дек", orders: 42, revenue: 2400000, plan: 3000000 },
   ];
 
-  const longTimeNoOrderCategories = [
-    {
-      id: "synthetic-old",
-      name: "Синтетические масла",
-      count: 7,
-      products: [
-        { id: "MAN-501", name: "MANNOL 5W-30 API SN/CF", lastOrder: "05.09.2024", daysAgo: 107, price: 1250 },
-        { id: "MAN-502", name: "MANNOL 0W-40 Premium", lastOrder: "12.08.2024", daysAgo: 131, price: 1580 }
-      ]
-    },
-    {
-      id: "transmission-old",
-      name: "Трансмиссионные масла",
-      count: 5,
-      products: [
-        { id: "MAN-601", name: "MANNOL ATF AG52", lastOrder: "20.09.2024", daysAgo: 92, price: 980 },
-        { id: "MAN-602", name: "MANNOL CVT Fluid", lastOrder: "01.09.2024", daysAgo: 111, price: 1150 }
-      ]
-    },
-    {
-      id: "coolants-old",
-      name: "Антифризы",
-      count: 3,
-      products: [
-        { id: "MAN-701", name: "MANNOL Antifreeze AG13", lastOrder: "15.08.2024", daysAgo: 128, price: 650 }
-      ]
-    }
+  const categoryData = [
+    { name: "Моторные масла", value: 58, amount: 14500000, color: "#3b82f6" },
+    { name: "Трансмиссионные", value: 20, amount: 5000000, color: "#10b981" },
+    { name: "Антифризы", value: 12, amount: 3000000, color: "#8b5cf6" },
+    { name: "Автохимия", value: 6, amount: 1500000, color: "#f59e0b" },
+    { name: "Фильтры", value: 4, amount: 1000000, color: "#ef4444" },
   ];
 
   const topProducts = [
-    { id: "MAN-001", name: "MANNOL 5W-30 API SN/CF", orders: 45, liters: 2250, revenue: "₽2,812,500" },
-    { id: "MAN-004", name: "MANNOL 10W-40 EXTRA", orders: 38, liters: 1900, revenue: "₽2,090,000" },
-    { id: "MAN-002", name: "MANNOL ATF AG52", orders: 32, liters: 1280, revenue: "₽1,254,400" },
-    { id: "MAN-005", name: "MANNOL Antifreeze AG11", orders: 28, liters: 1120, revenue: "₽728,000" },
-    { id: "MAN-003", name: "MANNOL Radiator Cleaner", orders: 24, liters: 480, revenue: "₽216,000" }
+    { 
+      id: 1,
+      name: "MANNOL 5W-30 API SN/CF", 
+      orders: 245, 
+      units: 4900,
+      revenue: 6125000,
+      trend: "+18%",
+      trendUp: true
+    },
+    { 
+      id: 2,
+      name: "MANNOL 10W-40 EXTRA", 
+      orders: 198, 
+      units: 3960,
+      revenue: 4356000,
+      trend: "+12%",
+      trendUp: true
+    },
+    { 
+      id: 3,
+      name: "MANNOL ATF AG52", 
+      orders: 156, 
+      units: 3120,
+      revenue: 3057600,
+      trend: "+8%",
+      trendUp: true
+    },
+    { 
+      id: 4,
+      name: "MANNOL Antifreeze AG11", 
+      orders: 142, 
+      units: 2840,
+      revenue: 1846000,
+      trend: "-3%",
+      trendUp: false
+    },
+    { 
+      id: 5,
+      name: "MANNOL 0W-20 Longlife", 
+      orders: 128, 
+      units: 2560,
+      revenue: 3712000,
+      trend: "+25%",
+      trendUp: true
+    },
+  ];
+
+  const quarterlyComparison = [
+    { quarter: "Q1 2023", revenue: 7650000 },
+    { quarter: "Q2 2023", revenue: 8920000 },
+    { quarter: "Q3 2023", revenue: 8450000 },
+    { quarter: "Q4 2023", revenue: 9180000 },
+    { quarter: "Q1 2024", revenue: 8880000 },
+    { quarter: "Q2 2024", revenue: 9750000 },
+    { quarter: "Q3 2024", revenue: 9350000 },
+    { quarter: "Q4 2024", revenue: 10120000 },
+  ];
+
+  const kpiStats = [
+    {
+      title: "Общая выручка",
+      value: "₽28,4М",
+      change: "+15,2%",
+      isPositive: true,
+      icon: "TrendingUp",
+      description: "За последние 12 месяцев",
+      color: "bg-emerald-50",
+      iconColor: "text-emerald-600"
+    },
+    {
+      title: "Средний чек",
+      value: "₽48,650",
+      change: "+8,5%",
+      isPositive: true,
+      icon: "DollarSign",
+      description: "Средняя сумма заказа",
+      color: "bg-blue-50",
+      iconColor: "text-blue-600"
+    },
+    {
+      title: "Всего заказов",
+      value: "584",
+      change: "+6,2%",
+      isPositive: true,
+      icon: "ShoppingCart",
+      description: "За текущий год",
+      color: "bg-purple-50",
+      iconColor: "text-purple-600"
+    },
+    {
+      title: "Выполнение плана",
+      value: "94%",
+      change: "-6%",
+      isPositive: false,
+      icon: "Target",
+      description: "От годового плана",
+      color: "bg-amber-50",
+      iconColor: "text-amber-600"
+    },
   ];
 
   const salesPlan = {
-    currentMonth: {
-      planLiters: 5000,
-      factLiters: 3200,
-      planUnits: 2500,
-      factUnits: 1600,
-      percentComplete: 64
+    year: {
+      plan: 30000000,
+      fact: 28400000,
+      percent: 94.7,
     },
-    currentQuarter: {
-      planLiters: 15000,
-      factLiters: 11800,
-      planUnits: 7500,
-      factUnits: 5900,
-      percentComplete: 79
+    quarter: {
+      plan: 10000000,
+      fact: 10120000,
+      percent: 101.2,
     },
-    currentYear: {
-      planLiters: 60000,
-      factLiters: 38500,
-      planUnits: 30000,
-      factUnits: 19250,
-      percentComplete: 64
+    month: {
+      plan: 3000000,
+      fact: 2400000,
+      percent: 80.0,
     }
   };
 
-  const topDistributors = [
-    { rank: 1, name: "ООО \"Авто-Про\"", share: 18.5, liters: 7125, trend: "+12%" },
-    { rank: 2, name: "ИП Петров С.А.", share: 15.2, liters: 5852, trend: "+8%" },
-    { rank: 3, name: "ООО \"МегаАвто\"", share: 12.8, liters: 4928, trend: "+5%" },
-    { rank: 4, name: "ООО \"Торг-Плюс\"", share: 10.5, liters: 4042, trend: "-3%" },
-    { rank: 5, name: "ИП Иванов А.В.", share: 9.2, liters: 3542, trend: "+15%" }
-  ];
-
-  const categoryBreakdown = [
-    { category: "Моторные масла", liters: 22500, units: 11250, share: 58, color: "bg-blue-500" },
-    { category: "Трансмиссионные масла", liters: 7700, units: 3850, share: 20, color: "bg-green-500" },
-    { category: "Антифризы", liters: 4620, units: 2310, share: 12, color: "bg-purple-500" },
-    { category: "Автохимия", liters: 2310, units: 1155, share: 6, color: "bg-orange-500" },
-    { category: "Тормозные жидкости", liters: 1540, units: 770, share: 4, color: "bg-red-500" }
-  ];
-
-  const monthlyDynamics = [
-    { month: "Январь", plan: 5000, fact: 4500 },
-    { month: "Февраль", plan: 5000, fact: 4800 },
-    { month: "Март", plan: 5000, fact: 5200 },
-    { month: "Апрель", plan: 5000, fact: 4600 },
-    { month: "Май", plan: 5000, fact: 5400 },
-    { month: "Июнь", plan: 5000, fact: 5100 },
-    { month: "Июль", plan: 5000, fact: 4900 },
-    { month: "Август", plan: 5000, fact: 5300 },
-    { month: "Сентябрь", plan: 5000, fact: 4700 },
-    { month: "Октябрь", plan: 5000, fact: 5100 },
-    { month: "Ноябрь", plan: 5000, fact: 4800 },
-    { month: "Декабрь", plan: 5000, fact: 3200 }
-  ];
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-semibold text-[#27265C] mb-2">{payload[0].payload.month}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: ₽{(entry.value / 1000000).toFixed(2)}М
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Аналитика продаж</h1>
-          <p className="text-gray-600 mt-1">Планы, факты и рейтинги дистрибьюторов</p>
+          <h1 className="text-3xl font-bold text-[#27265C]">Аналитика и отчёты</h1>
+          <p className="text-gray-600 mt-1">Подробная статистика продаж и эффективности</p>
         </div>
-        <Badge variant="outline" className="border-[#27265C] text-[#27265C] text-sm px-4 py-2">
-          <Icon name="Calendar" size={16} className="mr-2" />
-          Данные за 2024 год
-        </Badge>
+        <div className="flex gap-2">
+          <Button 
+            variant={periodFilter === "month" ? "default" : "outline"}
+            onClick={() => setPeriodFilter("month")}
+            className={periodFilter === "month" ? "bg-[#27265C]" : ""}
+          >
+            Месяц
+          </Button>
+          <Button 
+            variant={periodFilter === "quarter" ? "default" : "outline"}
+            onClick={() => setPeriodFilter("quarter")}
+            className={periodFilter === "quarter" ? "bg-[#27265C]" : ""}
+          >
+            Квартал
+          </Button>
+          <Button 
+            variant={periodFilter === "year" ? "default" : "outline"}
+            onClick={() => setPeriodFilter("year")}
+            className={periodFilter === "year" ? "bg-[#27265C]" : ""}
+          >
+            Год
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="TrendingUp" size={20} />
-              Месяц (Декабрь)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (литры)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentMonth.factLiters.toLocaleString()} / {salesPlan.currentMonth.planLiters.toLocaleString()}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpiStats.map((stat, idx) => (
+          <Card key={idx} className="hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className={`w-12 h-12 rounded-xl ${stat.color} flex items-center justify-center`}>
+                  <Icon name={stat.icon as any} className={stat.iconColor} size={24} />
+                </div>
+                <Badge 
+                  variant={stat.isPositive ? "default" : "destructive"}
+                  className={stat.isPositive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}
+                >
+                  {stat.change}
+                </Badge>
               </div>
-              <Progress value={salesPlan.currentMonth.percentComplete} className="h-3" />
-              <p className="text-xs text-gray-500 mt-1">{salesPlan.currentMonth.percentComplete}% от плана</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (штуки)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentMonth.factUnits.toLocaleString()} / {salesPlan.currentMonth.planUnits.toLocaleString()}</span>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">{stat.title}</p>
+                <p className="text-3xl font-bold text-[#27265C] mb-1">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.description}</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="Calendar" size={20} />
-              Квартал (Q4)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (литры)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentQuarter.factLiters.toLocaleString()} / {salesPlan.currentQuarter.planLiters.toLocaleString()}</span>
-              </div>
-              <Progress value={salesPlan.currentQuarter.percentComplete} className="h-3" />
-              <p className="text-xs text-gray-500 mt-1">{salesPlan.currentQuarter.percentComplete}% от плана</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (штуки)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentQuarter.factUnits.toLocaleString()} / {salesPlan.currentQuarter.planUnits.toLocaleString()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="BarChart3" size={20} />
-              Год (2024)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (литры)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentYear.factLiters.toLocaleString()} / {salesPlan.currentYear.planLiters.toLocaleString()}</span>
-              </div>
-              <Progress value={salesPlan.currentYear.percentComplete} className="h-3" />
-              <p className="text-xs text-gray-500 mt-1">{salesPlan.currentYear.percentComplete}% от плана</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">План / Факт (штуки)</span>
-                <span className="font-bold text-[#27265C]">{salesPlan.currentYear.factUnits.toLocaleString()} / {salesPlan.currentYear.planUnits.toLocaleString()}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className={`${salesPlan.month.percent >= 100 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-500'}`}>
           <CardHeader>
-            <CardTitle className="text-[#27265C]">Рейтинг дистрибьюторов</CardTitle>
-            <CardDescription>ТОП-5 по объёму продаж в литрах</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topDistributors.map((distributor) => (
-                <div key={distributor.rank} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                    distributor.rank === 1 ? "bg-yellow-500" :
-                    distributor.rank === 2 ? "bg-gray-400" :
-                    distributor.rank === 3 ? "bg-orange-600" :
-                    "bg-[#27265C]"
-                  }`}>
-                    {distributor.rank === 1 && "🏆"}
-                    {distributor.rank === 2 && "🥈"}
-                    {distributor.rank === 3 && "🥉"}
-                    {distributor.rank > 3 && distributor.rank}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-[#27265C]">{distributor.name}</h4>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-600">{distributor.liters.toLocaleString()} л</span>
-                      <Badge variant="outline" className={distributor.trend.startsWith("+") ? "border-green-500 text-green-600" : "border-red-500 text-red-600"}>
-                        {distributor.trend}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[#27265C]">{distributor.share}%</div>
-                    <p className="text-xs text-gray-500">доля рынка</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-[#27265C]">Продажи по категориям</CardTitle>
-            <CardDescription>Распределение объёма продаж за год</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {categoryBreakdown.map((category, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded ${category.color}`} />
-                      <span className="font-semibold text-[#27265C]">{category.category}</span>
-                    </div>
-                    <span className="font-bold text-[#27265C]">{category.share}%</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-gray-50 p-2 rounded">
-                      <Icon name="Droplets" size={14} className="inline mr-1 text-blue-600" />
-                      <span className="text-gray-600">{category.liters.toLocaleString()} л</span>
-                    </div>
-                    <div className="bg-gray-50 p-2 rounded">
-                      <Icon name="Package" size={14} className="inline mr-1 text-gray-600" />
-                      <span className="text-gray-600">{category.units.toLocaleString()} шт</span>
-                    </div>
-                  </div>
-                  <Progress value={category.share} className="h-2" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-l-4 border-l-[#FCC71E]">
-        <CardHeader>
-          <CardTitle className="text-[#27265C] flex items-center gap-2">
-            <Icon name="Award" size={24} />
-            Рейтинг по SKU
-          </CardTitle>
-          <CardDescription>Процент охвата товарного ассортимента</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-[#27265C] to-[#3d3b7c] text-white rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="Package" size={20} />
-                  <span className="text-sm opacity-90">Всего SKU</span>
-                </div>
-                <p className="text-4xl font-bold">{skuRating.totalSKU}</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="CheckCircle" size={20} />
-                  <span className="text-sm opacity-90">Заказано SKU</span>
-                </div>
-                <p className="text-4xl font-bold">{skuRating.orderedSKU}</p>
-              </div>
-              
-              <div className="bg-gradient-to-br from-[#FCC71E] to-[#fdb91e] text-[#27265C] rounded-lg p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="TrendingUp" size={20} />
-                  <span className="text-sm opacity-90">Охват</span>
-                </div>
-                <p className="text-4xl font-bold">{skuRating.percentage}%</p>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600">Прогресс охвата ассортимента</span>
-                <span className="font-bold text-[#27265C]">{skuRating.orderedSKU} из {skuRating.totalSKU}</span>
-              </div>
-              <Progress value={skuRating.percentage} className="h-4" />
-            </div>
-
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-              <div className="flex items-start gap-3">
-                <Icon name="Info" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-blue-900 mb-1">Ваша позиция в рейтинге</p>
-                  <p className="text-sm text-blue-800">
-                    Вы занимаете <span className="font-bold">{skuRating.rank} место</span> из {skuRating.totalPartners} партнеров по охвату SKU. 
-                    Закажите товары из раздела "Не брал совсем" чтобы повысить рейтинг!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="border-l-4 border-l-red-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="XCircle" size={20} className="text-red-600" />
-              Не брал совсем
+            <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
+              <Icon name="Calendar" size={18} />
+              Декабрь 2024
             </CardTitle>
-            <CardDescription>SKU, которые вы ещё не заказывали</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Icon name="AlertTriangle" size={16} className="text-red-600" />
-                <span className="font-semibold text-red-900 text-sm">Расширьте ассортимент</span>
-              </div>
-              <p className="text-xs text-red-800">
-                {neverOrderedCategories.reduce((sum, cat) => sum + cat.count, 0)} SKU в каталоге
-              </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">План</span>
+              <span className="font-semibold">₽{(salesPlan.month.plan / 1000000).toFixed(1)}М</span>
             </div>
-
-            <Accordion type="single" collapsible className="w-full">
-              {neverOrderedCategories.map((category) => (
-                <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <span className="font-semibold text-[#27265C] text-sm">{category.name}</span>
-                      <Badge variant="outline" className="border-red-500 text-red-600 text-xs">
-                        {category.count}
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      {category.products.map((product) => (
-                        <div key={product.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-[#27265C] text-xs truncate">{product.name}</p>
-                              <p className="text-xs text-gray-600">{product.viscosity} • ₽{product.price.toLocaleString()}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Link to={`/product/${product.id}`} className="flex-1">
-                              <Button size="sm" variant="outline" className="w-full h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                                <Icon name="Eye" size={12} className="mr-1" />
-                                Карточка
-                              </Button>
-                            </Link>
-                            <Link to="/order/new" className="flex-1">
-                              <Button size="sm" className="w-full h-7 text-xs bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
-                                <Icon name="Plus" size={12} className="mr-1" />
-                                Заказать
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Факт</span>
+              <span className="font-semibold text-[#27265C]">₽{(salesPlan.month.fact / 1000000).toFixed(1)}М</span>
+            </div>
+            <Progress value={salesPlan.month.percent} className="h-2" />
+            <p className="text-xs text-gray-500 text-center">{salesPlan.month.percent}% выполнения</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className={`${salesPlan.quarter.percent >= 100 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-500'}`}>
           <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="Clock" size={20} className="text-orange-600" />
-              Давно не заказывал
+            <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
+              <Icon name="BarChart3" size={18} />
+              Q4 2024
             </CardTitle>
-            <CardDescription>Не заказывались более 2 месяцев</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center gap-2 mb-1">
-                <Icon name="AlertCircle" size={16} className="text-orange-600" />
-                <span className="font-semibold text-orange-900 text-sm">Возобновите закупки</span>
-              </div>
-              <p className="text-xs text-orange-800">
-                {longTimeNoOrderCategories.reduce((sum, cat) => sum + cat.count, 0)} SKU давно не заказывались
-              </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">План</span>
+              <span className="font-semibold">₽{(salesPlan.quarter.plan / 1000000).toFixed(1)}М</span>
             </div>
-
-            <Accordion type="single" collapsible className="w-full">
-              {longTimeNoOrderCategories.map((category) => (
-                <AccordionItem key={category.id} value={category.id}>
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <span className="font-semibold text-[#27265C] text-sm">{category.name}</span>
-                      <Badge variant="outline" className="border-orange-500 text-orange-600 text-xs">
-                        {category.count}
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      {category.products.map((product) => (
-                        <div key={product.id} className="p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-[#27265C] text-xs truncate">{product.name}</p>
-                              <p className="text-xs text-gray-600">
-                                {product.lastOrder} ({product.daysAgo}д)
-                              </p>
-                              <p className="text-xs text-gray-600">₽{product.price.toLocaleString()}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Link to={`/product/${product.id}`} className="flex-1">
-                              <Button size="sm" variant="outline" className="w-full h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                                <Icon name="Eye" size={12} className="mr-1" />
-                                Карточка
-                              </Button>
-                            </Link>
-                            <Link to="/order/new" className="flex-1">
-                              <Button size="sm" className="w-full h-7 text-xs bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90">
-                                <Icon name="Plus" size={12} className="mr-1" />
-                                Заказать
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Факт</span>
+              <span className="font-semibold text-emerald-600">₽{(salesPlan.quarter.fact / 1000000).toFixed(1)}М</span>
+            </div>
+            <Progress value={salesPlan.quarter.percent} className="h-2" />
+            <p className="text-xs text-emerald-600 text-center font-semibold">{salesPlan.quarter.percent}% — План перевыполнен!</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className={`${salesPlan.year.percent >= 100 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-500'}`}>
           <CardHeader>
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="TrendingUp" size={20} className="text-green-600" />
-              Топ покупаемых
+            <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
+              <Icon name="TrendingUp" size={18} />
+              Год 2024
             </CardTitle>
-            <CardDescription>Самые популярные за год</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {topProducts.map((product, idx) => (
-                <div key={product.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
-                    idx === 0 ? "bg-yellow-500" :
-                    idx === 1 ? "bg-gray-400" :
-                    idx === 2 ? "bg-orange-600" :
-                    "bg-[#27265C]"
-                  }`}>
-                    {idx === 0 && "🏆"}
-                    {idx === 1 && "🥈"}
-                    {idx === 2 && "🥉"}
-                    {idx > 2 && (idx + 1)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-[#27265C] text-xs truncate">{product.name}</h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <span>{product.orders} зак.</span>
-                      <span>•</span>
-                      <span>{product.liters} л</span>
-                    </div>
-                    <p className="text-xs font-semibold text-green-600">{product.revenue}</p>
-                  </div>
-                  <Link to={`/product/${product.id}`}>
-                    <Button size="sm" variant="outline" className="h-7 text-xs border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                      <Icon name="Eye" size={12} />
-                    </Button>
-                  </Link>
-                </div>
-              ))}
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">План</span>
+              <span className="font-semibold">₽{(salesPlan.year.plan / 1000000).toFixed(1)}М</span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Факт</span>
+              <span className="font-semibold text-[#27265C]">₽{(salesPlan.year.fact / 1000000).toFixed(1)}М</span>
+            </div>
+            <Progress value={salesPlan.year.percent} className="h-2" />
+            <p className="text-xs text-gray-500 text-center">{salesPlan.year.percent}% выполнения</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-[#27265C]">Динамика продаж по месяцам</CardTitle>
-          <CardDescription>План vs Факт в литрах за 2024 год</CardDescription>
+          <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
+            <Icon name="LineChart" size={22} />
+            Динамика заказов за 2024 год
+          </CardTitle>
+          <CardDescription>
+            Сравнение плановых и фактических показателей продаж по месяцам
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {monthlyDynamics.map((month, idx) => {
-              const percentage = Math.round((month.fact / month.plan) * 100);
-              const isOverPlan = month.fact >= month.plan;
-              return (
-                <div key={idx} className="flex items-center gap-4">
-                  <div className="w-24 text-sm font-semibold text-gray-600">{month.month}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-500">План: {month.plan.toLocaleString()} л</span>
-                      <span className="text-xs text-gray-500">•</span>
-                      <span className="text-xs font-semibold text-[#27265C]">Факт: {month.fact.toLocaleString()} л</span>
-                      <Badge variant="outline" className={isOverPlan ? "border-green-500 text-green-600" : "border-orange-500 text-orange-600"}>
-                        {percentage}%
-                      </Badge>
-                    </div>
-                    <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="absolute h-full bg-blue-200 rounded-full" style={{ width: "100%" }} />
-                      <div className={`absolute h-full rounded-full ${isOverPlan ? "bg-green-500" : "bg-orange-500"}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
+          <ResponsiveContainer width="100%" height={350}>
+            <AreaChart data={monthlyOrders}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#27265C" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#27265C" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorPlan" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FCC71E" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#FCC71E" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="month" 
+                stroke="#6b7280"
+                style={{ fontSize: '12px' }}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                style={{ fontSize: '12px' }}
+                tickFormatter={(value) => `₽${(value / 1000000).toFixed(1)}М`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                wrapperStyle={{ paddingTop: '20px' }}
+                iconType="circle"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="plan" 
+                stroke="#FCC71E" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="url(#colorPlan)" 
+                name="План"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#27265C" 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorRevenue)" 
+                name="Выручка"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
+              <Icon name="PieChart" size={22} />
+              Структура продаж по категориям
+            </CardTitle>
+            <CardDescription>
+              Распределение выручки по группам товаров
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col lg:flex-row items-center gap-8">
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any, name: any, props: any) => [
+                      `${value}% (₽${(props.payload.amount / 1000000).toFixed(1)}М)`,
+                      props.payload.name
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2 w-full lg:w-auto">
+                {categoryData.map((cat, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#27265C]">{cat.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {cat.value}% • ₽{(cat.amount / 1000000).toFixed(1)}М
+                      </p>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
+              <Icon name="BarChart2" size={22} />
+              Рост по кварталам
+            </CardTitle>
+            <CardDescription>
+              Сравнение показателей 2023 и 2024 года
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={quarterlyComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="quarter" 
+                  stroke="#6b7280"
+                  style={{ fontSize: '11px' }}
+                />
+                <YAxis 
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => `₽${(value / 1000000).toFixed(1)}М`}
+                />
+                <Tooltip 
+                  formatter={(value: any) => `₽${(value / 1000000).toFixed(2)}М`}
+                  labelStyle={{ color: '#27265C', fontWeight: 'bold' }}
+                />
+                <Bar 
+                  dataKey="revenue" 
+                  fill="#27265C" 
+                  radius={[8, 8, 0, 0]}
+                  name="Выручка"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
+                <Icon name="Award" size={22} />
+                ТОП-5 продуктов
+              </CardTitle>
+              <CardDescription>
+                Самые популярные товары за текущий год
+              </CardDescription>
+            </div>
+            <Link to="/catalog">
+              <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+                Весь каталог
+                <Icon name="ArrowRight" size={16} className="ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {topProducts.map((product, idx) => (
+              <div 
+                key={product.id}
+                className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white ${
+                  idx === 0 ? 'bg-amber-500' : 
+                  idx === 1 ? 'bg-gray-400' : 
+                  idx === 2 ? 'bg-amber-700' : 'bg-gray-300'
+                }`}>
+                  {idx + 1}
                 </div>
-              );
-            })}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-[#27265C] mb-1">{product.name}</p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span>{product.orders} заказов</span>
+                    <span>•</span>
+                    <span>{product.units.toLocaleString()} шт</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-[#27265C] text-lg">
+                    ₽{(product.revenue / 1000000).toFixed(1)}М
+                  </p>
+                  <Badge 
+                    variant={product.trendUp ? "default" : "destructive"}
+                    className={product.trendUp ? "bg-emerald-100 text-emerald-700 text-xs" : "bg-red-100 text-red-700 text-xs"}
+                  >
+                    {product.trend}
+                  </Badge>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex gap-4">
+        <Link to="/orders" className="flex-1">
+          <Button className="w-full bg-[#27265C] hover:bg-[#27265C]/90 text-white py-6">
+            <Icon name="FileText" size={20} className="mr-2" />
+            Все заказы
+          </Button>
+        </Link>
+        <Link to="/catalog" className="flex-1">
+          <Button className="w-full bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] py-6">
+            <Icon name="Package" size={20} className="mr-2" />
+            Перейти в каталог
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 };
