@@ -45,9 +45,9 @@ const DebtBanner = () => {
   };
   
   const debtInfo: DebtInfo = {
-    amount: 124500,
-    overdueDays: 5,
-    isOverdue: true,
+    amount: 0,
+    overdueDays: 0,
+    isOverdue: false,
     isBlocked: false
   };
 

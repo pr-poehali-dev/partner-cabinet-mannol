@@ -29,7 +29,8 @@ const Catalog = () => {
   const displayProducts = selectedSeries?.products || [];
 
   const breadcrumbs = [
-    { label: "Каталог", path: "/catalog" },
+    { label: "Главная", path: "/", icon: "Home" },
+    { label: "Каталог", path: "/catalog", icon: "Package" },
     ...(selectedCategory ? [{ label: selectedCategory.name, path: `/catalog/${selectedCategory.id}` }] : []),
     ...(selectedSeries ? [{ label: selectedSeries.name, path: `/catalog/${categoryId}/${seriesId}` }] : [])
   ];
@@ -143,19 +144,24 @@ const Catalog = () => {
 
       <div className="flex-1 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <nav className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200">
             {breadcrumbs.map((crumb, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                {idx > 0 && <Icon name="ChevronRight" size={14} />}
+                {idx > 0 && <Icon name="ChevronRight" size={14} className="text-gray-400" />}
                 <Link 
                   to={crumb.path}
-                  className="hover:text-[#27265C] font-medium"
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                    idx === breadcrumbs.length - 1 
+                      ? 'text-[#27265C] font-semibold' 
+                      : 'text-gray-600 hover:text-[#27265C]'
+                  }`}
                 >
+                  {crumb.icon && <Icon name={crumb.icon} size={14} />}
                   {crumb.label}
                 </Link>
               </div>
             ))}
-          </div>
+          </nav>
           {totalItems > 0 && (
             <Button
               onClick={createOrder}
