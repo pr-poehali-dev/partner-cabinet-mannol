@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RegisterVerify from "./pages/RegisterVerify";
 import Activation from "./pages/Activation";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
 import ProductDetails from "./pages/ProductDetails";
@@ -36,7 +38,8 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/register/verify" element={<RegisterVerify />} />
           <Route path="/activation" element={<Activation />} />
-          <Route path="/forgot-password" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
         <Layout>
           <Routes>
