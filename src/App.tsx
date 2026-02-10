@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RegisterVerify from "./pages/RegisterVerify";
 import Activation from "./pages/Activation";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
@@ -33,6 +34,7 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/register/verify" element={<RegisterVerify />} />
           <Route path="/activation" element={<Activation />} />
           <Route path="/forgot-password" element={<Login />} />
         </Routes>
