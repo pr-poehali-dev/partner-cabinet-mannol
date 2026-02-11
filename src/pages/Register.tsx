@@ -14,7 +14,9 @@ const Register = () => {
     email: "",
     password: "",
     passwordConfirm: "",
-    fullName: "",
+    lastName: "",
+    firstName: "",
+    middleName: "",
     phone: "",
     company: "",
     inn: ""
@@ -39,8 +41,12 @@ const Register = () => {
       newErrors.passwordConfirm = 'Пароли не совпадают';
     }
     
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Обязательное поле';
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Обязательное поле';
+    }
+    
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'Обязательное поле';
     }
     
     if (!formData.phone.trim()) {
@@ -121,8 +127,8 @@ const Register = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-[#27265C] font-semibold">
-                    ФИО *
+                  <Label htmlFor="lastName" className="text-[#27265C] font-semibold">
+                    Фамилия *
                   </Label>
                   <div className="relative">
                     <Icon 
@@ -131,16 +137,62 @@ const Register = () => {
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" 
                     />
                     <Input
-                      id="fullName"
+                      id="lastName"
                       type="text"
-                      placeholder="Иванов Иван Иванович"
-                      value={formData.fullName}
-                      onChange={(e) => updateField('fullName', e.target.value)}
-                      className={`pl-10 ${errors.fullName ? 'border-red-500' : 'border-gray-300'} focus:border-[#27265C] focus:ring-[#27265C]`}
+                      placeholder="Иванов"
+                      value={formData.lastName}
+                      onChange={(e) => updateField('lastName', e.target.value)}
+                      className={`pl-10 ${errors.lastName ? 'border-red-500' : 'border-gray-300'} focus:border-[#27265C] focus:ring-[#27265C]`}
                       required
                     />
                   </div>
-                  {errors.fullName && <p className="text-xs text-red-500">{errors.fullName}</p>}
+                  {errors.lastName && <p className="text-xs text-red-500">{errors.lastName}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName" className="text-[#27265C] font-semibold">
+                    Имя *
+                  </Label>
+                  <div className="relative">
+                    <Icon 
+                      name="User" 
+                      size={18} 
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" 
+                    />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="Иван"
+                      value={formData.firstName}
+                      onChange={(e) => updateField('firstName', e.target.value)}
+                      className={`pl-10 ${errors.firstName ? 'border-red-500' : 'border-gray-300'} focus:border-[#27265C] focus:ring-[#27265C]`}
+                      required
+                    />
+                  </div>
+                  {errors.firstName && <p className="text-xs text-red-500">{errors.firstName}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="middleName" className="text-[#27265C] font-semibold">
+                    Отчество
+                  </Label>
+                  <div className="relative">
+                    <Icon 
+                      name="User" 
+                      size={18} 
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" 
+                    />
+                    <Input
+                      id="middleName"
+                      type="text"
+                      placeholder="Иванович"
+                      value={formData.middleName}
+                      onChange={(e) => updateField('middleName', e.target.value)}
+                      className="pl-10 border-gray-300 focus:border-[#27265C] focus:ring-[#27265C]"
+                    />
+                  </div>
                 </div>
               </div>
 

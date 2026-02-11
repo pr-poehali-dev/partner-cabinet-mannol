@@ -113,7 +113,7 @@ const Payments = () => {
               <Alert className="border-blue-200 bg-blue-50">
                 <Icon name="Info" size={18} className="text-blue-600" />
                 <AlertDescription className="text-blue-800">
-                  Счет будет сформирован на основе выбранных документов. Вы сможете оплатить его удобным способом.
+                  Квитанция формируется в 1С и содержит прямую ссылку на онлайн-оплату по выбранным счетам.
                 </AlertDescription>
               </Alert>
 
@@ -138,9 +138,9 @@ const Payments = () => {
                     </div>
                     <div className="flex-1">
                       <Icon name="FileText" size={32} className={`mb-3 ${paymentMethod === "pdf" ? "text-white" : "text-[#27265C]"}`} />
-                      <h3 className="font-bold text-lg mb-2">Скачать PDF счет</h3>
+                      <h3 className="font-bold text-lg mb-2">Скачать PDF квитанцию</h3>
                       <p className={`text-sm ${paymentMethod === "pdf" ? "text-white/80" : "text-gray-600"}`}>
-                        Получите счет в формате PDF для распечатки или оплаты через банк
+                        Квитанция ЖКХ с QR-кодом и прямой ссылкой на оплату онлайн
                       </p>
                     </div>
                   </div>
@@ -179,7 +179,7 @@ const Payments = () => {
                 <Alert className="border-green-200 bg-green-50">
                   <Icon name="FileDown" size={18} className="text-green-600" />
                   <AlertDescription className="text-green-800">
-                    <strong>PDF счет</strong> — универсальный документ для оплаты через любой банк или бухгалтерию.
+                    <strong>PDF квитанция</strong> — готовый документ из 1С со ссылкой для онлайн-оплаты. Оплачивайте через банк или по QR-коду.
                   </AlertDescription>
                 </Alert>
               )}
@@ -260,7 +260,7 @@ const Payments = () => {
                       className="w-full bg-[#27265C] hover:bg-[#27265C]/90 text-white font-bold text-base h-14"
                     >
                       <Icon name="FileDown" size={20} className="mr-2" />
-                      Скачать счет PDF
+                      Скачать квитанцию PDF
                     </Button>
                   )}
 
@@ -275,7 +275,7 @@ const Payments = () => {
                   )}
 
                   <p className="text-xs text-gray-500 text-center">
-                    После получения счета вы сможете оплатить его удобным способом
+                    Квитанция содержит ссылку для онлайн-оплаты и реквизиты для банка
                   </p>
                 </>
               )}
