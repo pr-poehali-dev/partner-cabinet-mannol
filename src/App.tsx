@@ -23,6 +23,10 @@ import Notifications from "./pages/Notifications";
 import Analytics from "./pages/Analytics";
 import DebtDetails from "./pages/DebtDetails";
 import Payments from "./pages/Payments";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,9 +48,9 @@ const App = () => (
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/profile" element={<Dashboard />} />
-            <Route path="/settings" element={<Dashboard />} />
-            <Route path="/help" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/help" element={<Help />} />
             <Route path="/catalog" element={<Catalog />} />
             <Route path="/catalog/:categoryId" element={<Catalog />} />
             <Route path="/catalog/:categoryId/:seriesId" element={<Catalog />} />
@@ -64,9 +68,9 @@ const App = () => (
             <Route path="/debt-details" element={<DebtDetails />} />
             <Route path="/debt-details/modal" element={<Dashboard />} />
             <Route path="/payments" element={<Payments />} />
-            <Route path="/support" element={<Dashboard />} />
-            <Route path="/privacy" element={<Dashboard />} />
-            <Route path="/terms" element={<Dashboard />} />
+            <Route path="/support" element={<Help />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

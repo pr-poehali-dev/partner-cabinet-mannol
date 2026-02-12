@@ -345,7 +345,12 @@ const Catalog = () => {
                             </td>
                             <td className="px-4 py-4 text-center">
                               <Link to={`/product/${product.id}`}>
-                                <Button variant="ghost" size="sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="hover:bg-[#27265C] hover:text-white"
+                                  title="Подробная информация о товаре"
+                                >
                                   <Icon name="Info" size={16} />
                                 </Button>
                               </Link>

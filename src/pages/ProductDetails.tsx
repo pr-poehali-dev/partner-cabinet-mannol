@@ -104,74 +104,78 @@ const ProductDetails = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-bold text-[#27265C] mb-3">Описание</h3>
-                <p className="text-gray-700">{product.description || 'Описание отсутствует'}</p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h3 className="font-bold text-[#27265C] mb-3">Характеристики</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">Вязкость</p>
-                    <p className="font-mono font-bold text-[#27265C]">{product.viscosity}</p>
+              <Tabs defaultValue="description" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="description">Описание</TabsTrigger>
+                  <TabsTrigger value="specs">Характеристики</TabsTrigger>
+                  <TabsTrigger value="application">Применение</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="description" className="space-y-4 pt-4">
+                  <div>
+                    <h3 className="font-bold text-[#27265C] mb-3">О продукте</h3>
+                    <p className="text-gray-700 leading-relaxed">{product.description || 'Универсальное моторное масло для различных типов двигателей'}</p>
                   </div>
-                  {product.stockLevel && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">На складе</p>
-                      <p className="font-bold text-[#27265C]">{product.stockLevel} шт</p>
+                  
+                  {product.features && product.features.length > 0 && (
+                    <div>
+                      <h3 className="font-bold text-[#27265C] mb-3">Преимущества</h3>
+                      <ul className="space-y-2">
+                        {product.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Icon name="CheckCircle" size={16} className="text-green-600 mt-1 flex-shrink-0" />
+                            <span className="text-gray-700">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-                </div>
-              </div>
+                </TabsContent>
 
-              <Separator />
-
-              <div>
-                <h3 className="font-bold text-[#27265C] mb-3">Спецификации</h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.specifications.map((spec, idx) => (
-                    <Badge key={idx} variant="outline" className="text-sm">
-                      {spec}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {product.features && product.features.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-bold text-[#27265C] mb-3">Преимущества</h3>
-                    <ul className="space-y-2">
-                      {product.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Icon name="CheckCircle" size={16} className="text-green-600 mt-1 flex-shrink-0" />
-                          <span className="text-gray-700">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <TabsContent value="specs" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">Вязкость</p>
+                      <p className="font-mono font-bold text-[#27265C]">{product.viscosity}</p>
+                    </div>
+                    {product.stockLevel && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-xs text-gray-500 mb-1">На складе</p>
+                        <p className="font-bold text-[#27265C]">{product.stockLevel} шт</p>
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
-
-              {product.applications && product.applications.length > 0 && (
-                <>
-                  <Separator />
+                  
                   <div>
-                    <h3 className="font-bold text-[#27265C] mb-3">Применение</h3>
+                    <h3 className="font-bold text-[#27265C] mb-3">Спецификации и допуски</h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.applications.map((app, idx) => (
-                        <Badge key={idx} className="bg-blue-100 text-blue-700">
-                          {app}
+                      {product.specifications.map((spec, idx) => (
+                        <Badge key={idx} variant="outline" className="text-sm">
+                          {spec}
                         </Badge>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
+                </TabsContent>
+
+                <TabsContent value="application" className="space-y-4 pt-4">
+                  {product.applications && product.applications.length > 0 ? (
+                    <div>
+                      <h3 className="font-bold text-[#27265C] mb-3">Рекомендуется для</h3>
+                      <div className="grid grid-cols-1 gap-3">
+                        {product.applications.map((app, idx) => (
+                          <div key={idx} className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <Icon name="Car" size={20} className="text-blue-600" />
+                            <span className="font-medium text-blue-900">{app}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Универсальное применение для большинства типов автомобилей</p>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
