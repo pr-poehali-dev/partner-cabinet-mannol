@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 interface ScheduleSlot {
   time: string;
@@ -168,10 +168,26 @@ const schedule: ScheduleDay[] = [
 ];
 
 const Schedule = () => {
-  const [selectedSlot, setSelectedSlot] = useState<{ slot: ScheduleSlot; date: string; day: string } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedSlot, setSelectedSlot] = useState<{ slot: ScheduleSlot; date: string; day: string } | null>(() => {
+    const orderId = searchParams.get("order");
+    if (orderId) {
+      for (const day of schedule) {
+        const slot = day.slots.find(s => s.order === orderId);
+        if (slot) return { slot, date: day.date, day: day.day };
+      }
+    }
+    return null;
+  });
 
   const openDetails = (slot: ScheduleSlot, date: string, day: string) => {
     setSelectedSlot({ slot, date, day });
+    setSearchParams({ order: slot.order });
+  };
+
+  const closeDetails = () => {
+    setSelectedSlot(null);
+    setSearchParams({});
   };
 
   return (
@@ -362,7 +378,7 @@ const Schedule = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedSlot} onOpenChange={() => setSelectedSlot(null)}>
+      <Dialog open={!!selectedSlot} onOpenChange={() => closeDetails()}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedSlot && (
             <>

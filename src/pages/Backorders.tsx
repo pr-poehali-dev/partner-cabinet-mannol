@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Icon from "@/components/ui/icon";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
 type BackorderStatus = 
@@ -205,13 +205,27 @@ const backordersData: BackorderItem[] = [
 
 const Backorders = () => {
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedItem, setSelectedItem] = useState<BackorderItem | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [confirmDialogItem, setConfirmDialogItem] = useState<BackorderItem | null>(null);
-  const [cancelDialogItem, setCancelDialogItem] = useState<BackorderItem | null>(null);
-  const [sortBy, setSortBy] = useState("date-desc");
   const [items, setItems] = useState<BackorderItem[]>(backordersData);
+
+  const openFromUrl = searchParams.get("id");
+  const actionFromUrl = searchParams.get("action");
+
+  const [selectedItem, setSelectedItem] = useState<BackorderItem | null>(() => {
+    if (openFromUrl) return items.find(i => i.id === openFromUrl) || null;
+    return null;
+  });
+  const [isDetailOpen, setIsDetailOpen] = useState(!!openFromUrl && !actionFromUrl);
+  const [confirmDialogItem, setConfirmDialogItem] = useState<BackorderItem | null>(() => {
+    if (openFromUrl && actionFromUrl === "confirm") return items.find(i => i.id === openFromUrl) || null;
+    return null;
+  });
+  const [cancelDialogItem, setCancelDialogItem] = useState<BackorderItem | null>(() => {
+    if (openFromUrl && actionFromUrl === "cancel") return items.find(i => i.id === openFromUrl) || null;
+    return null;
+  });
+  const [sortBy, setSortBy] = useState("date-desc");
 
   const activeItems = items.filter(i => ["waiting", "available", "partial"].includes(i.status));
   const confirmedItems = items.filter(i => i.status === "confirmed");
@@ -256,6 +270,7 @@ const Backorders = () => {
         : i
     ));
     setConfirmDialogItem(null);
+    setSearchParams({});
     toast({
       title: "Допоставка подтверждена",
       description: `${item.productName} — ${item.shortageQty} шт будут отгружены`,
@@ -273,6 +288,7 @@ const Backorders = () => {
         : i
     ));
     setCancelDialogItem(null);
+    setSearchParams({});
     toast({
       title: "Допоставка отменена",
       description: `${item.productName} — недопоставка закрыта`,
@@ -376,7 +392,7 @@ const Backorders = () => {
                 variant="ghost"
                 size="sm"
                 className="text-gray-600"
-                onClick={() => { setSelectedItem(item); setIsDetailOpen(true); }}
+                onClick={() => { setSelectedItem(item); setIsDetailOpen(true); setSearchParams({ id: item.id }); }}
               >
                 <Icon name="History" size={16} className="mr-1" />
                 История
@@ -388,7 +404,7 @@ const Backorders = () => {
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700 text-white font-semibold"
-                      onClick={() => setConfirmDialogItem(item)}
+                      onClick={() => { setConfirmDialogItem(item); setSearchParams({ id: item.id, action: "confirm" }); }}
                     >
                       <Icon name="Check" size={16} className="mr-1" />
                       Подтвердить допоставку
@@ -397,7 +413,7 @@ const Backorders = () => {
                       size="sm"
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => setCancelDialogItem(item)}
+                      onClick={() => { setCancelDialogItem(item); setSearchParams({ id: item.id, action: "cancel" }); }}
                     >
                       <Icon name="X" size={16} className="mr-1" />
                       Отказаться
@@ -586,7 +602,7 @@ const Backorders = () => {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+      <Dialog open={isDetailOpen} onOpenChange={(open) => { setIsDetailOpen(open); if (!open) setSearchParams({}); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-[#27265C]">История недопоставки</DialogTitle>
@@ -641,7 +657,7 @@ const Backorders = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!confirmDialogItem} onOpenChange={() => setConfirmDialogItem(null)}>
+      <Dialog open={!!confirmDialogItem} onOpenChange={() => { setConfirmDialogItem(null); setSearchParams({}); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-green-700 flex items-center gap-2">
@@ -694,7 +710,7 @@ const Backorders = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!cancelDialogItem} onOpenChange={() => setCancelDialogItem(null)}>
+      <Dialog open={!!cancelDialogItem} onOpenChange={() => { setCancelDialogItem(null); setSearchParams({}); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2">
