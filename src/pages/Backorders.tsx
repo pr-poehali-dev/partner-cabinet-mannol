@@ -227,6 +227,13 @@ const Backorders = () => {
   });
   const [sortBy, setSortBy] = useState("date-desc");
 
+  const currentTab = searchParams.get("tab") || "active";
+  const setCurrentTab = (tab: string) => {
+    const params: Record<string, string> = {};
+    if (tab !== "active") params.tab = tab;
+    setSearchParams(params);
+  };
+
   const activeItems = items.filter(i => ["waiting", "available", "partial"].includes(i.status));
   const confirmedItems = items.filter(i => i.status === "confirmed");
   const completedItems = items.filter(i => ["shipped", "cancelled"].includes(i.status));
@@ -270,7 +277,7 @@ const Backorders = () => {
         : i
     ));
     setConfirmDialogItem(null);
-    setSearchParams({});
+    setSearchParams(prev => { const p = Object.fromEntries(prev); delete p.id; delete p.action; return p; });
     toast({
       title: "Допоставка подтверждена",
       description: `${item.productName} — ${item.shortageQty} шт будут отгружены`,
@@ -288,7 +295,7 @@ const Backorders = () => {
         : i
     ));
     setCancelDialogItem(null);
-    setSearchParams({});
+    setSearchParams(prev => { const p = Object.fromEntries(prev); delete p.id; delete p.action; return p; });
     toast({
       title: "Допоставка отменена",
       description: `${item.productName} — недопоставка закрыта`,
@@ -392,7 +399,7 @@ const Backorders = () => {
                 variant="ghost"
                 size="sm"
                 className="text-gray-600"
-                onClick={() => { setSelectedItem(item); setIsDetailOpen(true); setSearchParams({ id: item.id }); }}
+                onClick={() => { setSelectedItem(item); setIsDetailOpen(true); setSearchParams(prev => { const p = Object.fromEntries(prev); return { ...p, id: item.id }; }); }}
               >
                 <Icon name="History" size={16} className="mr-1" />
                 История
@@ -404,7 +411,7 @@ const Backorders = () => {
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700 text-white font-semibold"
-                      onClick={() => { setConfirmDialogItem(item); setSearchParams({ id: item.id, action: "confirm" }); }}
+                      onClick={() => { setConfirmDialogItem(item); setSearchParams(prev => { const p = Object.fromEntries(prev); return { ...p, id: item.id, action: "confirm" }; }); }}
                     >
                       <Icon name="Check" size={16} className="mr-1" />
                       Подтвердить допоставку
@@ -413,7 +420,7 @@ const Backorders = () => {
                       size="sm"
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => { setCancelDialogItem(item); setSearchParams({ id: item.id, action: "cancel" }); }}
+                      onClick={() => { setCancelDialogItem(item); setSearchParams(prev => { const p = Object.fromEntries(prev); return { ...p, id: item.id, action: "cancel" }; }); }}
                     >
                       <Icon name="X" size={16} className="mr-1" />
                       Отказаться
@@ -572,7 +579,7 @@ const Backorders = () => {
         </Select>
       </div>
 
-      <Tabs defaultValue="active" className="w-full">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="bg-gray-100">
           <TabsTrigger value="active" id="active-tab">
             Активные ({activeItems.length})
@@ -602,7 +609,7 @@ const Backorders = () => {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isDetailOpen} onOpenChange={(open) => { setIsDetailOpen(open); if (!open) setSearchParams({}); }}>
+      <Dialog open={isDetailOpen} onOpenChange={(open) => { setIsDetailOpen(open); if (!open) { setSearchParams(prev => { const p = Object.fromEntries(prev); delete p.id; delete p.action; return p; }); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-[#27265C]">История недопоставки</DialogTitle>
@@ -657,7 +664,7 @@ const Backorders = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!confirmDialogItem} onOpenChange={() => { setConfirmDialogItem(null); setSearchParams({}); }}>
+      <Dialog open={!!confirmDialogItem} onOpenChange={() => { setConfirmDialogItem(null); setSearchParams(prev => { const p = Object.fromEntries(prev); delete p.id; delete p.action; return p; }); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-green-700 flex items-center gap-2">
@@ -710,7 +717,7 @@ const Backorders = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!cancelDialogItem} onOpenChange={() => { setCancelDialogItem(null); setSearchParams({}); }}>
+      <Dialog open={!!cancelDialogItem} onOpenChange={() => { setCancelDialogItem(null); setSearchParams(prev => { const p = Object.fromEntries(prev); delete p.id; delete p.action; return p; }); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center gap-2">
