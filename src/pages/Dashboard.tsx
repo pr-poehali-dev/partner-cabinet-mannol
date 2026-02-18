@@ -68,9 +68,9 @@ const Dashboard = () => {
   ];
 
   const recentOrders = [
-    { id: "089-2024-1247", date: "от 24 апреля", status: "В работе", statusColor: "bg-emerald-100 text-emerald-700", amount: "₽156,000" },
-    { id: "089-2024-1248", date: "от 23 апреля", status: "В работе", statusColor: "bg-emerald-100 text-emerald-700", amount: "₽99,000" },
-    { id: "089-2024-1245", date: "от 22 апреля", status: "В работе", statusColor: "bg-emerald-100 text-emerald-700", amount: "₽105,600" },
+    { id: "ORD-2024-1247", date: "от 24 апреля", status: "Частично отгружен", statusColor: "bg-indigo-100 text-indigo-700", amount: "₽231,700" },
+    { id: "ORD-2024-1246", date: "от 23 апреля", status: "Отгружен", statusColor: "bg-blue-100 text-blue-700", amount: "₽89,200" },
+    { id: "ORD-2024-1243", date: "от 22 апреля", status: "В обработке", statusColor: "bg-yellow-100 text-yellow-700", amount: "₽98,400" },
   ];
 
   const notifications = [
@@ -141,7 +141,7 @@ const Dashboard = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
-                      <Icon name={stat.icon as any} className={stat.iconColor} size={24} />
+                      <Icon name={stat.icon} className={stat.iconColor} size={24} />
                     </div>
                     <div>
                       <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
@@ -174,7 +174,7 @@ const Dashboard = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${info.iconBg} flex items-center justify-center flex-shrink-0`}>
-                    <Icon name={info.icon as any} className={info.iconColor} size={20} />
+                    <Icon name={info.icon} className={info.iconColor} size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-700 truncate">{info.text}</p>
@@ -245,7 +245,7 @@ const Dashboard = () => {
                 >
                   <div className="flex gap-3">
                     <div className={`w-10 h-10 rounded-lg ${notif.iconBg} flex items-center justify-center flex-shrink-0`}>
-                      <Icon name={notif.icon as any} className={notif.iconColor} size={20} />
+                      <Icon name={notif.icon} className={notif.iconColor} size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2 mb-2">
