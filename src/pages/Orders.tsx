@@ -1,496 +1,911 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Icon from "@/components/ui/icon";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import Icon from "@/components/ui/icon";
+import { Link } from "react-router-dom";
+
+/* ─────────── Types ─────────── */
 
 type OrderStatus =
-  | "Согласование"
-  | "В обработке"
-  | "Частично отгружен"
-  | "Отгружен"
-  | "Доставлен";
+  | "draft"
+  | "sent"
+  | "processing"
+  | "needs-approval"
+  | "confirmed"
+  | "scheduled"
+  | "shipped";
 
-interface OrderItemPreview {
+type ItemLineStatus =
+  | "confirmed"
+  | "pending"
+  | "rejected-auto"
+  | "rejected-manager"
+  | "preorder"
+  | "backorder";
+
+interface OrderItemLine {
   name: string;
   sku: string;
-  qty: number;
-  amount: string;
-  type: "shipped" | "preorder" | "backorder";
-  deliveryId?: string;
+  qtyRequested: number;
+  qtyConfirmed: number;
+  price: number;
+  weightPerUnit: number;
+  lineStatus: ItemLineStatus;
+  rejectReason?: string;
 }
 
 interface Order {
   id: string;
   date: string;
   status: OrderStatus;
-  items: number;
-  total: string;
-  delivery: string;
+  desiredShipDate: string | null;
+  items: OrderItemLine[];
+  totalAmount: number;
+  totalWeight: number;
   warehouse: string;
-  type: string;
-  shippedCount: number;
-  preorderCount: number;
-  backorderCount: number;
-  itemsList: OrderItemPreview[];
+  type: "Обычный" | "Прямой";
+  isLocked: boolean;
+  isStale: boolean;
+  manager: string;
+  managerPhone: string;
 }
 
+/* ─────────── Config ─────────── */
+
+const STATUS_CONFIG: Record<
+  OrderStatus,
+  { label: string; icon: string; textColor: string; bgColor: string }
+> = {
+  draft: {
+    label: "Черновик",
+    icon: "FileEdit",
+    textColor: "text-gray-700",
+    bgColor: "bg-gray-100",
+  },
+  sent: {
+    label: "Отправлен",
+    icon: "Send",
+    textColor: "text-blue-700",
+    bgColor: "bg-blue-100",
+  },
+  processing: {
+    label: "В обработке",
+    icon: "Clock",
+    textColor: "text-yellow-700",
+    bgColor: "bg-yellow-100",
+  },
+  "needs-approval": {
+    label: "Требует согласования",
+    icon: "RotateCcw",
+    textColor: "text-orange-700",
+    bgColor: "bg-orange-100",
+  },
+  confirmed: {
+    label: "Подтверждён",
+    icon: "CheckCircle",
+    textColor: "text-green-700",
+    bgColor: "bg-green-100",
+  },
+  scheduled: {
+    label: "В графике отгрузки",
+    icon: "CalendarCheck",
+    textColor: "text-indigo-700",
+    bgColor: "bg-indigo-100",
+  },
+  shipped: {
+    label: "Отгружен",
+    icon: "Truck",
+    textColor: "text-emerald-700",
+    bgColor: "bg-emerald-100",
+  },
+};
+
+const LINE_STATUS_CONFIG: Record<
+  ItemLineStatus,
+  { label: string; dotColor: string; textColor: string; bgColor: string; icon: string }
+> = {
+  confirmed: {
+    label: "Подтверждено",
+    dotColor: "bg-green-500",
+    textColor: "text-green-700",
+    bgColor: "bg-green-50 border-green-200",
+    icon: "CheckCircle",
+  },
+  pending: {
+    label: "На рассмотрении",
+    dotColor: "bg-yellow-500",
+    textColor: "text-yellow-700",
+    bgColor: "bg-yellow-50 border-yellow-200",
+    icon: "Clock",
+  },
+  "rejected-auto": {
+    label: "Отклонено (авто)",
+    dotColor: "bg-red-500",
+    textColor: "text-red-700",
+    bgColor: "bg-red-50 border-red-200",
+    icon: "XCircle",
+  },
+  "rejected-manager": {
+    label: "Отклонено (менеджер)",
+    dotColor: "bg-red-500",
+    textColor: "text-red-700",
+    bgColor: "bg-red-50 border-red-200",
+    icon: "UserX",
+  },
+  preorder: {
+    label: "Предзаказ",
+    dotColor: "bg-blue-500",
+    textColor: "text-blue-700",
+    bgColor: "bg-blue-50 border-blue-200",
+    icon: "ShoppingBag",
+  },
+  backorder: {
+    label: "Недопоставка",
+    dotColor: "bg-amber-500",
+    textColor: "text-amber-700",
+    bgColor: "bg-amber-50 border-amber-200",
+    icon: "AlertTriangle",
+  },
+};
+
+const MAX_TRUCK_KG = 20000;
+
+const ACTIVE_STATUSES: OrderStatus[] = [
+  "draft",
+  "sent",
+  "processing",
+  "needs-approval",
+];
+const CONFIRMED_STATUSES: OrderStatus[] = ["confirmed", "scheduled"];
+
+/* ─────────── Helpers ─────────── */
+
+function formatWeight(kg: number): string {
+  if (kg >= 1000) return `${(kg / 1000).toFixed(1)} т`;
+  return `${kg.toFixed(0)} кг`;
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("ru-RU", {
+    style: "currency",
+    currency: "RUB",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function itemSummary(items: OrderItemLine[]) {
+  let confirmed = 0;
+  let pending = 0;
+  let rejected = 0;
+  let preorder = 0;
+  let backorder = 0;
+
+  for (const item of items) {
+    switch (item.lineStatus) {
+      case "confirmed":
+        confirmed++;
+        break;
+      case "pending":
+        pending++;
+        break;
+      case "rejected-auto":
+      case "rejected-manager":
+        rejected++;
+        break;
+      case "preorder":
+        preorder++;
+        break;
+      case "backorder":
+        backorder++;
+        break;
+    }
+  }
+
+  return { confirmed, pending, rejected, preorder, backorder };
+}
+
+/* ─────────── Mock Data ─────────── */
+
+const mockOrders: Order[] = [
+  {
+    id: "ORD-2026-0201",
+    date: "17.02.2026",
+    status: "draft",
+    desiredShipDate: "28.02.2026",
+    totalAmount: 389500,
+    totalWeight: 8500,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: false,
+    isStale: false,
+    manager: "Иванова Мария Сергеевна",
+    managerPhone: "+7 (495) 123-45-67",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 400,
+        qtyConfirmed: 0,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 300,
+        qtyConfirmed: 0,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Antifreeze AG13 -40C",
+        sku: "MN4013-5",
+        qtyRequested: 250,
+        qtyConfirmed: 0,
+        price: 520,
+        weightPerUnit: 5.2,
+        lineStatus: "pending",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0198",
+    date: "13.02.2026",
+    status: "needs-approval",
+    desiredShipDate: "25.02.2026",
+    totalAmount: 1842600,
+    totalWeight: 15300,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: false,
+    isStale: false,
+    manager: "Иванова Мария Сергеевна",
+    managerPhone: "+7 (495) 123-45-67",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 800,
+        qtyConfirmed: 800,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 600,
+        qtyConfirmed: 600,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL ATF AG52 Automatic Special",
+        sku: "MN8211-4",
+        qtyRequested: 200,
+        qtyConfirmed: 0,
+        price: 980,
+        weightPerUnit: 4.1,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Longlife 504/507 5W-30",
+        sku: "MN7715-4",
+        qtyRequested: 100,
+        qtyConfirmed: 0,
+        price: 1680,
+        weightPerUnit: 4.0,
+        lineStatus: "rejected-auto",
+        rejectReason: "Нет свободных остатков на складе",
+      },
+      {
+        name: "MANNOL Classic 10W-40",
+        sku: "MN7501-4",
+        qtyRequested: 80,
+        qtyConfirmed: 50,
+        price: 1050,
+        weightPerUnit: 4.2,
+        lineStatus: "rejected-manager",
+        rejectReason: "Объём превышает доступный лимит поставки",
+      },
+      {
+        name: "MANNOL Compressor Oil ISO 100",
+        sku: "MN2902-4",
+        qtyRequested: 150,
+        qtyConfirmed: 0,
+        price: 890,
+        weightPerUnit: 4.3,
+        lineStatus: "preorder",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0195",
+    date: "10.02.2026",
+    status: "confirmed",
+    desiredShipDate: "20.02.2026",
+    totalAmount: 2156000,
+    totalWeight: 18200,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: true,
+    isStale: false,
+    manager: "Козлов Андрей Петрович",
+    managerPhone: "+7 (495) 987-65-43",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 1000,
+        qtyConfirmed: 1000,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 500,
+        qtyConfirmed: 500,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Classic 10W-40",
+        sku: "MN7501-4",
+        qtyRequested: 300,
+        qtyConfirmed: 300,
+        price: 1050,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Antifreeze AG13 -40C",
+        sku: "MN4013-5",
+        qtyRequested: 200,
+        qtyConfirmed: 200,
+        price: 520,
+        weightPerUnit: 5.2,
+        lineStatus: "confirmed",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0192",
+    date: "12.02.2026",
+    status: "sent",
+    desiredShipDate: "22.02.2026",
+    totalAmount: 1245000,
+    totalWeight: 12100,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: false,
+    isStale: true,
+    manager: "Иванова Мария Сергеевна",
+    managerPhone: "+7 (495) 123-45-67",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 500,
+        qtyConfirmed: 0,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 400,
+        qtyConfirmed: 0,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL ATF AG52 Automatic Special",
+        sku: "MN8211-4",
+        qtyRequested: 300,
+        qtyConfirmed: 0,
+        price: 980,
+        weightPerUnit: 4.1,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Classic 10W-40",
+        sku: "MN7501-4",
+        qtyRequested: 200,
+        qtyConfirmed: 0,
+        price: 1050,
+        weightPerUnit: 4.2,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Antifreeze AG13 -40C",
+        sku: "MN4013-5",
+        qtyRequested: 150,
+        qtyConfirmed: 0,
+        price: 520,
+        weightPerUnit: 5.2,
+        lineStatus: "pending",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0189",
+    date: "08.02.2026",
+    status: "scheduled",
+    desiredShipDate: "19.02.2026",
+    totalAmount: 2480000,
+    totalWeight: 19500,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: true,
+    isStale: false,
+    manager: "Козлов Андрей Петрович",
+    managerPhone: "+7 (495) 987-65-43",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 1200,
+        qtyConfirmed: 1200,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 700,
+        qtyConfirmed: 700,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Antifreeze AG13 -40C",
+        sku: "MN4013-5",
+        qtyRequested: 400,
+        qtyConfirmed: 400,
+        price: 520,
+        weightPerUnit: 5.2,
+        lineStatus: "confirmed",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0185",
+    date: "05.02.2026",
+    status: "shipped",
+    desiredShipDate: "15.02.2026",
+    totalAmount: 1923400,
+    totalWeight: 17800,
+    warehouse: "Склад Москва (Подольск)",
+    type: "Обычный",
+    isLocked: true,
+    isStale: false,
+    manager: "Иванова Мария Сергеевна",
+    managerPhone: "+7 (495) 123-45-67",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 900,
+        qtyConfirmed: 900,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 500,
+        qtyConfirmed: 500,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Classic 10W-40",
+        sku: "MN7501-4",
+        qtyRequested: 200,
+        qtyConfirmed: 200,
+        price: 1050,
+        weightPerUnit: 4.2,
+        lineStatus: "confirmed",
+      },
+      {
+        name: "MANNOL Antifreeze AG13 -40C",
+        sku: "MN4013-5",
+        qtyRequested: 300,
+        qtyConfirmed: 250,
+        price: 520,
+        weightPerUnit: 5.2,
+        lineStatus: "backorder",
+        rejectReason: "Недопоставка 50 шт будет компенсирована",
+      },
+    ],
+  },
+  {
+    id: "ORD-2026-0180",
+    date: "14.02.2026",
+    status: "processing",
+    desiredShipDate: null,
+    totalAmount: 1568000,
+    totalWeight: 14200,
+    warehouse: "Завод-производитель",
+    type: "Прямой",
+    isLocked: false,
+    isStale: false,
+    manager: "Козлов Андрей Петрович",
+    managerPhone: "+7 (495) 987-65-43",
+    items: [
+      {
+        name: "MANNOL Energy Formula OP 5W-30",
+        sku: "MN7917-4",
+        qtyRequested: 600,
+        qtyConfirmed: 0,
+        price: 1450,
+        weightPerUnit: 4.2,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Diesel Extra 10W-40",
+        sku: "MN7504-4",
+        qtyRequested: 500,
+        qtyConfirmed: 0,
+        price: 1100,
+        weightPerUnit: 4.5,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL ATF AG52 Automatic Special",
+        sku: "MN8211-4",
+        qtyRequested: 250,
+        qtyConfirmed: 0,
+        price: 980,
+        weightPerUnit: 4.1,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Longlife 504/507 5W-30",
+        sku: "MN7715-4",
+        qtyRequested: 200,
+        qtyConfirmed: 0,
+        price: 1680,
+        weightPerUnit: 4.0,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Classic 10W-40",
+        sku: "MN7501-4",
+        qtyRequested: 150,
+        qtyConfirmed: 0,
+        price: 1050,
+        weightPerUnit: 4.2,
+        lineStatus: "pending",
+      },
+      {
+        name: "MANNOL Compressor Oil ISO 100",
+        sku: "MN2902-4",
+        qtyRequested: 180,
+        qtyConfirmed: 0,
+        price: 890,
+        weightPerUnit: 4.3,
+        lineStatus: "pending",
+      },
+    ],
+  },
+];
+
+/* ─────────── Component ─────────── */
+
 const Orders = () => {
-  const navigate = useNavigate();
-  const { orderId } = useParams();
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  
-  const orders: Order[] = [
-    {
-      id: "ORD-2024-1247",
-      date: "17.12.2024",
-      status: "Частично отгружен",
-      items: 5,
-      total: "₽231,700",
-      delivery: "22.12.2024",
-      warehouse: "Склад Москва",
-      type: "Обычный",
-      shippedCount: 3,
-      preorderCount: 2,
-      backorderCount: 1,
-      itemsList: [
-        { name: "MANNOL Energy Formula 5W-30", sku: "MN7917-4", qty: 50, amount: "₽72,500", type: "shipped", deliveryId: "НКЛ-1247/1" },
-        { name: "MANNOL Energy Formula 5W-30", sku: "MN7917-4", qty: 30, amount: "₽43,500", type: "shipped", deliveryId: "НКЛ-1247/2" },
-        { name: "MANNOL 10W-40 EXTRA", sku: "MN7504-4", qty: 40, amount: "₽44,000", type: "shipped", deliveryId: "НКЛ-1247/1" },
-        { name: "MANNOL ATF AG52", sku: "MN8211-4", qty: 30, amount: "₽29,400", type: "preorder" },
-        { name: "MANNOL Longlife 504/507", sku: "MN7715-4", qty: 25, amount: "₽42,000", type: "preorder" },
-        { name: "MANNOL Radiator Cleaner", sku: "MN9965", qty: 20, amount: "₽6,400", type: "backorder" },
-      ],
-    },
-    {
-      id: "ORD-2024-1246",
-      date: "16.12.2024",
-      status: "Отгружен",
-      items: 3,
-      total: "₽89,200",
-      delivery: "20.12.2024",
-      warehouse: "Склад Москва",
-      type: "Обычный",
-      shippedCount: 3,
-      preorderCount: 0,
-      backorderCount: 0,
-      itemsList: [
-        { name: "MANNOL Diesel TDI 5W-30", sku: "MN7919-4", qty: 60, amount: "₽48,000", type: "shipped", deliveryId: "НКЛ-1246/1" },
-        { name: "MANNOL Classic 10W-40", sku: "MN7501-4", qty: 30, amount: "₽27,600", type: "shipped", deliveryId: "НКЛ-1246/1" },
-        { name: "MANNOL Antifreeze AG13", sku: "MN4013-5", qty: 20, amount: "₽13,600", type: "shipped", deliveryId: "НКЛ-1246/1" },
-      ],
-    },
-    {
-      id: "ORD-2024-1245",
-      date: "15.12.2024",
-      status: "Доставлен",
-      items: 4,
-      total: "₽156,800",
-      delivery: "19.12.2024",
-      warehouse: "Склад Москва",
-      type: "Обычный",
-      shippedCount: 4,
-      preorderCount: 0,
-      backorderCount: 0,
-      itemsList: [
-        { name: "MANNOL Energy Formula 5W-30", sku: "MN7917-4", qty: 80, amount: "₽116,000", type: "shipped", deliveryId: "НКЛ-1245/1" },
-        { name: "MANNOL ATF AG52", sku: "MN8211-4", qty: 20, amount: "₽19,600", type: "shipped", deliveryId: "НКЛ-1245/1" },
-        { name: "MANNOL Radiator Cleaner", sku: "MN9965", qty: 40, amount: "₽12,800", type: "shipped", deliveryId: "НКЛ-1245/1" },
-        { name: "MANNOL Antifreeze AG13", sku: "MN4013-5", qty: 15, amount: "₽8,400", type: "shipped", deliveryId: "НКЛ-1245/1" },
-      ],
-    },
-    {
-      id: "ORD-2024-1244",
-      date: "14.12.2024",
-      status: "Согласование",
-      items: 6,
-      total: "₽245,000",
-      delivery: "28.12.2024",
-      warehouse: "Завод",
-      type: "Прямой",
-      shippedCount: 0,
-      preorderCount: 6,
-      backorderCount: 0,
-      itemsList: [
-        { name: "MANNOL Energy Formula 5W-30", sku: "MN7917-4", qty: 200, amount: "₽145,000", type: "preorder" },
-        { name: "MANNOL 10W-40 EXTRA", sku: "MN7504-4", qty: 100, amount: "₽55,000", type: "preorder" },
-        { name: "MANNOL Diesel TDI 5W-30", sku: "MN7919-4", qty: 50, amount: "₽24,000", type: "preorder" },
-        { name: "MANNOL ATF AG52", sku: "MN8211-4", qty: 40, amount: "₽19,600", type: "preorder" },
-        { name: "MANNOL Classic 10W-40", sku: "MN7501-4", qty: 25, amount: "₽11,500", type: "preorder" },
-        { name: "MANNOL Antifreeze AG13", sku: "MN4013-5", qty: 30, amount: "₽10,200", type: "preorder" },
-      ],
-    },
-    {
-      id: "ORD-2024-1243",
-      date: "13.12.2024",
-      status: "В обработке",
-      items: 3,
-      total: "₽98,400",
-      delivery: "20.12.2024",
-      warehouse: "Склад Москва",
-      type: "Обычный",
-      shippedCount: 0,
-      preorderCount: 1,
-      backorderCount: 0,
-      itemsList: [
-        { name: "MANNOL Energy Formula 5W-30", sku: "MN7917-4", qty: 50, amount: "₽72,500", type: "shipped" },
-        { name: "MANNOL 10W-40 EXTRA", sku: "MN7504-4", qty: 20, amount: "₽22,000", type: "shipped" },
-        { name: "MANNOL Longlife 504/507", sku: "MN7715-4", qty: 10, amount: "₽16,800", type: "preorder" },
-      ],
-    },
-  ];
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (orderId) {
-      const order = orders.find(o => o.id === orderId);
-      if (order) setSelectedOrder(order);
+  /* ── Filtering ── */
+
+  const filterOrders = (statuses: OrderStatus[] | null) => {
+    let filtered = mockOrders;
+    if (statuses) {
+      filtered = filtered.filter((o) => statuses.includes(o.status));
     }
-  }, [orderId]);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (o) =>
+          o.id.toLowerCase().includes(q) ||
+          o.items.some(
+            (item) =>
+              item.name.toLowerCase().includes(q) ||
+              item.sku.toLowerCase().includes(q)
+          )
+      );
+    }
+    return filtered;
+  };
 
-  const handleOpenModal = (order: Order) => {
+  const allOrders = useMemo(
+    () => filterOrders(null),
+    [searchQuery]
+  );
+  const activeOrders = useMemo(
+    () => filterOrders(ACTIVE_STATUSES),
+    [searchQuery]
+  );
+  const confirmedOrders = useMemo(
+    () => filterOrders(CONFIRMED_STATUSES),
+    [searchQuery]
+  );
+  const shippedOrders = useMemo(
+    () => filterOrders(["shipped"]),
+    [searchQuery]
+  );
+
+  /* ── Summary stats ── */
+
+  const totalOrdersAmount = mockOrders.reduce((s, o) => s + o.totalAmount, 0);
+  const activeCount = mockOrders.filter((o) =>
+    ACTIVE_STATUSES.includes(o.status)
+  ).length;
+
+  /* ── Modal handler ── */
+
+  const openOrderModal = (order: Order) => {
     setSelectedOrder(order);
-    navigate(`/orders/${order.id}/details`);
+    setDialogOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setSelectedOrder(null);
-    navigate('/orders');
-  };
+  /* ── Quick actions per status ── */
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Доставлен": return "bg-green-100 text-green-700";
-      case "Отгружен": return "bg-blue-100 text-blue-700";
-      case "Частично отгружен": return "bg-indigo-100 text-indigo-700";
-      case "В обработке": return "bg-yellow-100 text-yellow-700";
-      case "Согласование": return "bg-orange-100 text-orange-700";
-      default: return "bg-gray-100 text-gray-700";
+  const renderQuickActions = (order: Order) => {
+    switch (order.status) {
+      case "draft":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" className="bg-[#27265C] hover:bg-[#27265C]/90 text-white text-xs">
+              <Icon name="FileEdit" size={14} className="mr-1" />
+              Редактировать
+            </Button>
+            <Button
+              size="sm"
+              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 text-xs font-semibold"
+            >
+              <Icon name="Send" size={14} className="mr-1" />
+              Отправить
+            </Button>
+          </div>
+        );
+      case "needs-approval":
+        return (
+          <div className="flex gap-2">
+            <Link to={`/orders/${order.id}`}>
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white text-xs">
+                <Icon name="RotateCcw" size={14} className="mr-1" />
+                Доработать
+              </Button>
+            </Link>
+          </div>
+        );
+      case "sent":
+      case "processing":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="text-xs border-gray-300">
+              <Icon name="Phone" size={14} className="mr-1" />
+              Связаться
+            </Button>
+          </div>
+        );
+      case "confirmed":
+      case "scheduled":
+        return (
+          <div className="flex gap-2">
+            <Link to={`/orders/${order.id}`}>
+              <Button size="sm" variant="outline" className="text-xs border-gray-300">
+                <Icon name="Eye" size={14} className="mr-1" />
+                Просмотреть
+              </Button>
+            </Link>
+          </div>
+        );
+      case "shipped":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="text-xs border-gray-300">
+              <Icon name="Download" size={14} className="mr-1" />
+              Документы
+            </Button>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Доставлен": return "CheckCircle";
-      case "Отгружен": return "Truck";
-      case "Частично отгружен": return "PackageOpen";
-      case "В обработке": return "Clock";
-      case "Согласование": return "MessageSquare";
-      default: return "Package";
-    }
-  };
+  /* ── Render a single order card ── */
 
   const renderOrderCard = (order: Order) => {
-    const shippedItems = order.itemsList.filter(i => i.type === "shipped");
-    const preorderItemsList = order.itemsList.filter(i => i.type === "preorder");
-    const backorderItemsList = order.itemsList.filter(i => i.type === "backorder");
+    const summary = itemSummary(order.items);
+    const truckPercent = Math.min((order.totalWeight / MAX_TRUCK_KG) * 100, 100);
+    const isDirect = order.type === "Прямой";
+    const statusCfg = STATUS_CONFIG[order.status];
 
     return (
-      <Card key={order.id} className="hover:shadow-lg transition-shadow">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1 space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-[#27265C]">{order.id}</h3>
-                    <Badge className={getStatusColor(order.status)}>
-                      <Icon name={getStatusIcon(order.status)} size={12} className="mr-1" />
-                      {order.status}
+      <Card
+        key={order.id}
+        className={`hover:shadow-lg transition-all ${
+          isDirect ? "border-purple-300 border-2" : ""
+        } ${order.isStale ? "ring-2 ring-red-200" : ""}`}
+      >
+        <CardContent className="p-5">
+          <div className="flex flex-col gap-4">
+            {/* ── Row 1: header ── */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-lg font-bold text-[#27265C]">{order.id}</h3>
+                  <Badge className={`${statusCfg.bgColor} ${statusCfg.textColor} gap-1`}>
+                    <Icon name={statusCfg.icon} size={13} />
+                    {statusCfg.label}
+                  </Badge>
+                  {isDirect && (
+                    <Badge className="bg-purple-100 text-purple-700 border border-purple-300 gap-1">
+                      <Icon name="Factory" size={13} />
+                      Прямой
                     </Badge>
-                    {order.type === "Прямой" && (
-                      <Badge className="bg-purple-100 text-purple-700">
-                        <Icon name="Truck" size={12} className="mr-1" />
-                        Прямой заказ
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Создан: {order.date} • Плановая отгрузка: {order.delivery}
-                  </p>
+                  )}
+                  {order.isLocked && (
+                    <Badge className="bg-gray-200 text-gray-600 gap-1">
+                      <Icon name="Lock" size={13} />
+                      Заблокирован
+                    </Badge>
+                  )}
+                  {order.isStale && (
+                    <Badge className="bg-red-100 text-red-700 border border-red-300 gap-1">
+                      <Icon name="AlertOctagon" size={13} />
+                      Не обработан &gt; 3 дн.
+                    </Badge>
+                  )}
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-[#27265C]">{order.total}</div>
-                  <p className="text-sm text-gray-500">{order.items} позиций</p>
+
+                <div className="flex items-center gap-4 mt-1.5 text-sm text-gray-500 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <Icon name="Calendar" size={13} />
+                    {order.date}
+                  </span>
+                  {isDirect ? (
+                    <span className="flex items-center gap-1 text-purple-600 text-xs">
+                      <Icon name="Info" size={13} />
+                      Дата прямой поставки будет подтверждена
+                    </span>
+                  ) : order.desiredShipDate ? (
+                    <span className="flex items-center gap-1">
+                      <Icon name="Truck" size={13} />
+                      Отгрузка: {order.desiredShipDate}
+                    </span>
+                  ) : null}
+                  <span className="flex items-center gap-1">
+                    <Icon name="Warehouse" size={13} />
+                    {order.warehouse}
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Склад</p>
-                  <div className="flex items-center gap-2">
-                    <Icon name="Warehouse" size={16} className="text-[#27265C]" />
-                    <span className="font-semibold text-[#27265C]">{order.warehouse}</span>
-                  </div>
+              <div className="text-right flex-shrink-0">
+                <div className="text-xl font-bold text-[#27265C]">
+                  {formatCurrency(order.totalAmount)}
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Отгружено</p>
-                  <span className="font-semibold text-green-700">{shippedItems.length} поз.</span>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Под заказ</p>
-                  <span className={`font-semibold ${preorderItemsList.length > 0 ? "text-blue-700" : "text-gray-400"}`}>
-                    {preorderItemsList.length > 0 ? `${preorderItemsList.length} поз.` : "—"}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Недопоставка</p>
-                  <span className={`font-semibold ${backorderItemsList.length > 0 ? "text-amber-700" : "text-gray-400"}`}>
-                    {backorderItemsList.length > 0 ? `${backorderItemsList.length} поз.` : "—"}
-                  </span>
+                <div className="text-sm text-gray-500">
+                  {formatWeight(order.totalWeight)} / {order.items.length} поз.
                 </div>
               </div>
             </div>
 
-            <div className="flex lg:flex-col gap-2 lg:w-48">
-              <Dialog open={selectedOrder?.id === order.id} onOpenChange={(open) => !open && handleCloseModal()}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white"
-                    onClick={() => handleOpenModal(order)}
-                  >
-                    <Icon name="Eye" size={16} className="mr-2" />
-                    Подробнее
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onEscapeKeyDown={handleCloseModal}>
-                  {selectedOrder && (
-                    <>
-                      <DialogHeader>
-                        <DialogTitle className="text-2xl text-[#27265C] flex items-center gap-3">
-                          <div className="w-12 h-12 bg-[#27265C] rounded-lg flex items-center justify-center">
-                            <Icon name="ShoppingCart" size={24} className="text-white" />
-                          </div>
-                          Заказ {selectedOrder.id}
-                        </DialogTitle>
-                        <DialogDescription className="text-base">
-                          Создан {selectedOrder.date} • Плановая отгрузка {selectedOrder.delivery}
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <Separator />
-                      
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="border rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-gray-600 mb-1">
-                              <Icon name="Package" size={16} />
-                              <span className="text-xs">Позиций</span>
-                            </div>
-                            <p className="text-xl font-bold text-[#27265C]">{selectedOrder.items}</p>
-                          </div>
-                          <div className="border rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-gray-600 mb-1">
-                              <Icon name="DollarSign" size={16} />
-                              <span className="text-xs">Сумма</span>
-                            </div>
-                            <p className="text-xl font-bold text-[#27265C]">{selectedOrder.total}</p>
-                          </div>
-                          <div className="border rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-gray-600 mb-1">
-                              <Icon name="Warehouse" size={16} />
-                              <span className="text-xs">Склад</span>
-                            </div>
-                            <p className="text-sm font-semibold text-[#27265C]">{selectedOrder.warehouse}</p>
-                          </div>
-                          <div className="border rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-gray-600 mb-1">
-                              <Icon name="Info" size={16} />
-                              <span className="text-xs">Статус</span>
-                            </div>
-                            <Badge className={getStatusColor(selectedOrder.status)}>{selectedOrder.status}</Badge>
-                          </div>
-                        </div>
+            {/* ── Row 2: item summary badges ── */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {summary.confirmed > 0 && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  {summary.confirmed} подтв.
+                </Badge>
+              )}
+              {summary.pending > 0 && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                  {summary.pending} на рассм.
+                </Badge>
+              )}
+              {summary.rejected > 0 && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  {summary.rejected} откл.
+                </Badge>
+              )}
+              {summary.preorder > 0 && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  {summary.preorder} предзаказ
+                </Badge>
+              )}
+              {summary.backorder > 0 && (
+                <Badge variant="outline" className="gap-1.5 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  {summary.backorder} недопост.
+                </Badge>
+              )}
+            </div>
 
-                        {(() => {
-                          const shipped = selectedOrder.itemsList.filter(i => i.type === "shipped");
-                          const preorder = selectedOrder.itemsList.filter(i => i.type === "preorder");
-                          const backorder = selectedOrder.itemsList.filter(i => i.type === "backorder");
+            {/* ── Row 3: truck loading bar + actions ── */}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span>Загрузка фуры</span>
+                  <span className="font-semibold text-[#27265C]">
+                    {formatWeight(order.totalWeight)} из {formatWeight(MAX_TRUCK_KG)}
+                  </span>
+                </div>
+                <Progress
+                  value={truckPercent}
+                  className={`h-2.5 ${
+                    truckPercent >= 90
+                      ? "[&>div]:bg-green-500"
+                      : truckPercent >= 60
+                      ? "[&>div]:bg-[#27265C]"
+                      : "[&>div]:bg-amber-500"
+                  }`}
+                />
+                <div className="text-[11px] text-gray-400 mt-0.5">
+                  {truckPercent.toFixed(0)}% загружено
+                  {order.totalWeight < MAX_TRUCK_KG &&
+                    ` — осталось ${formatWeight(MAX_TRUCK_KG - order.totalWeight)}`}
+                </div>
+              </div>
 
-                          const deliveryGroupsMap = new Map<string, typeof shipped>();
-                          shipped.forEach(i => {
-                            const key = i.deliveryId || "unknown";
-                            if (!deliveryGroupsMap.has(key)) deliveryGroupsMap.set(key, []);
-                            deliveryGroupsMap.get(key)!.push(i);
-                          });
-
-                          return (
-                            <>
-                              {Array.from(deliveryGroupsMap.entries()).map(([delivId, delivItems]) => (
-                                <div key={delivId}>
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                      <Icon name="PackageCheck" size={14} className="text-green-600" />
-                                    </div>
-                                    <h4 className="font-semibold text-[#27265C]">Отгрузка {delivId}</h4>
-                                  </div>
-                                  <div className="space-y-2">
-                                    {delivItems.map((item, idx) => (
-                                      <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                        <div className="flex items-center justify-between">
-                                          <div>
-                                            <p className="font-semibold text-[#27265C]">{item.name}</p>
-                                            <p className="text-sm text-gray-600">Арт: {item.sku}</p>
-                                          </div>
-                                          <div className="text-right">
-                                            <p className="font-semibold text-[#27265C]">{item.qty} шт</p>
-                                            <p className="text-sm text-gray-600">{item.amount}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-
-                              {preorder.length > 0 && (
-                                <div>
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                                      <Icon name="Clock" size={14} className="text-blue-600" />
-                                    </div>
-                                    <h4 className="font-semibold text-[#27265C]">Под заказ</h4>
-                                    <Badge className="bg-blue-100 text-blue-700 text-xs">{preorder.length}</Badge>
-                                  </div>
-                                  <div className="space-y-2">
-                                    {preorder.map((item, idx) => (
-                                      <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                        <div className="flex items-center justify-between">
-                                          <div>
-                                            <p className="font-semibold text-[#27265C]">{item.name}</p>
-                                            <p className="text-sm text-gray-600">Арт: {item.sku}</p>
-                                          </div>
-                                          <div className="text-right">
-                                            <p className="font-semibold text-[#27265C]">{item.qty} шт</p>
-                                            <p className="text-sm text-gray-600">{item.amount}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {backorder.length > 0 && (
-                                <div>
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center">
-                                      <Icon name="PackageX" size={14} className="text-amber-600" />
-                                    </div>
-                                    <h4 className="font-semibold text-[#27265C]">Недопоставка</h4>
-                                    <Badge className="bg-amber-100 text-amber-700 text-xs">{backorder.length}</Badge>
-                                  </div>
-                                  <div className="space-y-2">
-                                    {backorder.map((item, idx) => (
-                                      <div key={idx} className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                        <div className="flex items-center justify-between">
-                                          <div>
-                                            <p className="font-semibold text-[#27265C]">{item.name}</p>
-                                            <p className="text-sm text-gray-600">Арт: {item.sku}</p>
-                                          </div>
-                                          <div className="text-right">
-                                            <p className="font-semibold text-amber-700">{item.qty} шт</p>
-                                            <p className="text-sm text-gray-600">{item.amount}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                          <div className="flex items-start gap-3">
-                            <Icon name="User" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="font-semibold text-blue-900 mb-1">Менеджер заказа</p>
-                              <p className="text-sm text-blue-800">
-                                Иванова Мария • +7 (495) 123-45-67 • manager@mannol.ru
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-4">
-                        <div className="flex gap-2">
-                          <Link to={`/order/${selectedOrder.id}`} className="flex-1">
-                            <Button className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
-                              <Icon name="FileText" size={18} className="mr-2" />
-                              Полная информация
-                            </Button>
-                          </Link>
-                          <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                            <Icon name="Printer" size={18} className="mr-2" />
-                            Печать
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          <Link to="/catalog">
-                            <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
-                              <Icon name="ShoppingCart" size={14} className="mr-1" />
-                              Каталог
-                            </Button>
-                          </Link>
-                          <Link to="/backorders">
-                            <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
-                              <Icon name="PackageX" size={14} className="mr-1" />
-                              Недопоставки
-                            </Button>
-                          </Link>
-                          <Link to="/analytics">
-                            <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
-                              <Icon name="BarChart3" size={14} className="mr-1" />
-                              Аналитика
-                            </Button>
-                          </Link>
-                          <Link to="/payments">
-                            <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50 text-xs">
-                              <Icon name="CreditCard" size={14} className="mr-1" />
-                              Платежи
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </DialogContent>
-              </Dialog>
-              {order.status === "Отгружен" && (
-                <Button className="flex-1 bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
-                  <Icon name="FileText" size={16} className="mr-2" />
-                  Документы
+              <div className="flex gap-2 flex-shrink-0">
+                {renderQuickActions(order)}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white text-xs"
+                  onClick={() => openOrderModal(order)}
+                >
+                  <Icon name="Eye" size={14} className="mr-1" />
+                  Подробнее
                 </Button>
-              )}
-              {order.status === "Согласование" && (
-                <Button className="flex-1 bg-green-500 text-white hover:bg-green-600">
-                  <Icon name="CheckCircle" size={16} className="mr-2" />
-                  Согласовать
-                </Button>
-              )}
-              {order.backorderCount > 0 && (
-                <Link to="/backorders" className="flex-1">
-                  <Button variant="outline" className="w-full border-amber-500 text-amber-700 hover:bg-amber-50">
-                    <Icon name="PackageX" size={16} className="mr-2" />
-                    Недопоставки
-                  </Button>
-                </Link>
-              )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -498,70 +913,414 @@ const Orders = () => {
     );
   };
 
-  const inWorkStatuses = ["В обработке", "Согласование", "Частично отгружен"];
+  /* ── Empty state ── */
+
+  const renderEmpty = (message: string) => (
+    <div className="text-center py-16">
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+        <Icon name="Package" size={28} className="text-gray-400" />
+      </div>
+      <p className="text-gray-500 text-lg">{message}</p>
+      <p className="text-gray-400 text-sm mt-1">
+        Попробуйте изменить фильтры или поисковый запрос
+      </p>
+    </div>
+  );
+
+  /* ── Order list ── */
+
+  const renderOrderList = (orders: Order[], emptyMsg: string) => {
+    if (orders.length === 0) return renderEmpty(emptyMsg);
+    return (
+      <div className="space-y-4">
+        {orders.map((order) => renderOrderCard(order))}
+      </div>
+    );
+  };
+
+  /* ── Modal content ── */
+
+  const renderModal = () => {
+    if (!selectedOrder) return null;
+    const order = selectedOrder;
+    const summary = itemSummary(order.items);
+    const truckPercent = Math.min(
+      (order.totalWeight / MAX_TRUCK_KG) * 100,
+      100
+    );
+    const statusCfg = STATUS_CONFIG[order.status];
+
+    const shortageItems = order.items.filter(
+      (i) =>
+        i.lineStatus === "rejected-auto" ||
+        i.lineStatus === "rejected-manager" ||
+        i.lineStatus === "backorder"
+    );
+    const totalShortageAmount = shortageItems.reduce(
+      (sum, item) => sum + (item.qtyRequested - item.qtyConfirmed) * item.price,
+      0
+    );
+
+    const groupedItems: Record<string, OrderItemLine[]> = {};
+    const statusOrder: ItemLineStatus[] = [
+      "confirmed",
+      "pending",
+      "rejected-auto",
+      "rejected-manager",
+      "preorder",
+      "backorder",
+    ];
+    for (const status of statusOrder) {
+      const matching = order.items.filter((i) => i.lineStatus === status);
+      if (matching.length > 0) {
+        groupedItems[status] = matching;
+      }
+    }
+
+    return (
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3 flex-wrap">
+              <DialogTitle className="text-[#27265C] text-xl">
+                {order.id}
+              </DialogTitle>
+              <Badge className={`${statusCfg.bgColor} ${statusCfg.textColor} gap-1`}>
+                <Icon name={statusCfg.icon} size={14} />
+                {statusCfg.label}
+              </Badge>
+              {order.isLocked && (
+                <Badge className="bg-gray-200 text-gray-600 gap-1">
+                  <Icon name="Lock" size={13} />
+                  Заблокирован
+                </Badge>
+              )}
+              {order.type === "Прямой" && (
+                <Badge className="bg-purple-100 text-purple-700 border border-purple-300 gap-1">
+                  <Icon name="Factory" size={13} />
+                  Прямой
+                </Badge>
+              )}
+            </div>
+            <DialogDescription>
+              Создан: {order.date}
+              {order.desiredShipDate
+                ? ` | Отгрузка: ${order.desiredShipDate}`
+                : order.type === "Прямой"
+                ? " | Дата прямой поставки будет подтверждена отдельно"
+                : ""}
+              {" | "}
+              {order.warehouse}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+            <div className="bg-[#27265C]/5 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-[#27265C]">
+                {order.items.length}
+              </div>
+              <div className="text-xs text-gray-600">Позиций</div>
+            </div>
+            <div className="bg-[#FCC71E]/10 rounded-lg p-3 text-center">
+              <div className="text-lg font-bold text-[#27265C]">
+                {formatCurrency(order.totalAmount)}
+              </div>
+              <div className="text-xs text-gray-600">Сумма</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-[#27265C]">
+                {formatWeight(order.totalWeight)}
+              </div>
+              <div className="text-xs text-gray-600">Масса</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-[#27265C]">
+                {truckPercent.toFixed(0)}%
+              </div>
+              <div className="text-xs text-gray-600">Загрузка фуры</div>
+            </div>
+          </div>
+
+          <Separator className="my-2" />
+
+          {/* Grouped items */}
+          <div className="space-y-4">
+            {statusOrder.map((status) => {
+              const group = groupedItems[status];
+              if (!group) return null;
+              const lsCfg = LINE_STATUS_CONFIG[status];
+              return (
+                <div key={status}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${lsCfg.dotColor}`} />
+                    <span className={`text-sm font-semibold ${lsCfg.textColor}`}>
+                      {lsCfg.label} ({group.length})
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {group.map((item, idx) => (
+                      <div
+                        key={`${status}-${idx}`}
+                        className={`border rounded-lg p-3 ${lsCfg.bgColor}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Icon
+                                name={lsCfg.icon}
+                                size={16}
+                                className={lsCfg.textColor}
+                              />
+                              <span className="font-medium text-sm truncate">
+                                {item.name}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 ml-6">
+                              {item.sku}
+                            </span>
+
+                            {/* Qty breakdown for rejected / backorder */}
+                            {(status === "rejected-auto" ||
+                              status === "rejected-manager" ||
+                              status === "backorder") && (
+                              <div className="ml-6 mt-2 space-y-1">
+                                <div className="flex items-center gap-4 text-xs flex-wrap">
+                                  <span>
+                                    Запрошено:{" "}
+                                    <strong>{item.qtyRequested} шт</strong>
+                                  </span>
+                                  <span>
+                                    Подтверждено:{" "}
+                                    <strong className="text-green-700">
+                                      {item.qtyConfirmed} шт
+                                    </strong>
+                                  </span>
+                                  <span>
+                                    Отклонено:{" "}
+                                    <strong className="text-red-600">
+                                      {item.qtyRequested - item.qtyConfirmed} шт
+                                    </strong>
+                                  </span>
+                                </div>
+                                {item.rejectReason && (
+                                  <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+                                    <Icon name="AlertCircle" size={12} />
+                                    {item.rejectReason}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-right flex-shrink-0 text-sm">
+                            <div className="font-semibold">
+                              {item.qtyRequested} шт
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatCurrency(item.qtyRequested * item.price)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Shortage summary */}
+          {shortageItems.length > 0 && (
+            <>
+              <Separator className="my-2" />
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-1">
+                  <Icon name="AlertTriangle" size={16} />
+                  Сводка по отклонённым и недопоставкам
+                </div>
+                <div className="flex items-center gap-6 text-sm text-amber-700">
+                  <span>
+                    Позиций: <strong>{shortageItems.length}</strong>
+                  </span>
+                  <span>
+                    Сумма: <strong>{formatCurrency(totalShortageAmount)}</strong>
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Manager contact */}
+          <Separator className="my-2" />
+          <div className="flex items-center gap-3 text-sm">
+            <div className="w-9 h-9 rounded-full bg-[#27265C]/10 flex items-center justify-center flex-shrink-0">
+              <Icon name="User" size={18} className="text-[#27265C]" />
+            </div>
+            <div>
+              <p className="font-medium text-[#27265C]">{order.manager}</p>
+              <p className="text-gray-500 text-xs flex items-center gap-1">
+                <Icon name="Phone" size={11} />
+                {order.managerPhone}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+            >
+              Закрыть
+            </Button>
+            <Link to={`/orders/${order.id}`}>
+              <Button className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold">
+                <Icon name="ArrowRight" size={16} className="mr-1.5" />
+                Полная страница заказа
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  /* ─────────── Main render ─────────── */
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* ── Page header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Мои заказы</h1>
-          <p className="text-gray-600 mt-1">История и статусы ваших заказов</p>
+          <h1 className="text-3xl font-bold text-[#27265C]">Заказы</h1>
+          <p className="text-gray-500 mt-1">
+            Управление заказами MANNOL B2B
+          </p>
         </div>
-        <Link to="/order/new">
-          <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white"
+          >
+            <Icon name="Download" size={18} className="mr-2" />
+            Экспорт
+          </Button>
+          <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 font-semibold">
             <Icon name="Plus" size={18} className="mr-2" />
             Новый заказ
           </Button>
-        </Link>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      {/* ── Summary KPIs ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#27265C]/10 flex items-center justify-center">
+              <Icon name="Package" size={22} className="text-[#27265C]" />
+            </div>
             <div>
-              <CardTitle className="text-[#27265C]">Список заказов</CardTitle>
-              <CardDescription>Всего заказов: {orders.length}</CardDescription>
+              <p className="text-2xl font-bold text-[#27265C]">
+                {mockOrders.length}
+              </p>
+              <p className="text-xs text-gray-500">Всего заказов</p>
             </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <div className="relative flex-1 md:w-[300px]">
-                <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <Input placeholder="Поиск по номеру заказа..." className="pl-10" />
-              </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center">
+              <Icon name="Clock" size={22} className="text-orange-600" />
             </div>
-          </div>
-        </CardHeader>
-      </Card>
+            <div>
+              <p className="text-2xl font-bold text-orange-600">{activeCount}</p>
+              <p className="text-xs text-gray-500">Активных</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center">
+              <Icon name="CheckCircle" size={22} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">
+                {
+                  mockOrders.filter((o) =>
+                    CONFIRMED_STATUSES.includes(o.status)
+                  ).length
+                }
+              </p>
+              <p className="text-xs text-gray-500">Подтверждённых</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#FCC71E]/20 flex items-center justify-center">
+              <Icon name="Banknote" size={22} className="text-[#27265C]" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-[#27265C]">
+                {formatCurrency(totalOrdersAmount)}
+              </p>
+              <p className="text-xs text-gray-500">Общая сумма</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="all">Все ({orders.length})</TabsTrigger>
-          <TabsTrigger value="processing">
-            В работе ({orders.filter(o => inWorkStatuses.includes(o.status)).length})
+      {/* ── Search ── */}
+      <div className="relative max-w-md">
+        <Icon
+          name="Search"
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+        <Input
+          placeholder="Поиск по номеру заказа, товару или артикулу..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* ── Tabs ── */}
+      <Tabs defaultValue="all">
+        <TabsList className="bg-[#27265C]/5">
+          <TabsTrigger value="all" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
+            Все ({allOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="shipped">
-            Отгружены ({orders.filter(o => o.status === "Отгружен").length})
+          <TabsTrigger value="active" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
+            <Icon name="Clock" size={14} className="mr-1.5" />
+            Активные ({activeOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="delivered">
-            Доставлены ({orders.filter(o => o.status === "Доставлен").length})
+          <TabsTrigger value="confirmed" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
+            <Icon name="CheckCircle" size={14} className="mr-1.5" />
+            Подтверждённые ({confirmedOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="shipped" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
+            <Icon name="Truck" size={14} className="mr-1.5" />
+            Отгруженные ({shippedOrders.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {orders.map(renderOrderCard)}
+        <TabsContent value="all" className="mt-4">
+          {renderOrderList(allOrders, "Заказов не найдено")}
         </TabsContent>
-
-        <TabsContent value="processing" className="space-y-4">
-          {orders.filter(o => inWorkStatuses.includes(o.status)).map(renderOrderCard)}
+        <TabsContent value="active" className="mt-4">
+          {renderOrderList(activeOrders, "Нет активных заказов")}
         </TabsContent>
-
-        <TabsContent value="shipped" className="space-y-4">
-          {orders.filter(o => o.status === "Отгружен").map(renderOrderCard)}
+        <TabsContent value="confirmed" className="mt-4">
+          {renderOrderList(confirmedOrders, "Нет подтверждённых заказов")}
         </TabsContent>
-
-        <TabsContent value="delivered" className="space-y-4">
-          {orders.filter(o => o.status === "Доставлен").map(renderOrderCard)}
+        <TabsContent value="shipped" className="mt-4">
+          {renderOrderList(shippedOrders, "Нет отгруженных заказов")}
         </TabsContent>
       </Tabs>
+
+      {/* ── Modal ── */}
+      {renderModal()}
     </div>
   );
 };

@@ -68,9 +68,9 @@ const Dashboard = () => {
   ];
 
   const recentOrders = [
-    { id: "ORD-2024-1247", date: "от 24 апреля", status: "Частично отгружен", statusColor: "bg-indigo-100 text-indigo-700", amount: "₽231,700" },
-    { id: "ORD-2024-1246", date: "от 23 апреля", status: "Отгружен", statusColor: "bg-blue-100 text-blue-700", amount: "₽89,200" },
-    { id: "ORD-2024-1243", date: "от 22 апреля", status: "В обработке", statusColor: "bg-yellow-100 text-yellow-700", amount: "₽98,400" },
+    { id: "ORD-2026-0198", date: "от 15 февраля", status: "Требует согласования", statusColor: "bg-orange-100 text-orange-700", amount: "₽2,458,900" },
+    { id: "ORD-2026-0195", date: "от 14 февраля", status: "Подтверждён", statusColor: "bg-green-100 text-green-700", amount: "₽1,320,000" },
+    { id: "ORD-2026-0192", date: "от 12 февраля", status: "Отправлен", statusColor: "bg-blue-100 text-blue-700", amount: "₽890,400" },
   ];
 
   const notifications = [
