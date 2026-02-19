@@ -15,14 +15,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import Icon from "@/components/ui/icon";
@@ -632,8 +625,7 @@ const mockOrders: Order[] = [
 
 const Orders = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+
 
   /* ── Filtering ── */
 
@@ -681,13 +673,6 @@ const Orders = () => {
     ACTIVE_STATUSES.includes(o.status)
   ).length;
 
-  /* ── Modal handler ── */
-
-  const openOrderModal = (order: Order) => {
-    setSelectedOrder(order);
-    setDialogOpen(true);
-  };
-
   /* ── Quick actions per status ── */
 
   const renderQuickActions = (order: Order) => {
@@ -695,26 +680,36 @@ const Orders = () => {
       case "draft":
         return (
           <div className="flex gap-2">
-            <Button size="sm" className="bg-[#27265C] hover:bg-[#27265C]/90 text-white text-xs">
-              <Icon name="FileEdit" size={14} className="mr-1" />
-              Редактировать
-            </Button>
-            <Button
-              size="sm"
-              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 text-xs font-semibold"
-            >
-              <Icon name="Send" size={14} className="mr-1" />
-              Отправить
-            </Button>
+            <Link to={`/order/${order.id}`}>
+              <Button size="sm" className="bg-[#27265C] hover:bg-[#27265C]/90 text-white text-xs">
+                <Icon name="FileEdit" size={14} className="mr-1" />
+                Редактировать
+              </Button>
+            </Link>
+            <Link to={`/order/${order.id}/send`}>
+              <Button
+                size="sm"
+                className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 text-xs font-semibold"
+              >
+                <Icon name="Send" size={14} className="mr-1" />
+                Отправить
+              </Button>
+            </Link>
           </div>
         );
       case "needs-approval":
         return (
           <div className="flex gap-2">
-            <Link to={`/orders/${order.id}`}>
+            <Link to={`/order/${order.id}/review`}>
               <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white text-xs">
-                <Icon name="RotateCcw" size={14} className="mr-1" />
-                Доработать
+                <Icon name="ClipboardList" size={14} className="mr-1" />
+                Результат
+              </Button>
+            </Link>
+            <Link to={`/order/${order.id}/confirm`}>
+              <Button size="sm" className="bg-[#27265C] hover:bg-[#27265C]/90 text-white text-xs">
+                <Icon name="CheckCircle" size={14} className="mr-1" />
+                Подтвердить
               </Button>
             </Link>
           </div>
@@ -733,7 +728,7 @@ const Orders = () => {
       case "scheduled":
         return (
           <div className="flex gap-2">
-            <Link to={`/orders/${order.id}`}>
+            <Link to={`/order/${order.id}`}>
               <Button size="sm" variant="outline" className="text-xs border-gray-300">
                 <Icon name="Eye" size={14} className="mr-1" />
                 Просмотреть
@@ -896,15 +891,16 @@ const Orders = () => {
 
               <div className="flex gap-2 flex-shrink-0">
                 {renderQuickActions(order)}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white text-xs"
-                  onClick={() => openOrderModal(order)}
-                >
-                  <Icon name="Eye" size={14} className="mr-1" />
-                  Подробнее
-                </Button>
+                <Link to={`/order/${order.id}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white text-xs"
+                  >
+                    <Icon name="Eye" size={14} className="mr-1" />
+                    Подробнее
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -938,253 +934,6 @@ const Orders = () => {
     );
   };
 
-  /* ── Modal content ── */
-
-  const renderModal = () => {
-    if (!selectedOrder) return null;
-    const order = selectedOrder;
-    const summary = itemSummary(order.items);
-    const truckPercent = Math.min(
-      (order.totalWeight / MAX_TRUCK_KG) * 100,
-      100
-    );
-    const statusCfg = STATUS_CONFIG[order.status];
-
-    const shortageItems = order.items.filter(
-      (i) =>
-        i.lineStatus === "rejected-auto" ||
-        i.lineStatus === "rejected-manager" ||
-        i.lineStatus === "backorder"
-    );
-    const totalShortageAmount = shortageItems.reduce(
-      (sum, item) => sum + (item.qtyRequested - item.qtyConfirmed) * item.price,
-      0
-    );
-
-    const groupedItems: Record<string, OrderItemLine[]> = {};
-    const statusOrder: ItemLineStatus[] = [
-      "confirmed",
-      "pending",
-      "rejected-auto",
-      "rejected-manager",
-      "preorder",
-      "backorder",
-    ];
-    for (const status of statusOrder) {
-      const matching = order.items.filter((i) => i.lineStatus === status);
-      if (matching.length > 0) {
-        groupedItems[status] = matching;
-      }
-    }
-
-    return (
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-3 flex-wrap">
-              <DialogTitle className="text-[#27265C] text-xl">
-                {order.id}
-              </DialogTitle>
-              <Badge className={`${statusCfg.bgColor} ${statusCfg.textColor} gap-1`}>
-                <Icon name={statusCfg.icon} size={14} />
-                {statusCfg.label}
-              </Badge>
-              {order.isLocked && (
-                <Badge className="bg-gray-200 text-gray-600 gap-1">
-                  <Icon name="Lock" size={13} />
-                  Заблокирован
-                </Badge>
-              )}
-              {order.type === "Прямой" && (
-                <Badge className="bg-purple-100 text-purple-700 border border-purple-300 gap-1">
-                  <Icon name="Factory" size={13} />
-                  Прямой
-                </Badge>
-              )}
-            </div>
-            <DialogDescription>
-              Создан: {order.date}
-              {order.desiredShipDate
-                ? ` | Отгрузка: ${order.desiredShipDate}`
-                : order.type === "Прямой"
-                ? " | Дата прямой поставки будет подтверждена отдельно"
-                : ""}
-              {" | "}
-              {order.warehouse}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-            <div className="bg-[#27265C]/5 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-[#27265C]">
-                {order.items.length}
-              </div>
-              <div className="text-xs text-gray-600">Позиций</div>
-            </div>
-            <div className="bg-[#FCC71E]/10 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-[#27265C]">
-                {formatCurrency(order.totalAmount)}
-              </div>
-              <div className="text-xs text-gray-600">Сумма</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-[#27265C]">
-                {formatWeight(order.totalWeight)}
-              </div>
-              <div className="text-xs text-gray-600">Масса</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-[#27265C]">
-                {truckPercent.toFixed(0)}%
-              </div>
-              <div className="text-xs text-gray-600">Загрузка фуры</div>
-            </div>
-          </div>
-
-          <Separator className="my-2" />
-
-          {/* Grouped items */}
-          <div className="space-y-4">
-            {statusOrder.map((status) => {
-              const group = groupedItems[status];
-              if (!group) return null;
-              const lsCfg = LINE_STATUS_CONFIG[status];
-              return (
-                <div key={status}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${lsCfg.dotColor}`} />
-                    <span className={`text-sm font-semibold ${lsCfg.textColor}`}>
-                      {lsCfg.label} ({group.length})
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {group.map((item, idx) => (
-                      <div
-                        key={`${status}-${idx}`}
-                        className={`border rounded-lg p-3 ${lsCfg.bgColor}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Icon
-                                name={lsCfg.icon}
-                                size={16}
-                                className={lsCfg.textColor}
-                              />
-                              <span className="font-medium text-sm truncate">
-                                {item.name}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-500 ml-6">
-                              {item.sku}
-                            </span>
-
-                            {/* Qty breakdown for rejected / backorder */}
-                            {(status === "rejected-auto" ||
-                              status === "rejected-manager" ||
-                              status === "backorder") && (
-                              <div className="ml-6 mt-2 space-y-1">
-                                <div className="flex items-center gap-4 text-xs flex-wrap">
-                                  <span>
-                                    Запрошено:{" "}
-                                    <strong>{item.qtyRequested} шт</strong>
-                                  </span>
-                                  <span>
-                                    Подтверждено:{" "}
-                                    <strong className="text-green-700">
-                                      {item.qtyConfirmed} шт
-                                    </strong>
-                                  </span>
-                                  <span>
-                                    Отклонено:{" "}
-                                    <strong className="text-red-600">
-                                      {item.qtyRequested - item.qtyConfirmed} шт
-                                    </strong>
-                                  </span>
-                                </div>
-                                {item.rejectReason && (
-                                  <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 rounded px-2 py-1">
-                                    <Icon name="AlertCircle" size={12} />
-                                    {item.rejectReason}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="text-right flex-shrink-0 text-sm">
-                            <div className="font-semibold">
-                              {item.qtyRequested} шт
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {formatCurrency(item.qtyRequested * item.price)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Shortage summary */}
-          {shortageItems.length > 0 && (
-            <>
-              <Separator className="my-2" />
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm mb-1">
-                  <Icon name="AlertTriangle" size={16} />
-                  Сводка по отклонённым и недопоставкам
-                </div>
-                <div className="flex items-center gap-6 text-sm text-amber-700">
-                  <span>
-                    Позиций: <strong>{shortageItems.length}</strong>
-                  </span>
-                  <span>
-                    Сумма: <strong>{formatCurrency(totalShortageAmount)}</strong>
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Manager contact */}
-          <Separator className="my-2" />
-          <div className="flex items-center gap-3 text-sm">
-            <div className="w-9 h-9 rounded-full bg-[#27265C]/10 flex items-center justify-center flex-shrink-0">
-              <Icon name="User" size={18} className="text-[#27265C]" />
-            </div>
-            <div>
-              <p className="font-medium text-[#27265C]">{order.manager}</p>
-              <p className="text-gray-500 text-xs flex items-center gap-1">
-                <Icon name="Phone" size={11} />
-                {order.managerPhone}
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-            >
-              Закрыть
-            </Button>
-            <Link to={`/orders/${order.id}`}>
-              <Button className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold">
-                <Icon name="ArrowRight" size={16} className="mr-1.5" />
-                Полная страница заказа
-              </Button>
-            </Link>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   /* ─────────── Main render ─────────── */
 
   return (
@@ -1205,10 +954,12 @@ const Orders = () => {
             <Icon name="Download" size={18} className="mr-2" />
             Экспорт
           </Button>
-          <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 font-semibold">
-            <Icon name="Plus" size={18} className="mr-2" />
-            Новый заказ
-          </Button>
+          <Link to="/order/new">
+            <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 font-semibold">
+              <Icon name="Plus" size={18} className="mr-2" />
+              Новый заказ
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -1319,8 +1070,7 @@ const Orders = () => {
         </TabsContent>
       </Tabs>
 
-      {/* ── Modal ── */}
-      {renderModal()}
+
     </div>
   );
 };

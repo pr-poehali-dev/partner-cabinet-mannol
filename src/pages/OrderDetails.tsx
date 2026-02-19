@@ -11,14 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -26,462 +18,35 @@ import {
 } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
 import { Link, useParams } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-
-/* ─────────── Types ─────────── */
-
-type OrderStatus =
-  | "draft"
-  | "sent"
-  | "processing"
-  | "needs-approval"
-  | "confirmed"
-  | "scheduled"
-  | "shipped";
-
-type ItemLineStatus =
-  | "confirmed"
-  | "pending"
-  | "rejected-auto"
-  | "rejected-manager"
-  | "preorder"
-  | "backorder";
-
-type OrderType = "regular" | "direct";
-
-interface OrderItem {
-  id: string;
-  name: string;
-  sku: string;
-  qtyRequested: number;
-  qtyConfirmed: number;
-  qtyShortage: number;
-  price: number;
-  weightPerUnit: number;
-  lineStatus: ItemLineStatus;
-  rejectReason?: string;
-}
-
-interface RecommendedProduct {
-  id: string;
-  name: string;
-  sku: string;
-  price: number;
-  weightPerUnit: number;
-  availability: "in-stock" | "plenty";
-  category: "A";
-  regularBuy: boolean;
-}
-
-interface HistoryEntry {
-  date: string;
-  event: string;
-  user: string;
-  icon: string;
-  color: string;
-}
-
-interface OrderData {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  sentAt: string;
-  status: OrderStatus;
-  orderType: OrderType;
-  desiredShipmentDate: string;
-  warehouse: string;
-  manager: string;
-  managerPhone: string;
-  managerEmail: string;
-  clientName: string;
-  items: OrderItem[];
-  history: HistoryEntry[];
-}
-
-/* ─────────── Constants ─────────── */
-
-const ORDER_STATUS_CONFIG: Record<
+import {
+  OrderData,
+  OrderItem,
   OrderStatus,
-  { label: string; icon: string; color: string; bgColor: string; step: number }
-> = {
-  draft: {
-    label: "Черновик",
-    icon: "FileEdit",
-    color: "text-gray-700",
-    bgColor: "bg-gray-100",
-    step: 1,
-  },
-  sent: {
-    label: "Отправлен",
-    icon: "Send",
-    color: "text-blue-700",
-    bgColor: "bg-blue-100",
-    step: 2,
-  },
-  processing: {
-    label: "В обработке",
-    icon: "Clock",
-    color: "text-yellow-700",
-    bgColor: "bg-yellow-100",
-    step: 3,
-  },
-  "needs-approval": {
-    label: "Требует согласования",
-    icon: "RotateCcw",
-    color: "text-orange-700",
-    bgColor: "bg-orange-100",
-    step: 4,
-  },
-  confirmed: {
-    label: "Подтверждён",
-    icon: "CheckCircle",
-    color: "text-green-700",
-    bgColor: "bg-green-100",
-    step: 5,
-  },
-  scheduled: {
-    label: "В графике отгрузки",
-    icon: "CalendarCheck",
-    color: "text-indigo-700",
-    bgColor: "bg-indigo-100",
-    step: 6,
-  },
-  shipped: {
-    label: "Отгружен",
-    icon: "Truck",
-    color: "text-emerald-700",
-    bgColor: "bg-emerald-100",
-    step: 7,
-  },
-};
-
-const STATUS_STEPS: OrderStatus[] = [
-  "draft",
-  "sent",
-  "processing",
-  "needs-approval",
-  "confirmed",
-  "scheduled",
-  "shipped",
-];
-
-const LINE_STATUS_CONFIG: Record<
   ItemLineStatus,
-  { label: string; color: string; bgColor: string; dotColor: string; icon: string }
-> = {
-  confirmed: {
-    label: "Подтверждено",
-    color: "text-green-700",
-    bgColor: "bg-green-50 border-green-200",
-    dotColor: "bg-green-500",
-    icon: "CheckCircle",
-  },
-  pending: {
-    label: "На рассмотрении",
-    color: "text-yellow-700",
-    bgColor: "bg-yellow-50 border-yellow-200",
-    dotColor: "bg-yellow-500",
-    icon: "Clock",
-  },
-  "rejected-auto": {
-    label: "Отклонено автоматически",
-    color: "text-red-700",
-    bgColor: "bg-red-50 border-red-200",
-    dotColor: "bg-red-500",
-    icon: "XCircle",
-  },
-  "rejected-manager": {
-    label: "Отклонено менеджером",
-    color: "text-red-700",
-    bgColor: "bg-red-50 border-red-200",
-    dotColor: "bg-red-500",
-    icon: "UserX",
-  },
-  preorder: {
-    label: "Предзаказ",
-    color: "text-blue-700",
-    bgColor: "bg-blue-50 border-blue-200",
-    dotColor: "bg-blue-500",
-    icon: "ShoppingBag",
-  },
-  backorder: {
-    label: "Недопоставка",
-    color: "text-amber-700",
-    bgColor: "bg-amber-50 border-amber-200",
-    dotColor: "bg-amber-500",
-    icon: "AlertTriangle",
-  },
-};
-
-const MAX_TRUCK_WEIGHT = 20000; // 20 tonnes in kg
-
-/* ─────────── Mock Data ─────────── */
-
-const mockOrder: OrderData = {
-  id: "ORD-2024-1583",
-  createdAt: "14.12.2024 09:15",
-  updatedAt: "18.12.2024 14:30",
-  sentAt: "14.12.2024 09:45",
-  status: "needs-approval",
-  orderType: "regular",
-  desiredShipmentDate: "25.12.2024",
-  warehouse: "Склад Москва (Подольск)",
-  manager: "Иванова Мария Сергеевна",
-  managerPhone: "+7 (495) 123-45-67",
-  managerEmail: "ivanova@mannol.ru",
-  clientName: 'ООО "АвтоСнаб Плюс"',
-  items: [
-    {
-      id: "item-1",
-      name: "MANNOL Energy Formula OP 5W-30 API SN/CF",
-      sku: "MN7917-4",
-      qtyRequested: 800,
-      qtyConfirmed: 800,
-      qtyShortage: 0,
-      price: 1450,
-      weightPerUnit: 4.2,
-      lineStatus: "confirmed",
-    },
-    {
-      id: "item-2",
-      name: "MANNOL Diesel Extra 10W-40 API CI-4/SL",
-      sku: "MN7504-4",
-      qtyRequested: 600,
-      qtyConfirmed: 600,
-      qtyShortage: 0,
-      price: 1100,
-      weightPerUnit: 4.5,
-      lineStatus: "confirmed",
-    },
-    {
-      id: "item-3",
-      name: "MANNOL ATF AG52 Automatic Special",
-      sku: "MN8211-4",
-      qtyRequested: 200,
-      qtyConfirmed: 0,
-      qtyShortage: 0,
-      price: 980,
-      weightPerUnit: 4.1,
-      lineStatus: "pending",
-    },
-    {
-      id: "item-4",
-      name: "MANNOL Longlife 504/507 5W-30",
-      sku: "MN7715-4",
-      qtyRequested: 100,
-      qtyConfirmed: 0,
-      qtyShortage: 100,
-      price: 1680,
-      weightPerUnit: 4.0,
-      lineStatus: "rejected-auto",
-      rejectReason: "Нет свободных остатков на складе",
-    },
-    {
-      id: "item-5",
-      name: "MANNOL Classic 10W-40 API SN/CF",
-      sku: "MN7501-4",
-      qtyRequested: 80,
-      qtyConfirmed: 50,
-      qtyShortage: 30,
-      price: 1050,
-      weightPerUnit: 4.2,
-      lineStatus: "rejected-manager",
-      rejectReason: "Решение менеджера: объём превышает доступный лимит поставки",
-    },
-    {
-      id: "item-6",
-      name: "MANNOL Compressor Oil ISO 100",
-      sku: "MN2902-4",
-      qtyRequested: 150,
-      qtyConfirmed: 0,
-      qtyShortage: 0,
-      price: 890,
-      weightPerUnit: 4.3,
-      lineStatus: "preorder",
-    },
-    {
-      id: "item-7",
-      name: "MANNOL Antifreeze AG13 -40C",
-      sku: "MN4013-5",
-      qtyRequested: 300,
-      qtyConfirmed: 250,
-      qtyShortage: 50,
-      price: 520,
-      weightPerUnit: 5.2,
-      lineStatus: "backorder",
-      rejectReason: "Недопоставка будет компенсирована при ближайшей отгрузке",
-    },
-  ],
-  history: [
-    {
-      date: "14.12.2024 09:15",
-      event: "Заказ создан клиентом",
-      user: "Петров И.П.",
-      icon: "FilePlus",
-      color: "text-gray-600",
-    },
-    {
-      date: "14.12.2024 09:45",
-      event: "Заказ отправлен на согласование менеджеру",
-      user: "Петров И.П.",
-      icon: "Send",
-      color: "text-blue-600",
-    },
-    {
-      date: "14.12.2024 10:02",
-      event: "Менеджер принял заказ в работу",
-      user: "Иванова М.С.",
-      icon: "UserCheck",
-      color: "text-indigo-600",
-    },
-    {
-      date: "15.12.2024 11:30",
-      event: "Автоматическая проверка остатков выполнена",
-      user: "Система",
-      icon: "Database",
-      color: "text-purple-600",
-    },
-    {
-      date: "15.12.2024 11:30",
-      event:
-        "Позиция MN7715-4 (Longlife 504/507) отклонена автоматически: нет свободных остатков",
-      user: "Система",
-      icon: "XCircle",
-      color: "text-red-600",
-    },
-    {
-      date: "16.12.2024 09:15",
-      event:
-        "Менеджер отклонил часть позиции MN7501-4 (Classic 10W-40): подтверждено 50 из 80 шт",
-      user: "Иванова М.С.",
-      icon: "UserX",
-      color: "text-red-600",
-    },
-    {
-      date: "16.12.2024 09:15",
-      event:
-        "Позиция MN4013-5 (Antifreeze AG13): подтверждено 250 из 300, недопоставка 50 шт",
-      user: "Иванова М.С.",
-      icon: "AlertTriangle",
-      color: "text-amber-600",
-    },
-    {
-      date: "16.12.2024 09:20",
-      event: "Заказ возвращён клиенту на доработку",
-      user: "Иванова М.С.",
-      icon: "RotateCcw",
-      color: "text-orange-600",
-    },
-    {
-      date: "16.12.2024 09:20",
-      event:
-        "Комментарий менеджера: Просьба проверить позиции и решить по предзаказу/замене отклонённых товаров",
-      user: "Иванова М.С.",
-      icon: "MessageSquare",
-      color: "text-orange-600",
-    },
-  ],
-};
-
-const mockRecommendations: RecommendedProduct[] = [
-  {
-    id: "rec-1",
-    name: "MANNOL Hypoid Getriebeoel 80W-90 API GL-5",
-    sku: "MN8106-4",
-    price: 780,
-    weightPerUnit: 4.1,
-    availability: "plenty",
-    category: "A",
-    regularBuy: true,
-  },
-  {
-    id: "rec-2",
-    name: "MANNOL Dexron III Automatic Plus",
-    sku: "MN8206-4",
-    price: 920,
-    weightPerUnit: 4.0,
-    availability: "in-stock",
-    category: "A",
-    regularBuy: false,
-  },
-  {
-    id: "rec-3",
-    name: "MANNOL Motor Flush 10min",
-    sku: "MN9900-0.35",
-    price: 290,
-    weightPerUnit: 0.4,
-    availability: "plenty",
-    category: "A",
-    regularBuy: true,
-  },
-  {
-    id: "rec-4",
-    name: "MANNOL Radiator Flush",
-    sku: "MN9965-0.325",
-    price: 310,
-    weightPerUnit: 0.38,
-    availability: "in-stock",
-    category: "A",
-    regularBuy: true,
-  },
-];
-
-/* ─────────── Helpers ─────────── */
-
-function formatWeight(kg: number): string {
-  if (kg >= 1000) {
-    return `${(kg / 1000).toFixed(1)} т`;
-  }
-  return `${kg.toFixed(1)} кг`;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "RUB",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function daysSince(dateStr: string): number {
-  const parts = dateStr.split(" ")[0].split(".");
-  const date = new Date(
-    parseInt(parts[2]),
-    parseInt(parts[1]) - 1,
-    parseInt(parts[0])
-  );
-  const now = new Date(2024, 11, 18); // mock "today" = 18.12.2024
-  const diff = now.getTime() - date.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
-}
-
-function isOrderLocked(status: OrderStatus): boolean {
-  const lockedStatuses: OrderStatus[] = ["confirmed", "scheduled", "shipped"];
-  return lockedStatuses.includes(status);
-}
-
-function canClientEdit(status: OrderStatus): boolean {
-  return status === "draft" || status === "needs-approval";
-}
-
-/* ─────────── Component ─────────── */
+  RecommendedProduct,
+  ORDER_STATUS_CONFIG,
+  STATUS_STEPS,
+  LINE_STATUS_CONFIG,
+  MAX_TRUCK_WEIGHT,
+  MOCK_ORDER,
+  MOCK_RECOMMENDATIONS,
+  formatWeight,
+  formatCurrency,
+  daysSince,
+  isOrderLocked,
+  canClientEdit,
+} from "@/types/order";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
-  const { toast } = useToast();
 
   const [order, setOrder] = useState<OrderData>({
-    ...mockOrder,
-    id: orderId || mockOrder.id,
+    ...MOCK_ORDER,
+    id: orderId || MOCK_ORDER.id,
   });
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSendModal, setShowSendModal] = useState(false);
   const [addedRecommendations, setAddedRecommendations] = useState<Set<string>>(
     new Set()
   );
-
-  /* ── Computed values ── */
 
   const totalWeightKg = useMemo(() => {
     return order.items.reduce((sum, item) => {
@@ -532,8 +97,6 @@ const OrderDetails = () => {
 
   const currentStepIndex = STATUS_STEPS.indexOf(order.status);
 
-  /* ── Actions ── */
-
   const handleAddRecommendation = (product: RecommendedProduct) => {
     const newItem: OrderItem = {
       id: `item-new-${product.id}`,
@@ -548,57 +111,7 @@ const OrderDetails = () => {
     };
     setOrder((prev) => ({ ...prev, items: [...prev.items, newItem] }));
     setAddedRecommendations((prev) => new Set(prev).add(product.id));
-    toast({
-      title: "Товар добавлен",
-      description: `${product.name} добавлен в заказ (100 шт)`,
-    });
   };
-
-  const handleSendToManager = () => {
-    setShowSendModal(false);
-    setOrder((prev) => ({
-      ...prev,
-      status: "sent",
-      history: [
-        ...prev.history,
-        {
-          date: "18.12.2024 14:35",
-          event: "Заказ повторно отправлен на согласование менеджеру",
-          user: "Петров И.П.",
-          icon: "Send",
-          color: "text-blue-600",
-        },
-      ],
-    }));
-    toast({
-      title: "Заказ отправлен",
-      description: "Заказ отправлен менеджеру на согласование",
-    });
-  };
-
-  const handleConfirmOrder = () => {
-    setShowConfirmModal(false);
-    setOrder((prev) => ({
-      ...prev,
-      status: "confirmed",
-      history: [
-        ...prev.history,
-        {
-          date: "18.12.2024 14:40",
-          event: "Заказ подтверждён клиентом",
-          user: "Петров И.П.",
-          icon: "CheckCircle",
-          color: "text-green-600",
-        },
-      ],
-    }));
-    toast({
-      title: "Заказ подтверждён",
-      description: "Заказ подтверждён и передан в график отгрузки",
-    });
-  };
-
-  /* ── Render helpers ── */
 
   const renderLineStatusBadge = (status: ItemLineStatus) => {
     const config = LINE_STATUS_CONFIG[status];
@@ -648,10 +161,47 @@ const OrderDetails = () => {
     );
   };
 
+  const businessFlowSteps = [
+    {
+      label: "Формирование",
+      icon: "FilePlus",
+      href: "/order/new",
+      active: order.status === "draft",
+      completed: currentStepIndex > 0,
+    },
+    {
+      label: "Отправка",
+      icon: "Send",
+      href: `/order/${order.id}/send`,
+      active: order.status === "draft",
+      completed: currentStepIndex >= 1,
+    },
+    {
+      label: "Результат обработки",
+      icon: "ClipboardList",
+      href: `/order/${order.id}/review`,
+      active: order.status === "needs-approval",
+      completed: currentStepIndex >= 4,
+    },
+    {
+      label: "Дозаказ",
+      icon: "PackagePlus",
+      href: `/order/${order.id}/adjust`,
+      active: order.status === "needs-approval",
+      completed: currentStepIndex >= 4,
+    },
+    {
+      label: "Подтверждение",
+      icon: "CheckCircle",
+      href: `/order/${order.id}/confirm`,
+      active: order.status === "needs-approval",
+      completed: currentStepIndex >= 4,
+    },
+  ];
+
   return (
     <TooltipProvider>
       <div className="space-y-6 pb-12">
-        {/* ───── Header ───── */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -724,7 +274,6 @@ const OrderDetails = () => {
           </div>
         </div>
 
-        {/* ───── Stale Order Warning ───── */}
         {isStale && (
           <Card className="border-red-300 bg-red-50">
             <CardContent className="p-4 flex items-start gap-3">
@@ -756,7 +305,6 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {/* ───── Locked Order Warning ───── */}
         {locked && (
           <Card className="border-amber-300 bg-amber-50">
             <CardContent className="p-4 flex items-center gap-3">
@@ -773,7 +321,6 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {/* ───── What's happening now? (Context Card) ───── */}
         {order.status === "needs-approval" && (
           <Card className="border-[#27265C] border-2 bg-gradient-to-r from-[#27265C]/5 to-transparent">
             <CardContent className="p-5">
@@ -827,11 +374,9 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {/* ───── Status Steps ───── */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between gap-1 relative">
-              {/* Progress line */}
               <div className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200 -z-0" />
               <div
                 className="absolute top-5 left-8 h-0.5 bg-[#27265C] transition-all -z-0"
@@ -848,9 +393,7 @@ const OrderDetails = () => {
           </CardContent>
         </Card>
 
-        {/* ───── Order Info + Weight ───── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Order Info */}
           <Card className={`lg:col-span-1 ${order.orderType === "direct" ? "border-purple-300 border-2" : ""}`}>
             <CardHeader>
               <CardTitle className="text-[#27265C] flex items-center gap-2">
@@ -913,7 +456,6 @@ const OrderDetails = () => {
 
               <Separator />
 
-              {/* Financial summary */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Сумма запрошенного</span>
@@ -935,7 +477,6 @@ const OrderDetails = () => {
             </CardContent>
           </Card>
 
-          {/* Weight / Truck Loading */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-[#27265C] flex items-center gap-2">
@@ -995,9 +536,7 @@ const OrderDetails = () => {
                   >
                     {formatWeight(remainingWeightKg)}
                   </div>
-                  <div className="text-xs text-gray-600">
-                    Осталось до полной загрузки
-                  </div>
+                  <div className="text-xs text-gray-600">Осталось</div>
                 </div>
               </div>
 
@@ -1020,7 +559,6 @@ const OrderDetails = () => {
           </Card>
         </div>
 
-        {/* ───── Order Items ───── */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1064,7 +602,6 @@ const OrderDetails = () => {
                   className={`border rounded-xl p-4 transition-all ${lineConfig.bgColor}`}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                    {/* Item info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-3">
                         <div
@@ -1099,7 +636,6 @@ const OrderDetails = () => {
                         </div>
                       </div>
 
-                      {/* Qty breakdown for rejected / backorder */}
                       {(isRejected || hasShortage) && (
                         <div className="mt-3 ml-[52px]">
                           <div className="bg-white/70 rounded-lg p-3 space-y-2 text-sm border border-white/50">
@@ -1155,7 +691,6 @@ const OrderDetails = () => {
                         </div>
                       )}
 
-                      {/* Preorder notice */}
                       {item.lineStatus === "preorder" && (
                         <div className="mt-3 ml-[52px]">
                           <div className="bg-blue-100/50 rounded-lg p-3 text-sm border border-blue-200">
@@ -1172,7 +707,6 @@ const OrderDetails = () => {
                         </div>
                       )}
 
-                      {/* Backorder notice */}
                       {item.lineStatus === "backorder" && (
                         <div className="mt-3 ml-[52px]">
                           <div className="bg-amber-100/50 rounded-lg p-3 text-sm border border-amber-200">
@@ -1182,17 +716,20 @@ const OrderDetails = () => {
                             </div>
                             <p className="text-amber-700">
                               {item.rejectReason ||
-                                "Недостающий объём будет компенсирован при ближайшей отгрузке."}
+                                "Часть товара будет компенсирована при ближайшей отгрузке."}
                             </p>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Item numbers */}
-                    <div className="flex flex-row lg:flex-col items-end gap-3 lg:gap-1.5 text-right flex-shrink-0 lg:min-w-[180px]">
+                    <div
+                      className={`flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2 text-right flex-shrink-0 ${
+                        isRejected ? "opacity-60" : ""
+                      }`}
+                    >
                       <div>
-                        <div className="text-xs text-gray-500">Цена за ед.</div>
+                        <div className="text-xs text-gray-500">Цена/шт</div>
                         <div className="font-semibold">
                           {formatCurrency(item.price)}
                         </div>
@@ -1223,7 +760,6 @@ const OrderDetails = () => {
           </CardContent>
         </Card>
 
-        {/* ───── Shortage Summary Block ───── */}
         {totalShortageQty > 0 && (
           <Card className="border-amber-300 bg-amber-50">
             <CardHeader>
@@ -1278,16 +814,20 @@ const OrderDetails = () => {
               </div>
 
               {editable && (
-                <Button className="bg-amber-600 hover:bg-amber-700 text-white">
-                  <Icon name="Plus" size={18} className="mr-2" />
-                  Добрать товары
+                <Button
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  asChild
+                >
+                  <Link to={`/order/${order.id}/adjust`}>
+                    <Icon name="Plus" size={18} className="mr-2" />
+                    Добрать товары
+                  </Link>
                 </Button>
               )}
             </CardContent>
           </Card>
         )}
 
-        {/* ───── Recommendations for "Добивка" ───── */}
         {editable && remainingWeightKg > 500 && (
           <Card className="border-[#FCC71E] border-2">
             <CardHeader>
@@ -1308,7 +848,7 @@ const OrderDetails = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {mockRecommendations.map((product) => {
+                {MOCK_RECOMMENDATIONS.map((product) => {
                   const isAdded = addedRecommendations.has(product.id);
                   return (
                     <div
@@ -1332,11 +872,7 @@ const OrderDetails = () => {
                               {formatCurrency(product.price)}
                             </span>
                             <span className="text-gray-500">
-                              {formatWeight(product.weightPerUnit * 1000).replace(
-                                " кг",
-                                ""
-                              )}{" "}
-                              кг/шт
+                              {product.weightPerUnit} кг/шт
                             </span>
                             <Badge className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0">
                               {product.availability === "plenty"
@@ -1381,7 +917,6 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {/* ───── Actions Bar ───── */}
         {editable && (
           <Card className="border-[#27265C]">
             <CardContent className="p-5">
@@ -1393,32 +928,139 @@ const OrderDetails = () => {
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Проверьте позиции, добавьте товары при необходимости и
-                    отправьте заказ менеджеру.
+                    выберите следующий шаг.
                   </p>
                 </div>
                 <div className="flex gap-3 flex-wrap">
-                  <Button
-                    variant="outline"
-                    className="border-[#27265C] text-[#27265C]"
-                    onClick={() => setShowConfirmModal(true)}
-                  >
-                    <Icon name="CheckCircle" size={18} className="mr-2" />
-                    Подтвердить как есть
-                  </Button>
-                  <Button
-                    className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
-                    onClick={() => setShowSendModal(true)}
-                  >
-                    <Icon name="Send" size={18} className="mr-2" />
-                    Отправить на согласование
-                  </Button>
+                  {order.status === "draft" && (
+                    <Button
+                      className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
+                      asChild
+                    >
+                      <Link to={`/order/${order.id}/send`}>
+                        <Icon name="Send" size={18} className="mr-2" />
+                        Отправить на согласование
+                      </Link>
+                    </Button>
+                  )}
+                  {order.status === "needs-approval" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="border-[#27265C] text-[#27265C]"
+                        asChild
+                      >
+                        <Link to={`/order/${order.id}/review`}>
+                          <Icon name="ClipboardList" size={18} className="mr-2" />
+                          Посмотреть результат обработки
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-[#27265C] text-[#27265C]"
+                        asChild
+                      >
+                        <Link to={`/order/${order.id}/adjust`}>
+                          <Icon name="PackagePlus" size={18} className="mr-2" />
+                          Дозаказать товары
+                        </Link>
+                      </Button>
+                      <Button
+                        className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
+                        asChild
+                      >
+                        <Link to={`/order/${order.id}/confirm`}>
+                          <Icon name="CheckCircle" size={18} className="mr-2" />
+                          Подтвердить заказ
+                        </Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* ───── History ───── */}
+        {locked && (
+          <Card className="border-green-300 bg-green-50">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="CheckCircle" size={22} className="text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-green-800 text-lg">
+                    Заказ подтверждён
+                  </h3>
+                  <p className="text-sm text-green-700 mt-0.5">
+                    Заказ зафиксирован и передан в график отгрузки. Ожидайте уведомления о дате отгрузки.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="border-[#27265C]/20">
+          <CardHeader>
+            <CardTitle className="text-[#27265C] flex items-center gap-2">
+              <Icon name="Route" size={20} />
+              Бизнес-процесс заказа
+            </CardTitle>
+            <CardDescription>
+              Навигация по этапам обработки заказа
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-stretch gap-0 overflow-x-auto pb-2">
+              {businessFlowSteps.map((step, idx) => (
+                <div key={step.label} className="flex items-center shrink-0">
+                  {idx > 0 && (
+                    <div className="flex items-center px-1">
+                      <Icon name="ChevronRight" size={16} className="text-gray-300" />
+                    </div>
+                  )}
+                  {step.active ? (
+                    <Link
+                      to={step.href}
+                      className="flex flex-col items-center gap-2 rounded-xl border-2 border-[#27265C] bg-[#27265C]/5 p-3 min-w-[120px] hover:bg-[#27265C]/10 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-[#27265C] flex items-center justify-center">
+                        <Icon name={step.icon} size={18} className="text-white" />
+                      </div>
+                      <span className="text-xs font-bold text-[#27265C] text-center leading-tight">
+                        {step.label}
+                      </span>
+                    </Link>
+                  ) : step.completed ? (
+                    <Link
+                      to={step.href}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3 min-w-[120px] hover:bg-green-100 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center">
+                        <Icon name="Check" size={18} className="text-white" />
+                      </div>
+                      <span className="text-xs font-medium text-green-700 text-center leading-tight">
+                        {step.label}
+                      </span>
+                    </Link>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 min-w-[120px] opacity-50 cursor-not-allowed">
+                      <div className="w-9 h-9 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <Icon name={step.icon} size={18} className="text-gray-400" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-400 text-center leading-tight">
+                        {step.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-[#27265C] flex items-center gap-2">
@@ -1431,7 +1073,6 @@ const OrderDetails = () => {
           </CardHeader>
           <CardContent>
             <div className="relative">
-              {/* Vertical line */}
               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
 
               <div className="space-y-0">
@@ -1463,165 +1104,6 @@ const OrderDetails = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* ───── Confirm Modal ───── */}
-        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="text-[#27265C] flex items-center gap-2">
-                <Icon name="ShieldCheck" size={22} />
-                Подтверждение заказа
-              </DialogTitle>
-              <DialogDescription>
-                Проверьте финальный состав заказа перед подтверждением
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 max-h-[400px] overflow-y-auto">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                <Icon
-                  name="AlertTriangle"
-                  size={18}
-                  className="text-amber-600 mt-0.5 flex-shrink-0"
-                />
-                <p className="text-sm text-amber-800 font-medium">
-                  После подтверждения заказ нельзя изменить. Убедитесь, что все
-                  позиции и количества корректны.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {order.items
-                  .filter(
-                    (i) =>
-                      i.lineStatus !== "rejected-auto" &&
-                      i.lineStatus !== "rejected-manager"
-                  )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm border rounded-lg p-2.5"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium truncate block">
-                          {item.name}
-                        </span>
-                        <span className="text-xs text-gray-500">{item.sku}</span>
-                      </div>
-                      <div className="text-right ml-3 flex-shrink-0">
-                        <div className="font-semibold">
-                          {item.qtyConfirmed > 0
-                            ? item.qtyConfirmed
-                            : item.qtyRequested}{" "}
-                          шт
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatCurrency(
-                            (item.qtyConfirmed > 0
-                              ? item.qtyConfirmed
-                              : item.qtyRequested) * item.price
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-
-              <Separator />
-
-              <div className="flex justify-between font-bold text-[#27265C]">
-                <span>Итого к отгрузке:</span>
-                <span>{formatCurrency(totalAmount)}</span>
-              </div>
-
-              {order.orderType !== "direct" && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Icon name="Calendar" size={16} />
-                  <span>
-                    Желаемая дата отгрузки: {order.desiredShipmentDate}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Отмена
-              </Button>
-              <Button
-                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
-                onClick={handleConfirmOrder}
-              >
-                <Icon name="CheckCircle" size={18} className="mr-2" />
-                Подтвердить заказ
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ───── Send to Manager Modal ───── */}
-        <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-[#27265C] flex items-center gap-2">
-                <Icon name="Send" size={22} />
-                Отправить на согласование
-              </DialogTitle>
-              <DialogDescription>
-                Заказ будет отправлен менеджеру для проверки
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-                <Icon
-                  name="Info"
-                  size={18}
-                  className="text-blue-600 mt-0.5 flex-shrink-0"
-                />
-                <p className="text-sm text-blue-800">
-                  После отправки вы не сможете редактировать заказ до ответа
-                  менеджера. Менеджер проверит наличие, цены и условия поставки.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Позиций в заказе</span>
-                  <span className="font-semibold">{order.items.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Общий вес</span>
-                  <span className="font-semibold">
-                    {formatWeight(totalWeightKg)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Сумма</span>
-                  <span className="font-semibold">
-                    {formatCurrency(totalRequestedAmount)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowSendModal(false)}>
-                Отмена
-              </Button>
-              <Button
-                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
-                onClick={handleSendToManager}
-              >
-                <Icon name="Send" size={18} className="mr-2" />
-                Отправить
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </TooltipProvider>
   );

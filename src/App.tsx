@@ -16,6 +16,10 @@ import Catalog from "./pages/Catalog";
 import ProductDetails from "./pages/ProductDetails";
 import OrderNew from "./pages/OrderNew";
 import OrderDetails from "./pages/OrderDetails";
+import OrderSend from "./pages/OrderSend";
+import OrderReview from "./pages/OrderReview";
+import OrderAdjust from "./pages/OrderAdjust";
+import OrderConfirm from "./pages/OrderConfirm";
 import Orders from "./pages/Orders";
 import Backorders from "./pages/Backorders";
 import Schedule from "./pages/Schedule";
@@ -57,6 +61,10 @@ const App = () => (
             <Route path="/product/:productId" element={<ProductDetails />} />
             <Route path="/order/new" element={<OrderNew />} />
             <Route path="/order/:orderId" element={<OrderDetails />} />
+            <Route path="/order/:orderId/send" element={<OrderSend />} />
+            <Route path="/order/:orderId/review" element={<OrderReview />} />
+            <Route path="/order/:orderId/adjust" element={<OrderAdjust />} />
+            <Route path="/order/:orderId/confirm" element={<OrderConfirm />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:orderId/details" element={<Orders />} />
             <Route path="/backorders" element={<Backorders />} />
