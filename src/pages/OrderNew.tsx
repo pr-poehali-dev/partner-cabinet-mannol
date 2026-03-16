@@ -32,6 +32,7 @@ interface CatalogProduct {
   unit: string;
   category: string;
   inStock: boolean;
+  stock: number; // доступное количество на складе
 }
 
 const ORDER_ID = "ORD-2026-0215";
@@ -45,16 +46,16 @@ function formatDateRu(isoDate: string): string {
 }
 
 const CATALOG: CatalogProduct[] = [
-  { id: "p1", name: "MANNOL Energy Formula OP 5W-30", sku: "MN7917-4", price: 1450, unit: "шт", category: "Моторные масла", inStock: true },
-  { id: "p2", name: "MANNOL Diesel Extra 10W-40", sku: "MN7504-4", price: 1100, unit: "шт", category: "Моторные масла", inStock: true },
-  { id: "p3", name: "MANNOL ATF AG52 Automatic Special", sku: "MN8211-4", price: 980, unit: "шт", category: "Трансмиссионные масла", inStock: true },
-  { id: "p4", name: "MANNOL Longlife 504/507 5W-30", sku: "MN7715-4", price: 1680, unit: "шт", category: "Моторные масла", inStock: false },
-  { id: "p5", name: "MANNOL Classic 10W-40 API SN/CF", sku: "MN7501-4", price: 1050, unit: "шт", category: "Моторные масла", inStock: true },
-  { id: "p6", name: "MANNOL Compressor Oil ISO 100", sku: "MN2902-4", price: 890, unit: "шт", category: "Компрессорные масла", inStock: true },
-  { id: "p7", name: "MANNOL Antifreeze AG13 -40C", sku: "MN4013-5", price: 520, unit: "шт", category: "Охлаждающие жидкости", inStock: true },
-  { id: "p8", name: "MANNOL Radiator Flush 0.5L", sku: "MN9711-05", price: 320, unit: "шт", category: "Автохимия", inStock: true },
-  { id: "p9", name: "MANNOL Transmission Fluid ATF Dexron VI", sku: "MN8207-4", price: 1200, unit: "шт", category: "Трансмиссионные масла", inStock: true },
-  { id: "p10", name: "MANNOL Brake Fluid DOT 4", sku: "MN8818-1", price: 280, unit: "шт", category: "Тормозные жидкости", inStock: true },
+  { id: "p1", name: "MANNOL Energy Formula OP 5W-30", sku: "MN7917-4", price: 1450, unit: "шт", category: "Моторные масла", inStock: true, stock: 24 },
+  { id: "p2", name: "MANNOL Diesel Extra 10W-40", sku: "MN7504-4", price: 1100, unit: "шт", category: "Моторные масла", inStock: true, stock: 6 },
+  { id: "p3", name: "MANNOL ATF AG52 Automatic Special", sku: "MN8211-4", price: 980, unit: "шт", category: "Трансмиссионные масла", inStock: true, stock: 40 },
+  { id: "p4", name: "MANNOL Longlife 504/507 5W-30", sku: "MN7715-4", price: 1680, unit: "шт", category: "Моторные масла", inStock: false, stock: 0 },
+  { id: "p5", name: "MANNOL Classic 10W-40 API SN/CF", sku: "MN7501-4", price: 1050, unit: "шт", category: "Моторные масла", inStock: true, stock: 18 },
+  { id: "p6", name: "MANNOL Compressor Oil ISO 100", sku: "MN2902-4", price: 890, unit: "шт", category: "Компрессорные масла", inStock: true, stock: 12 },
+  { id: "p7", name: "MANNOL Antifreeze AG13 -40C", sku: "MN4013-5", price: 520, unit: "шт", category: "Охлаждающие жидкости", inStock: true, stock: 50 },
+  { id: "p8", name: "MANNOL Radiator Flush 0.5L", sku: "MN9711-05", price: 320, unit: "шт", category: "Автохимия", inStock: true, stock: 8 },
+  { id: "p9", name: "MANNOL Transmission Fluid ATF Dexron VI", sku: "MN8207-4", price: 1200, unit: "шт", category: "Трансмиссионные масла", inStock: true, stock: 30 },
+  { id: "p10", name: "MANNOL Brake Fluid DOT 4", sku: "MN8818-1", price: 280, unit: "шт", category: "Тормозные жидкости", inStock: true, stock: 5 },
 ];
 
 const OrderNew = () => {
@@ -93,12 +94,30 @@ const OrderNew = () => {
   };
 
   const addToOrder = (product: CatalogProduct) => {
-    const qty = addQty[product.id] || 10;
+    const requested = addQty[product.id] || 10;
     const existing = cartItems.find((i) => i.id === product.id);
+    const alreadyInCart = existing?.quantity ?? 0;
+    const freeStock = Math.max(0, product.stock - alreadyInCart);
+    const added = Math.min(requested, freeStock);
+    const shortage = requested - added;
+
+    if (added === 0) {
+      toast.warning("Нет свободных остатков", {
+        description: (
+          <div className="text-sm space-y-1.5 mt-1">
+            <p>Весь доступный остаток уже добавлен в заказ ({product.stock} шт).</p>
+            <p className="text-amber-700">Недостающее количество можно будет добавить через «Недопоставки».</p>
+          </div>
+        ),
+        duration: 6000,
+      });
+      return;
+    }
+
     if (existing) {
       setCartItems((prev) =>
         prev.map((i) =>
-          i.id === product.id ? { ...i, quantity: i.quantity + qty } : i
+          i.id === product.id ? { ...i, quantity: i.quantity + added } : i
         )
       );
     } else {
@@ -109,16 +128,41 @@ const OrderNew = () => {
           name: product.name,
           sku: product.sku,
           price: product.price,
-          quantity: qty,
+          quantity: added,
           unit: product.unit,
         },
       ]);
     }
+
     setAddQty((prev) => ({ ...prev, [product.id]: 10 }));
-    toast.success(`Товар добавлен в заказ`, {
-      description: product.name,
-      duration: 2500,
-    });
+
+    if (shortage > 0) {
+      toast.warning("Недостаточно свободных остатков для полного выполнения заказа", {
+        description: (
+          <div className="text-sm space-y-2 mt-1">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-gray-700">
+              <span>Запрошено:</span><span className="font-semibold">{requested} шт</span>
+              <span>Доступно:</span><span className="font-semibold text-green-700">{freeStock} шт — добавлены в заказ</span>
+              <span>Нехватка:</span><span className="font-semibold text-amber-700">{shortage} шт</span>
+            </div>
+            <p className="text-gray-600 pt-0.5">
+              Оставшиеся <strong>{shortage} шт</strong> можно будет добавить через «Недопоставки».
+            </p>
+            <p className="text-gray-500">Вы также можете продолжить добавление других товаров.</p>
+          </div>
+        ),
+        duration: 8000,
+        action: {
+          label: "Недопоставки",
+          onClick: () => navigate("/backorders"),
+        },
+      });
+    } else {
+      toast.success("Товар добавлен в заказ", {
+        description: `${product.name} — ${added} шт`,
+        duration: 2500,
+      });
+    }
   };
 
   const handleFinish = () => {
@@ -401,6 +445,8 @@ const OrderNew = () => {
                 {filteredProducts.map((product) => {
                   const inCart = cartItems.find((i) => i.id === product.id);
                   const qty = addQty[product.id] ?? 10;
+                  const freeStock = Math.max(0, product.stock - (inCart?.quantity ?? 0));
+                  const stockLow = product.stock > 0 && product.stock <= 10;
                   return (
                     <div
                       key={product.id}
@@ -415,16 +461,28 @@ const OrderNew = () => {
                               В заказе: {inCart.quantity} шт
                             </Badge>
                           )}
-                          {!product.inStock && (
+                          {!product.inStock ? (
                             <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
                               Под заказ
                             </Badge>
-                          )}
+                          ) : freeStock === 0 ? (
+                            <Badge className="bg-amber-100 text-amber-700 text-xs border-0">
+                              Остаток исчерпан
+                            </Badge>
+                          ) : stockLow ? (
+                            <Badge className="bg-orange-100 text-orange-700 text-xs border-0">
+                              Мало на складе
+                            </Badge>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 text-sm text-gray-500">
                           <span>Арт: {product.sku}</span>
                           <span className="text-gray-300">·</span>
                           <span className="text-gray-400">{product.category}</span>
+                          <span className="text-gray-300">·</span>
+                          <span className={freeStock === 0 ? "text-amber-600 font-medium" : stockLow ? "text-orange-500 font-medium" : "text-gray-400"}>
+                            Свободно: {freeStock} шт
+                          </span>
                         </div>
                       </div>
 
