@@ -57,6 +57,8 @@ export interface OrderData {
   status: OrderStatus;
   orderType: OrderType;
   desiredShipmentDate: string;
+  /** Плановая дата отгрузки — заполняется менеджером после подтверждения заказа */
+  plannedShipmentDate?: string;
   warehouse: string;
   manager: string;
   managerPhone: string;
@@ -216,9 +218,10 @@ export const MOCK_ORDER: OrderData = {
   createdAt: "15.02.2026 09:15",
   updatedAt: "18.02.2026 14:30",
   sentAt: "15.02.2026 09:45",
-  status: "needs-approval",
+  status: "scheduled",
   orderType: "regular",
   desiredShipmentDate: "25.02.2026",
+  plannedShipmentDate: "28.02.2026",
   warehouse: "Склад Москва (Подольск)",
   manager: "Иванова Мария Сергеевна",
   managerPhone: "+7 (495) 123-45-67",

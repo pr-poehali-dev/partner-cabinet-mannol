@@ -582,7 +582,7 @@ const OrderReview = () => {
         </Card>
 
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <Button
               variant="outline"
               className="border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -593,7 +593,10 @@ const OrderReview = () => {
                 Назад к заказу
               </Link>
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="hidden sm:block text-xs text-gray-400 text-right max-w-[160px] leading-tight">
+                Хотите добавить товары для более полной загрузки?
+              </div>
               <Button
                 variant="outline"
                 className="border-[#27265C]/30 text-[#27265C] hover:bg-[#27265C]/5"
@@ -601,7 +604,7 @@ const OrderReview = () => {
               >
                 <Link to={`/order/${orderId}/adjust`}>
                   <Icon name="PackagePlus" className="w-4 h-4 mr-2" />
-                  Дозаказать товары
+                  Добавить товары (дозаказ)
                 </Link>
               </Button>
               <Button

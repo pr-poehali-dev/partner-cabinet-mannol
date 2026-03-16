@@ -32,9 +32,9 @@ const OrderSend = () => {
 
   const state = (location.state as LocationState) || {};
   const cartItems: CartItem[] = state.cartItems ?? [];
-  const desiredDate: string = state.desiredDate ?? MOCK_ORDER.desiredShipmentDate;
+  const desiredDate: string = state.desiredDate ?? "";
 
-  const displayItems = cartItems.length > 0 ? cartItems : [];
+  const displayItems = cartItems;
 
   const totalAmount = displayItems.reduce((s, i) => s + i.quantity * i.price, 0);
   const totalQty = displayItems.reduce((s, i) => s + i.quantity, 0);
@@ -59,6 +59,29 @@ const OrderSend = () => {
 
   const currentStepIndex = 0;
   const nextStepIndex = 1;
+
+  // Если попали сюда без данных корзины — показываем заглушку
+  if (displayItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-6">
+        <div className="max-w-md text-center">
+          <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Icon name="ShoppingCart" className="w-8 h-8 text-amber-600" />
+          </div>
+          <h2 className="text-xl font-bold text-[#27265C] mb-2">Нет товаров для отправки</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Вы попали на эту страницу без состава заказа. Вернитесь и оформите заказ через кнопку «Отправить на согласование».
+          </p>
+          <Button className="bg-[#27265C] text-white" asChild>
+            <Link to="/order/new">
+              <Icon name="ArrowLeft" className="w-4 h-4 mr-2" />
+              Вернуться к заказу
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50">

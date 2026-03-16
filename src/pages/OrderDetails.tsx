@@ -425,12 +425,35 @@ const OrderDetails = () => {
                     производством.
                   </div>
                 ) : (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Желаемая дата отгрузки</span>
-                    <span className="font-semibold">
-                      {order.desiredShipmentDate}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Желаемая дата отгрузки</span>
+                      <span className="font-semibold">{order.desiredShipmentDate}</span>
+                    </div>
+                    {order.plannedShipmentDate && ["scheduled", "confirmed", "shipped"].includes(order.status) && (
+                      <>
+                        <Separator />
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon name="CalendarCheck" size={15} className="text-green-600" />
+                            <span className="text-sm font-semibold text-green-800">Плановая дата отгрузки</span>
+                            <Badge className="bg-green-600 text-white border-0 text-[10px] px-1.5 py-0">Подтверждено</Badge>
+                          </div>
+                          <p className="text-lg font-bold text-green-700">{order.plannedShipmentDate}</p>
+                          <p className="text-xs text-green-600 mt-0.5">Назначена менеджером. Ожидайте отгрузку.</p>
+                        </div>
+                      </>
+                    )}
+                    {!order.plannedShipmentDate && ["sent", "processing", "needs-approval"].includes(order.status) && (
+                      <>
+                        <Separator />
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Icon name="CalendarClock" size={14} />
+                          <span>Плановая дата будет назначена менеджером</span>
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
                 <Separator />
                 <div className="flex justify-between text-sm">
@@ -917,85 +940,132 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        {editable && (
+        {/* ── Блок действий: зависит от статуса ── */}
+        {order.status === "draft" && (
           <Card className="border-[#27265C]">
             <CardContent className="p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-[#27265C] text-lg flex items-center gap-2">
-                    <Icon name="Zap" size={20} />
-                    Что вы можете сделать сейчас?
+                    <Icon name="Send" size={20} />
+                    Заказ готов к отправке?
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Проверьте позиции, добавьте товары при необходимости и
-                    выберите следующий шаг.
+                    Проверьте состав заказа и отправьте его менеджеру на согласование.
                   </p>
                 </div>
-                <div className="flex gap-3 flex-wrap">
-                  {order.status === "draft" && (
-                    <Button
-                      className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
-                      asChild
-                    >
-                      <Link to={`/order/${order.id}/send`}>
-                        <Icon name="Send" size={18} className="mr-2" />
-                        Отправить на согласование
-                      </Link>
-                    </Button>
-                  )}
-                  {order.status === "needs-approval" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="border-[#27265C] text-[#27265C]"
-                        asChild
-                      >
-                        <Link to={`/order/${order.id}/review`}>
-                          <Icon name="ClipboardList" size={18} className="mr-2" />
-                          Посмотреть результат обработки
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-[#27265C] text-[#27265C]"
-                        asChild
-                      >
-                        <Link to={`/order/${order.id}/adjust`}>
-                          <Icon name="PackagePlus" size={18} className="mr-2" />
-                          Дозаказать товары
-                        </Link>
-                      </Button>
-                      <Button
-                        className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
-                        asChild
-                      >
-                        <Link to={`/order/${order.id}/confirm`}>
-                          <Icon name="CheckCircle" size={18} className="mr-2" />
-                          Подтвердить заказ
-                        </Link>
-                      </Button>
-                    </>
-                  )}
+                <Button
+                  className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold shrink-0"
+                  asChild
+                >
+                  <Link to={`/order/${order.id}/send`}>
+                    <Icon name="Send" size={18} className="mr-2" />
+                    Отправить на согласование
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(order.status === "sent" || order.status === "processing") && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Clock" size={22} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-blue-800 text-lg">
+                    Заказ у менеджера
+                  </h3>
+                  <p className="text-sm text-blue-700 mt-0.5">
+                    Менеджер проверяет наличие, цены и условия поставки. Обычно это занимает 1–2 рабочих дня.
+                    Вы получите уведомление, когда потребуется ваше решение.
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {locked && (
+        {order.status === "needs-approval" && (
+          <Card className="border-[#27265C]">
+            <CardContent className="p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-[#27265C] text-lg flex items-center gap-2">
+                    <Icon name="Zap" size={20} />
+                    Требуется ваше решение
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Менеджер обработал заказ. Изучите результат, при необходимости добейте фуру и подтвердите.
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap shrink-0">
+                  <Button
+                    variant="outline"
+                    className="border-[#27265C] text-[#27265C]"
+                    asChild
+                  >
+                    <Link to={`/order/${order.id}/review`}>
+                      <Icon name="ClipboardList" size={16} className="mr-1.5" />
+                      Результат обработки
+                    </Link>
+                  </Button>
+                  <Button
+                    className="bg-[#27265C] hover:bg-[#27265C]/90 text-white font-semibold"
+                    asChild
+                  >
+                    <Link to={`/order/${order.id}/confirm`}>
+                      <Icon name="CheckCircle" size={16} className="mr-1.5" />
+                      Подтвердить заказ
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(order.status === "confirmed" || order.status === "scheduled") && (
           <Card className="border-green-300 bg-green-50">
             <CardContent className="p-5">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <Icon name="CheckCircle" size={22} className="text-green-600" />
+                  <Icon name="CalendarCheck" size={22} className="text-green-600" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-bold text-green-800 text-lg">
-                    Заказ подтверждён
+                    Заказ подтверждён и поставлен в график отгрузки
                   </h3>
                   <p className="text-sm text-green-700 mt-0.5">
-                    Заказ зафиксирован и передан в график отгрузки. Ожидайте уведомления о дате отгрузки.
+                    {order.plannedShipmentDate
+                      ? `Плановая дата отгрузки: ${order.plannedShipmentDate}. Следите за статусом в разделе «График отгрузок».`
+                      : "Менеджер назначит дату отгрузки в ближайшее время."}
                   </p>
+                </div>
+                <Button variant="outline" className="border-green-400 text-green-800 hover:bg-green-100 shrink-0" asChild>
+                  <Link to="/schedule">
+                    <Icon name="Calendar" size={16} className="mr-1.5" />
+                    График отгрузок
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {order.status === "shipped" && (
+          <Card className="border-emerald-300 bg-emerald-50">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Truck" size={22} className="text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-emerald-800 text-lg">Заказ отгружен</h3>
+                  <p className="text-sm text-emerald-700 mt-0.5">Товар передан в доставку. Документы доступны для скачивания.</p>
                 </div>
               </div>
             </CardContent>
