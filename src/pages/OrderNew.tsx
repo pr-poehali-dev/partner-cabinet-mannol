@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,6 +36,14 @@ interface CatalogProduct {
 
 const ORDER_ID = "ORD-2026-0215";
 
+// Демо: плановая дата, подтверждённая менеджером (null = ещё не подтверждена)
+const PLANNED_DATE: string | null = "2026-03-18";
+
+function formatDateRu(isoDate: string): string {
+  const d = new Date(isoDate + "T00:00:00");
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
 const CATALOG: CatalogProduct[] = [
   { id: "p1", name: "MANNOL Energy Formula OP 5W-30", sku: "MN7917-4", price: 1450, unit: "шт", category: "Моторные масла", inStock: true },
   { id: "p2", name: "MANNOL Diesel Extra 10W-40", sku: "MN7504-4", price: 1100, unit: "шт", category: "Моторные масла", inStock: true },
@@ -48,6 +62,7 @@ const OrderNew = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [addQty, setAddQty] = useState<Record<string, number>>({});
+  const [desiredDate, setDesiredDate] = useState("");
 
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return CATALOG;
@@ -165,6 +180,70 @@ const OrderNew = () => {
       </div>
 
       <div className="space-y-6 p-6">
+        {/* Блок: даты */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Желаемая дата отгрузки — запрос клиента */}
+          <Card className="border-dashed border-gray-300 bg-gray-50/60">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon name="CalendarDays" size={17} className="text-gray-500" />
+                <span className="font-semibold text-gray-700 text-sm">Желаемая дата отгрузки</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">
+                        <Icon name="Info" size={15} className="text-gray-400" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-56 text-xs leading-relaxed">
+                      Это предпочтительная дата. Окончательная дата отгрузки будет подтверждена менеджером после обработки заказа.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                type="date"
+                value={desiredDate}
+                onChange={(e) => setDesiredDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="bg-white border-gray-300 text-[#27265C]"
+              />
+              <p className="mt-2.5 text-xs text-gray-400 leading-snug">
+                Это предпочтительная дата. Окончательная дата будет подтверждена менеджером.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Плановая дата отгрузки — подтверждена менеджером */}
+          {PLANNED_DATE ? (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="CalendarCheck" size={17} className="text-green-600" />
+                  <span className="font-semibold text-green-800 text-sm">Плановая дата отгрузки</span>
+                  <Badge className="bg-green-600 text-white border-0 text-[11px] px-2 py-0">
+                    Подтверждено
+                  </Badge>
+                </div>
+                <p className="text-2xl font-bold text-green-700 leading-tight">
+                  {formatDateRu(PLANNED_DATE)}
+                </p>
+                <p className="mt-2.5 text-xs text-green-600 leading-snug">
+                  Дата подтверждена менеджером и является официальной датой отгрузки.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed border-gray-200 bg-gray-50/30">
+              <CardContent className="pt-5 pb-4 flex flex-col items-center justify-center h-full text-center py-8">
+                <Icon name="CalendarClock" size={28} className="text-gray-300 mb-2" />
+                <p className="text-sm text-gray-400 font-medium">Плановая дата отгрузки</p>
+                <p className="text-xs text-gray-400 mt-1">Будет назначена менеджером<br/>после обработки заказа</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         {/* Блок: товары в заказе */}
         <Card>
           <CardHeader className="pb-3">
