@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  OrderData,
   ORDER_STATUS_CONFIG,
   STATUS_STEPS,
   formatWeight,
@@ -16,37 +15,34 @@ import {
   MOCK_ORDER,
   MAX_TRUCK_WEIGHT,
 } from "@/types/order";
+import { CartItem } from "@/pages/OrderNew";
+
+interface LocationState {
+  cartItems?: CartItem[];
+  desiredDate?: string;
+}
 
 const OrderSend = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [itemsExpanded, setItemsExpanded] = useState(false);
 
-  const order: OrderData = {
-    ...MOCK_ORDER,
-    id: orderId || MOCK_ORDER.id,
-    status: "draft",
-  };
+  const state = (location.state as LocationState) || {};
+  const cartItems: CartItem[] = state.cartItems ?? [];
+  const desiredDate: string = state.desiredDate ?? MOCK_ORDER.desiredShipmentDate;
 
-  const totalWeight = useMemo(
-    () =>
-      order.items.reduce(
-        (sum, item) => sum + item.qtyRequested * item.weightPerUnit,
-        0
-      ),
-    [order.items]
-  );
+  const displayItems = cartItems.length > 0 ? cartItems : [];
 
-  const totalAmount = useMemo(
-    () =>
-      order.items.reduce(
-        (sum, item) => sum + item.qtyRequested * item.price,
-        0
-      ),
-    [order.items]
-  );
+  const totalAmount = displayItems.reduce((s, i) => s + i.quantity * i.price, 0);
+  const totalQty = displayItems.reduce((s, i) => s + i.quantity, 0);
+  const hasBackorders = displayItems.some((i) => i.isBackorder);
+
+  // Примерный вес: 4 кг на единицу (заглушка — реальный вес придёт с бэкенда)
+  const AVG_WEIGHT_PER_UNIT = 4;
+  const totalWeight = displayItems.reduce((s, i) => s + i.quantity * AVG_WEIGHT_PER_UNIT, 0);
 
   const truckLoadPercent = Math.min((totalWeight / MAX_TRUCK_WEIGHT) * 100, 100);
 
@@ -55,7 +51,7 @@ const OrderSend = () => {
     setTimeout(() => {
       toast({
         title: "Заказ отправлен на согласование",
-        description: `Заказ ${order.id} успешно отправлен менеджеру. Ожидайте обработки в течение 1-2 рабочих дней.`,
+        description: `Заказ ${orderId} успешно отправлен менеджеру. Ожидайте обработки в течение 1-2 рабочих дней.`,
       });
       navigate(`/order/${orderId}`);
     }, 1200);
@@ -81,7 +77,7 @@ const OrderSend = () => {
                 Отправка заказа на согласование
               </h1>
               <p className="text-gray-500 mt-1 text-sm">
-                Заказ {order.id} будет направлен менеджеру для проверки и подтверждения
+                Заказ {orderId} будет направлен менеджеру для проверки и подтверждения
               </p>
             </div>
             <Badge
@@ -198,7 +194,7 @@ const OrderSend = () => {
                   </div>
                   <span className="text-[11px] text-gray-500 font-medium">Позиций</span>
                 </div>
-                <p className="text-lg font-bold text-[#27265C]">{order.items.length}</p>
+                <p className="text-lg font-bold text-[#27265C]">{displayItems.length}</p>
               </div>
 
               <div className="bg-gray-50 rounded-xl p-3.5">
@@ -233,7 +229,7 @@ const OrderSend = () => {
                   <span className="text-[11px] text-gray-500 font-medium">Отгрузка</span>
                 </div>
                 <p className="text-sm font-bold text-[#27265C]">
-                  {order.desiredShipmentDate}
+                  {desiredDate}
                 </p>
               </div>
             </div>
@@ -263,7 +259,7 @@ const OrderSend = () => {
               <Icon name="Warehouse" className="w-4 h-4 text-[#27265C]/60 shrink-0" />
               <div>
                 <p className="text-xs text-gray-500">Склад отгрузки</p>
-                <p className="text-sm font-semibold text-[#27265C]">{order.warehouse}</p>
+                <p className="text-sm font-semibold text-[#27265C]">{MOCK_ORDER.warehouse}</p>
               </div>
             </div>
           </CardContent>
@@ -363,48 +359,68 @@ const OrderSend = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-0">
-              {(itemsExpanded ? order.items : order.items.slice(0, 3)).map(
-                (item, index) => (
-                  <div key={item.id}>
-                    {index > 0 && <Separator className="my-0" />}
-                    <div className="flex items-center justify-between py-3 gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs text-gray-400 font-mono">
-                            {item.sku}
-                          </span>
+            {displayItems.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 text-sm">
+                Нет позиций — вернитесь и добавьте товары в заказ
+              </div>
+            ) : (
+              <div className="space-y-0">
+                {(itemsExpanded ? displayItems : displayItems.slice(0, 3)).map(
+                  (item, index) => (
+                    <div key={item.id}>
+                      {index > 0 && <Separator className="my-0" />}
+                      <div className="flex items-center justify-between py-3 gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-xs text-gray-400 font-mono">
+                              {item.sku}
+                            </span>
+                            {item.isBackorder && (
+                              <Badge className="bg-blue-100 text-blue-700 text-[10px] border-0 py-0 px-1.5">
+                                Под заказ
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-[#27265C] truncate">
+                            {item.name}
+                          </p>
                         </div>
-                        <p className="text-sm font-medium text-[#27265C] truncate">
-                          {item.name}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-[#27265C]">
-                          {item.qtyRequested} x {formatCurrency(item.price)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatCurrency(item.qtyRequested * item.price)}
-                        </p>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold text-[#27265C]">
+                            {item.quantity} x {formatCurrency(item.price)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatCurrency(item.quantity * item.price)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              )}
-            </div>
-            {!itemsExpanded && order.items.length > 3 && (
+                  )
+                )}
+              </div>
+            )}
+            {!itemsExpanded && displayItems.length > 3 && (
               <div className="pt-2 border-t border-dashed border-gray-200">
                 <button
                   onClick={() => setItemsExpanded(true)}
                   className="text-xs text-[#27265C] font-medium hover:underline"
                 >
-                  + ещё {order.items.length - 3} позиций
+                  + ещё {displayItems.length - 3} позиций
                 </button>
+              </div>
+            )}
+            {hasBackorders && (
+              <div className="mt-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-800">
+                <Icon name="Info" className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
+                <span>Позиции «Под заказ» отгружаются отдельно. Менеджер уточнит сроки и условия.</span>
               </div>
             )}
             <Separator className="my-3" />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">Итого</span>
+              <div>
+                <span className="text-sm font-medium text-gray-600">Итого</span>
+                <p className="text-xs text-gray-400">{totalQty} шт · {displayItems.length} позиций</p>
+              </div>
               <span className="text-base font-bold text-[#27265C]">
                 {formatCurrency(totalAmount)}
               </span>
@@ -426,16 +442,16 @@ const OrderSend = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-[#27265C]">
-                  {order.manager}
+                  {MOCK_ORDER.manager}
                 </p>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1">
                   <span className="text-xs text-gray-500 flex items-center gap-1.5">
                     <Icon name="Phone" className="w-3 h-3" />
-                    {order.managerPhone}
+                    {MOCK_ORDER.managerPhone}
                   </span>
                   <span className="text-xs text-gray-500 flex items-center gap-1.5">
                     <Icon name="Mail" className="w-3 h-3" />
-                    {order.managerEmail}
+                    {MOCK_ORDER.managerEmail}
                   </span>
                 </div>
               </div>
