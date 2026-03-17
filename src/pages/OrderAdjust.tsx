@@ -9,8 +9,6 @@ import Icon from "@/components/ui/icon";
 import { useToast } from "@/components/ui/use-toast";
 import {
   MOCK_ORDER,
-  MAX_TRUCK_WEIGHT,
-  formatWeight,
   formatCurrency,
 } from "@/types/order";
 import { catalogData, type Product } from "@/data/catalogData";
@@ -45,34 +43,15 @@ const OrderAdjust = () => {
     [order.items]
   );
 
-  const confirmedWeight = useMemo(
-    () => confirmedItems.reduce((s, i) => s + i.qtyConfirmed * i.weightPerUnit, 0),
-    [confirmedItems]
-  );
-
   const confirmedAmount = useMemo(
     () => confirmedItems.reduce((s, i) => s + i.qtyConfirmed * i.price, 0),
     [confirmedItems]
-  );
-
-  const addedWeight = useMemo(
-    () => cart.reduce((s, a) => s + a.qty * a.weightPerUnit, 0),
-    [cart]
   );
 
   const addedAmount = useMemo(
     () => cart.reduce((s, a) => s + a.qty * a.price, 0),
     [cart]
   );
-
-  const totalWeight = confirmedWeight + addedWeight;
-  const remaining = MAX_TRUCK_WEIGHT - totalWeight;
-  const loadPercent = Math.min((totalWeight / MAX_TRUCK_WEIGHT) * 100, 100);
-
-  const loadBarColor =
-    loadPercent >= 80 ? "bg-green-500" : loadPercent >= 50 ? "bg-yellow-500" : "bg-blue-400";
-  const loadTextColor =
-    loadPercent >= 80 ? "text-green-600" : loadPercent >= 50 ? "text-yellow-600" : "text-blue-500";
 
   const getPackSize = (productId: string) =>
     selectedPackaging[productId] || "";
@@ -212,65 +191,7 @@ const OrderAdjust = () => {
           </div>
         </div>
 
-        {/* Загрузка фуры */}
-        <Card className="mb-5 border-0 shadow-sm overflow-hidden">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-[#27265C]/10 flex items-center justify-center shrink-0">
-                <Icon name="Truck" className="w-5 h-5 text-[#27265C]" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold text-[#27265C]">Загрузка фуры</span>
-                  <span className={`text-base font-bold ${loadTextColor}`}>
-                    {loadPercent.toFixed(0)}%
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400">
-                  {formatWeight(totalWeight)} / {formatWeight(MAX_TRUCK_WEIGHT)}
-                </p>
-              </div>
-            </div>
-            <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-2">
-              <div
-                className="absolute inset-y-0 left-0 bg-green-500 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((confirmedWeight / MAX_TRUCK_WEIGHT) * 100, 100)}%` }}
-              />
-              {addedWeight > 0 && (
-                <div
-                  className="absolute inset-y-0 bg-[#FCC71E] rounded-r-full transition-all duration-500"
-                  style={{
-                    left: `${Math.min((confirmedWeight / MAX_TRUCK_WEIGHT) * 100, 100)}%`,
-                    width: `${Math.min((addedWeight / MAX_TRUCK_WEIGHT) * 100, 100 - (confirmedWeight / MAX_TRUCK_WEIGHT) * 100)}%`,
-                  }}
-                />
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-green-500" />
-                  <span className="text-[11px] text-gray-500">Подтверждено</span>
-                </div>
-                {addedWeight > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-[#FCC71E]" />
-                    <span className="text-[11px] text-gray-500">Дозаказ</span>
-                  </div>
-                )}
-              </div>
-              {remaining > 0 ? (
-                <span className="text-xs text-blue-700 font-medium bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                  Свободно {formatWeight(remaining)}
-                </span>
-              ) : (
-                <span className="text-xs text-green-700 font-medium bg-green-50 px-2.5 py-1 rounded-full border border-green-100">
-                  Фура загружена
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Корзина дозаказа — раскрывающийся блок */}
         {cartOpen && (
