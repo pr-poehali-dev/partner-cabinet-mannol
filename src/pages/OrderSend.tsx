@@ -3,17 +3,14 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { useToast } from "@/components/ui/use-toast";
 import {
   ORDER_STATUS_CONFIG,
   STATUS_STEPS,
-  formatWeight,
   formatCurrency,
   MOCK_ORDER,
-  MAX_TRUCK_WEIGHT,
 } from "@/types/order";
 import { CartItem } from "@/pages/OrderNew";
 
@@ -39,12 +36,6 @@ const OrderSend = () => {
   const totalAmount = displayItems.reduce((s, i) => s + i.quantity * i.price, 0);
   const totalQty = displayItems.reduce((s, i) => s + i.quantity, 0);
   const hasBackorders = displayItems.some((i) => i.isBackorder);
-
-  // Примерный вес: 4 кг на единицу (заглушка — реальный вес придёт с бэкенда)
-  const AVG_WEIGHT_PER_UNIT = 4;
-  const totalWeight = displayItems.reduce((s, i) => s + i.quantity * AVG_WEIGHT_PER_UNIT, 0);
-
-  const truckLoadPercent = Math.min((totalWeight / MAX_TRUCK_WEIGHT) * 100, 100);
 
   const handleSend = () => {
     setIsSending(true);
@@ -222,18 +213,6 @@ const OrderSend = () => {
 
               <div className="bg-gray-50 rounded-xl p-3.5">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-7 h-7 rounded-lg bg-[#27265C]/10 flex items-center justify-center">
-                    <Icon name="Weight" className="w-3.5 h-3.5 text-[#27265C]" />
-                  </div>
-                  <span className="text-[11px] text-gray-500 font-medium">Вес</span>
-                </div>
-                <p className="text-lg font-bold text-[#27265C]">
-                  {formatWeight(totalWeight)}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-3.5">
-                <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center">
                     <Icon name="Banknote" className="w-3.5 h-3.5 text-green-700" />
                   </div>
@@ -255,27 +234,6 @@ const OrderSend = () => {
                   {desiredDate}
                 </p>
               </div>
-            </div>
-
-            <div className="mt-4 bg-gray-50 rounded-xl p-3.5">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Icon name="Truck" className="w-4 h-4 text-[#27265C]/60" />
-                  <span className="text-xs font-medium text-gray-600">
-                    Загрузка автомобиля
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-[#27265C]">
-                  {formatWeight(totalWeight)} / {formatWeight(MAX_TRUCK_WEIGHT)}
-                </span>
-              </div>
-              <Progress
-                value={truckLoadPercent}
-                className="h-2.5 bg-gray-200"
-              />
-              <p className="text-[11px] text-gray-400 mt-1.5">
-                {truckLoadPercent.toFixed(0)}% загрузки ({formatWeight(MAX_TRUCK_WEIGHT - totalWeight)} свободно)
-              </p>
             </div>
 
             <div className="mt-4 flex items-center gap-2 bg-gray-50 rounded-xl px-3.5 py-3">

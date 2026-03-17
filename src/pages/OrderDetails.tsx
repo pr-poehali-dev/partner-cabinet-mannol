@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
   TooltipContent,
@@ -27,10 +26,8 @@ import {
   ORDER_STATUS_CONFIG,
   STATUS_STEPS,
   LINE_STATUS_CONFIG,
-  MAX_TRUCK_WEIGHT,
   MOCK_ORDER,
   MOCK_RECOMMENDATIONS,
-  formatWeight,
   formatCurrency,
   daysSince,
   isOrderLocked,
@@ -47,17 +44,6 @@ const OrderDetails = () => {
   const [addedRecommendations, setAddedRecommendations] = useState<Set<string>>(
     new Set()
   );
-
-  const totalWeightKg = useMemo(() => {
-    return order.items.reduce((sum, item) => {
-      const qty =
-        item.lineStatus === "rejected-auto" ? 0 : item.qtyConfirmed || item.qtyRequested;
-      return sum + qty * item.weightPerUnit;
-    }, 0);
-  }, [order.items]);
-
-  const truckLoadPercent = Math.min((totalWeightKg / MAX_TRUCK_WEIGHT) * 100, 100);
-  const remainingWeightKg = Math.max(MAX_TRUCK_WEIGHT - totalWeightKg, 0);
 
   const totalAmount = useMemo(() => {
     return order.items.reduce((sum, item) => {
@@ -500,86 +486,7 @@ const OrderDetails = () => {
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-[#27265C] flex items-center gap-2">
-                <Icon name="Weight" size={20} />
-                Загрузка транспорта
-              </CardTitle>
-              <CardDescription>
-                Максимальная загрузка фуры: {formatWeight(MAX_TRUCK_WEIGHT)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Текущий вес заказа</span>
-                  <span className="text-[#27265C] font-bold text-lg">
-                    {formatWeight(totalWeightKg)}
-                  </span>
-                </div>
-                <Progress
-                  value={truckLoadPercent}
-                  className="h-6 bg-gray-200"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>0 т</span>
-                  <span>{formatWeight(MAX_TRUCK_WEIGHT)}</span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-[#27265C]/5 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-[#27265C]">
-                    {truckLoadPercent.toFixed(0)}%
-                  </div>
-                  <div className="text-xs text-gray-600">Загружено</div>
-                </div>
-                <div className="bg-[#FCC71E]/10 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-[#27265C]">
-                    {formatWeight(totalWeightKg)}
-                  </div>
-                  <div className="text-xs text-gray-600">Текущий вес</div>
-                </div>
-                <div
-                  className={`rounded-lg p-3 text-center ${
-                    remainingWeightKg > 2000
-                      ? "bg-amber-50"
-                      : remainingWeightKg > 0
-                      ? "bg-green-50"
-                      : "bg-green-100"
-                  }`}
-                >
-                  <div
-                    className={`text-xl font-bold ${
-                      remainingWeightKg > 2000
-                        ? "text-amber-700"
-                        : "text-green-700"
-                    }`}
-                  >
-                    {formatWeight(remainingWeightKg)}
-                  </div>
-                  <div className="text-xs text-gray-600">Осталось</div>
-                </div>
-              </div>
-
-              {remainingWeightKg > 1000 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
-                  <Icon
-                    name="TrendingUp"
-                    size={20}
-                    className="text-amber-600 flex-shrink-0"
-                  />
-                  <div className="text-sm text-amber-800">
-                    <span className="font-semibold">Совет:</span> До полной
-                    загрузки фуры осталось {formatWeight(remainingWeightKg)}.
-                    Добавьте товары из рекомендаций ниже для оптимальной
-                    логистики.
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         <Card>
@@ -860,11 +767,10 @@ const OrderDetails = () => {
                 </div>
                 <div>
                   <CardTitle className="text-[#27265C]">
-                    Рекомендуемые товары для добивки
+                    Рекомендуемые товары
                   </CardTitle>
                   <CardDescription>
-                    Популярные товары категории A, всегда в наличии. Осталось{" "}
-                    {formatWeight(remainingWeightKg)} до полной загрузки.
+                    Популярные товары категории A, всегда в наличии.
                   </CardDescription>
                 </div>
               </div>

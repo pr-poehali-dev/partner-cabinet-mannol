@@ -14,8 +14,6 @@ import {
   STATUS_STEPS,
   LINE_STATUS_CONFIG,
   formatCurrency,
-  formatWeight,
-  MAX_TRUCK_WEIGHT,
   OrderData,
   OrderItem,
 } from "@/types/order";
@@ -86,20 +84,6 @@ const OrderConfirm = () => {
   const totalAmount = useMemo(
     () => includedItems.reduce((s, i) => s + getShipQty(i) * i.price, 0),
     [includedItems]
-  );
-
-  const totalWeight = useMemo(
-    () =>
-      includedItems.reduce(
-        (s, i) => s + getShipQty(i) * i.weightPerUnit,
-        0
-      ),
-    [includedItems]
-  );
-
-  const truckLoadPercent = Math.min(
-    (totalWeight / MAX_TRUCK_WEIGHT) * 100,
-    100
   );
 
   const handleConfirm = () => {
@@ -374,10 +358,6 @@ const OrderConfirm = () => {
                 <p className="text-[11px] text-white/60 font-medium mb-1">Количество</p>
                 <p className="text-xl font-bold">{totalQty.toLocaleString("ru-RU")} шт</p>
               </div>
-              <div className="bg-white/10 rounded-xl p-3.5">
-                <p className="text-[11px] text-white/60 font-medium mb-1">Общий вес</p>
-                <p className="text-xl font-bold">{formatWeight(totalWeight)}</p>
-              </div>
             </div>
             <div className="bg-white/10 rounded-xl p-4 mb-5">
               <div className="flex items-center justify-between mb-1">
@@ -388,23 +368,6 @@ const OrderConfirm = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-white/10 rounded-xl p-3.5">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="Truck" className="w-4 h-4 text-white/60" />
-                    <span className="text-xs text-white/70">Загрузка фуры</span>
-                  </div>
-                  <span className="text-xs font-bold text-[#FCC71E]">
-                    {truckLoadPercent.toFixed(0)}%
-                  </span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#FCC71E] rounded-full transition-all duration-500"
-                    style={{ width: `${truckLoadPercent}%` }}
-                  />
-                </div>
-              </div>
               <div className="bg-white/10 rounded-xl p-3.5 space-y-2">
                 <div className="flex items-center gap-2">
                   <Icon name="CalendarDays" className="w-4 h-4 text-white/60" />

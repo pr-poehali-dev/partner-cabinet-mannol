@@ -18,10 +18,7 @@ interface AdjustItem {
   packagingSize: string;
   qty: number;
   price: number;
-  weightPerUnit: number;
 }
-
-const AVG_WEIGHT_PER_UNIT = 3.5;
 
 const OrderAdjust = () => {
   const { orderId } = useParams();
@@ -97,7 +94,6 @@ const OrderAdjust = () => {
           packagingSize: pack.size,
           qty,
           price: pack.price,
-          weightPerUnit: AVG_WEIGHT_PER_UNIT,
         },
       ]);
     }
@@ -173,7 +169,7 @@ const OrderAdjust = () => {
             <div>
               <h1 className="text-2xl font-bold text-[#27265C]">Дозаказ товаров</h1>
               <p className="text-gray-500 mt-1 text-sm">
-                Заказ {order.id} — добавьте позиции для оптимальной загрузки фуры
+                Заказ {order.id} — добавьте позиции к заказу
               </p>
             </div>
             <Button
