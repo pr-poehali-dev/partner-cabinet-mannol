@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
-import { useToast } from "@/components/ui/use-toast";
 import {
   ORDER_STATUS_CONFIG,
   STATUS_STEPS,
@@ -23,7 +22,6 @@ const OrderSend = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [itemsExpanded, setItemsExpanded] = useState(false);
 
@@ -40,11 +38,7 @@ const OrderSend = () => {
   const handleSend = () => {
     setIsSending(true);
     setTimeout(() => {
-      toast({
-        title: "Заказ отправлен на согласование",
-        description: `Заказ ${orderId} успешно отправлен менеджеру. Ожидайте обработки в течение 1-2 рабочих дней.`,
-      });
-      navigate(`/order/${orderId}`);
+      navigate(`/order/${orderId}/success?type=sent`);
     }, 1200);
   };
 

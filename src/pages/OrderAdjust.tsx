@@ -108,11 +108,7 @@ const OrderAdjust = () => {
   const handleSubmit = () => {
     setIsSubmitting(true);
     setTimeout(() => {
-      toast({
-        title: "Дозаказ отправлен",
-        description: `Дополнительные позиции добавлены к заказу ${order.id} и переданы менеджеру.`,
-      });
-      navigate(`/order/${orderId}/confirm`);
+      navigate(`/order/${orderId}/success?type=adjusted`);
     }, 1200);
   };
 

@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import Icon from "@/components/ui/icon";
-import { useToast } from "@/components/ui/use-toast";
 import {
   MOCK_ORDER,
   ORDER_STATUS_CONFIG,
@@ -21,7 +20,6 @@ import {
 const OrderConfirm = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [agreed, setAgreed] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -89,11 +87,7 @@ const OrderConfirm = () => {
   const handleConfirm = () => {
     setIsConfirming(true);
     setTimeout(() => {
-      toast({
-        title: "Заказ подтверждён",
-        description: `Заказ ${order.id} подтверждён и передан в график отгрузки. Ожидайте уведомления о дате отгрузки.`,
-      });
-      navigate(`/order/${orderId}`);
+      navigate(`/order/${orderId}/success?type=confirmed`);
     }, 1500);
   };
 

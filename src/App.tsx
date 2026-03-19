@@ -20,6 +20,7 @@ import OrderSend from "./pages/OrderSend";
 import OrderReview from "./pages/OrderReview";
 import OrderAdjust from "./pages/OrderAdjust";
 import OrderConfirm from "./pages/OrderConfirm";
+import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import Backorders from "./pages/Backorders";
 import Schedule from "./pages/Schedule";
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/order/:orderId/review" element={<OrderReview />} />
             <Route path="/order/:orderId/adjust" element={<OrderAdjust />} />
             <Route path="/order/:orderId/confirm" element={<OrderConfirm />} />
+            <Route path="/order/:orderId/success" element={<OrderSuccess />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:orderId/details" element={<Orders />} />
             <Route path="/backorders" element={<Backorders />} />
