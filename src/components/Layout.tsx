@@ -198,7 +198,7 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       <div
-        className={`transition-all duration-300 lg:${isSidebarOpen ? "ml-64" : "ml-20"}`}
+        className={`transition-all duration-300 ${isSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}
       >
         <DebtBanner />
 

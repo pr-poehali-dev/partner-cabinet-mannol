@@ -346,7 +346,7 @@ const OrderNew = () => {
         </div>
       </div>
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 md:p-6">
         {/* Блок: дата отгрузки */}
         <Card className="border-dashed border-gray-300 bg-gray-50/60">
           <CardContent className="pt-5 pb-4">

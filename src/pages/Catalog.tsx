@@ -110,7 +110,7 @@ const Catalog = () => {
   const [isCatalogSidebarOpen, setIsCatalogSidebarOpen] = useState(false);
 
   return (
-    <div className="flex gap-6">
+    <div className="flex gap-0 lg:gap-6">
       {/* Mobile sidebar overlay */}
       {isCatalogSidebarOpen && (
         <div
@@ -194,9 +194,9 @@ const Catalog = () => {
         </Card>
       </aside>
 
-      <div className="flex-1 space-y-4 min-w-0">
+      <div className="flex-1 space-y-4 min-w-0 w-full">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {/* Mobile category button */}
             <Button
               variant="outline"
@@ -207,7 +207,7 @@ const Catalog = () => {
               <Icon name="SlidersHorizontal" size={16} className="mr-1" />
               Категории
             </Button>
-            <nav className="flex items-center gap-1 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 overflow-x-auto max-w-[calc(100vw-200px)] lg:max-w-none">
+            <nav className="flex items-center gap-1 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 overflow-x-auto max-w-full lg:max-w-none">
               {breadcrumbs.map((crumb, idx) => (
                 <div key={idx} className="flex items-center gap-1 flex-shrink-0">
                   {idx > 0 && <Icon name="ChevronRight" size={12} className="text-gray-400" />}

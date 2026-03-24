@@ -112,8 +112,8 @@ const Dashboard = () => {
 
       <Card className="bg-gradient-to-r from-amber-50 to-amber-100/50 border-amber-200">
         <CardContent className="p-4 md:p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <h2 className="text-lg md:text-2xl font-bold text-[#27265C] mb-2">Создать новый заказ</h2>
               <Link to="/order/new">
                 <Button className="bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] font-semibold px-4 md:px-8 py-3 md:py-6 text-sm md:text-base mt-2 md:mt-4">
@@ -122,7 +122,7 @@ const Dashboard = () => {
                 </Button>
               </Link>
             </div>
-            <div className="hidden lg:block">
+            <div className="hidden lg:block flex-shrink-0">
               <img 
                 src="https://cdn.poehali.dev/projects/5fb2cde2-4a6e-45ad-96cc-fea77357ddc8/bucket/242f1f87-ca29-40a8-881c-509c272c8e5b.png" 
                 alt="MANNOL Products" 
@@ -199,16 +199,16 @@ const Dashboard = () => {
             <div className="space-y-3">
               {recentOrders.map((order, idx) => (
                 <Link key={idx} to={`/order/${order.id}`}>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-[#27265C]">{order.id}</p>
+                  <div className="flex items-center justify-between gap-3 p-3 md:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p className="font-semibold text-[#27265C] truncate">{order.id}</p>
                       <p className="text-sm text-gray-500">{order.date}</p>
                       <Badge className={`${order.statusColor} text-xs`}>
                         {order.status}
                       </Badge>
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-bold text-[#27265C] text-lg">{order.amount}</p>
+                    <div className="text-right space-y-1 flex-shrink-0">
+                      <p className="font-bold text-[#27265C] text-base md:text-lg">{order.amount}</p>
                       <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto" />
                     </div>
                   </div>

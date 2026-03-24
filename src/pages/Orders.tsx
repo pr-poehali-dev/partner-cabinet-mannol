@@ -965,72 +965,68 @@ const Orders = () => {
       </div>
 
       {/* ── Summary KPIs ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#27265C]/10 flex items-center justify-center">
-              <Icon name="Package" size={22} className="text-[#27265C]" />
+          <CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-[#27265C]/10 flex items-center justify-center flex-shrink-0">
+              <Icon name="Package" size={18} className="text-[#27265C]" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-[#27265C]">
+            <div className="min-w-0">
+              <p className="text-xl md:text-2xl font-bold text-[#27265C] leading-none">
                 {mockOrders.length}
               </p>
-              <p className="text-xs text-gray-500">Всего заказов</p>
+              <p className="text-xs text-gray-500 mt-0.5">Всего</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Icon name="Clock" size={22} className="text-orange-600" />
+          <CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <Icon name="Clock" size={18} className="text-orange-600" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-orange-600">{activeCount}</p>
-              <p className="text-xs text-gray-500">Активных</p>
+            <div className="min-w-0">
+              <p className="text-xl md:text-2xl font-bold text-orange-600 leading-none">{activeCount}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Активных</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center">
-              <Icon name="CheckCircle" size={22} className="text-green-600" />
+          <CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+              <Icon name="CheckCircle" size={18} className="text-green-600" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">
-                {
-                  mockOrders.filter((o) =>
-                    CONFIRMED_STATUSES.includes(o.status)
-                  ).length
-                }
+            <div className="min-w-0">
+              <p className="text-xl md:text-2xl font-bold text-green-600 leading-none">
+                {mockOrders.filter((o) => CONFIRMED_STATUSES.includes(o.status)).length}
               </p>
-              <p className="text-xs text-gray-500">Подтверждённых</p>
+              <p className="text-xs text-gray-500 mt-0.5">Подтв.</p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#FCC71E]/20 flex items-center justify-center">
-              <Icon name="Banknote" size={22} className="text-[#27265C]" />
+          <CardContent className="p-3 md:p-4 flex items-center gap-2 md:gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-[#FCC71E]/20 flex items-center justify-center flex-shrink-0">
+              <Icon name="Banknote" size={18} className="text-[#27265C]" />
             </div>
-            <div>
-              <p className="text-lg font-bold text-[#27265C]">
+            <div className="min-w-0">
+              <p className="text-sm md:text-lg font-bold text-[#27265C] leading-none truncate">
                 {formatCurrency(totalOrdersAmount)}
               </p>
-              <p className="text-xs text-gray-500">Общая сумма</p>
+              <p className="text-xs text-gray-500 mt-0.5">Сумма</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* ── Search ── */}
-      <div className="relative max-w-md">
+      <div className="relative w-full md:max-w-md">
         <Icon
           name="Search"
           size={18}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
         />
         <Input
-          placeholder="Поиск по номеру заказа, товару или артикулу..."
+          placeholder="Поиск по номеру, товару или артикулу..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
