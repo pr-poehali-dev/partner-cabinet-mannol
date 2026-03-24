@@ -105,19 +105,19 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Личный кабинет партнера</h1>
-          <p className="text-gray-600 mt-1">Добрый день! Готовы к новым заказам MANNOL?</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Личный кабинет партнера</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Добрый день! Готовы к новым заказам MANNOL?</p>
         </div>
       </div>
 
       <Card className="bg-gradient-to-r from-amber-50 to-amber-100/50 border-amber-200">
-        <CardContent className="p-8">
+        <CardContent className="p-4 md:p-8">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[#27265C] mb-2">Создать новый заказ</h2>
+              <h2 className="text-lg md:text-2xl font-bold text-[#27265C] mb-2">Создать новый заказ</h2>
               <Link to="/order/new">
-                <Button className="bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] font-semibold px-8 py-6 text-base mt-4">
-                  <Icon name="ShoppingCart" size={20} className="mr-2" />
+                <Button className="bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] font-semibold px-4 md:px-8 py-3 md:py-6 text-sm md:text-base mt-2 md:mt-4">
+                  <Icon name="ShoppingCart" size={18} className="mr-2" />
                   Создать новый заказ
                 </Button>
               </Link>

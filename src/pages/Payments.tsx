@@ -36,20 +36,20 @@ const Payments = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Оплата счетов</h1>
-          <p className="text-gray-600 mt-1">Выберите счета и способ получения</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Оплата счетов</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Выберите счета и способ получения</p>
         </div>
         <Link to="/debt-details">
-          <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
+          <Button variant="outline" className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white w-full sm:w-auto">
             <Icon name="ArrowLeft" size={18} className="mr-2" />
             Назад
           </Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader>
@@ -81,7 +81,7 @@ const Payments = () => {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h4 className="font-bold text-[#27265C]">{invoice.id}</h4>
                           <Badge className={invoice.status === "Просрочен" ? "bg-red-500 text-white" : "bg-blue-500 text-white"}>
                             {invoice.status}
@@ -94,8 +94,8 @@ const Payments = () => {
                         </div>
                         <p className="text-sm text-gray-500">от {invoice.date}</p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-[#27265C]">₽{invoice.amount.toLocaleString()}</div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-lg md:text-2xl font-bold text-[#27265C]">₽{invoice.amount.toLocaleString()}</div>
                       </div>
                     </div>
                   </div>

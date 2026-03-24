@@ -189,13 +189,14 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Аналитика и отчёты</h1>
-          <p className="text-gray-600 mt-1">Подробная статистика продаж и эффективности</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Аналитика и отчёты</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Подробная статистика продаж и эффективности</p>
         </div>
         <div className="flex gap-2">
           <Button 
+            size="sm"
             variant={periodFilter === "month" ? "default" : "outline"}
             onClick={() => setPeriodFilter("month")}
             className={periodFilter === "month" ? "bg-[#27265C]" : ""}
@@ -203,6 +204,7 @@ const Analytics = () => {
             Месяц
           </Button>
           <Button 
+            size="sm"
             variant={periodFilter === "quarter" ? "default" : "outline"}
             onClick={() => setPeriodFilter("quarter")}
             className={periodFilter === "quarter" ? "bg-[#27265C]" : ""}
@@ -210,6 +212,7 @@ const Analytics = () => {
             Квартал
           </Button>
           <Button 
+            size="sm"
             variant={periodFilter === "year" ? "default" : "outline"}
             onClick={() => setPeriodFilter("year")}
             className={periodFilter === "year" ? "bg-[#27265C]" : ""}
@@ -219,7 +222,7 @@ const Analytics = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiStats.map((stat, idx) => (
           <Card key={idx} className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6">

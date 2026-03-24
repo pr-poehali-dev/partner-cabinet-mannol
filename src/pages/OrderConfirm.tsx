@@ -102,9 +102,9 @@ const OrderConfirm = () => {
             <Icon name="ArrowLeft" className="w-4 h-4" />
             <span>Назад к результатам</span>
           </Link>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-[#27265C]">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">
                 Финальное подтверждение заказа
               </h1>
               <p className="text-gray-500 mt-1 text-sm">
@@ -113,7 +113,7 @@ const OrderConfirm = () => {
             </div>
             <Badge
               variant="outline"
-              className="bg-orange-100 text-orange-700 border-orange-200 shrink-0 mt-1"
+              className="bg-orange-100 text-orange-700 border-orange-200 shrink-0 self-start"
             >
               <Icon name="RotateCcw" className="w-3.5 h-3.5 mr-1" />
               Требует согласования

@@ -136,8 +136,8 @@ const Help = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-[#27265C]">Справка и поддержка</h1>
-        <p className="text-gray-600 mt-1">Часто задаваемые вопросы и контакты службы поддержки</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Справка и поддержка</h1>
+        <p className="text-gray-600 mt-1 text-sm md:text-base">Часто задаваемые вопросы и контакты службы поддержки</p>
       </div>
 
       <Alert className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">

@@ -331,7 +331,7 @@ const Backorders = () => {
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-xl font-bold text-[#27265C]">
+                <p className="text-base md:text-xl font-bold text-[#27265C]">
                   {shortageAmount.toLocaleString("ru-RU")} ₽
                 </p>
                 <p className="text-xs text-gray-500">
@@ -340,7 +340,7 @@ const Backorders = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg text-sm">
               <div>
                 <p className="text-gray-500 text-xs">Заказано</p>
                 <p className="font-semibold text-[#27265C]">{item.orderedQty} шт</p>
@@ -410,11 +410,12 @@ const Backorders = () => {
                   <>
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold text-xs"
                       onClick={() => { setConfirmDialogItem(item); setSearchParams(prev => { const p = Object.fromEntries(prev); return { ...p, id: item.id, action: "confirm" }; }); }}
                     >
-                      <Icon name="Check" size={16} className="mr-1" />
-                      Подтвердить допоставку
+                      <Icon name="Check" size={14} className="mr-1" />
+                      <span className="hidden sm:inline">Подтвердить допоставку</span>
+                      <span className="sm:hidden">Подтвердить</span>
                     </Button>
                     <Button
                       size="sm"
@@ -454,8 +455,8 @@ const Backorders = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Недопоставки</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Недопоставки</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">
             Товары из ваших заказов, которые не были отгружены полностью
           </p>
         </div>
@@ -464,20 +465,22 @@ const Backorders = () => {
       {needsActionCount > 0 && (
         <Card className="border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50">
           <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icon name="Bell" size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-green-900">
-                  {needsActionCount} {needsActionCount === 1 ? "позиция требует" : "позиции требуют"} вашего решения
-                </h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Товар поступил на склад. Подтвердите допоставку или откажитесь — тогда недопоставка будет закрыта.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon name="Bell" size={20} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base md:text-lg font-bold text-green-900">
+                    {needsActionCount} {needsActionCount === 1 ? "позиция требует" : "позиции требуют"} вашего решения
+                  </h3>
+                  <p className="text-xs md:text-sm text-green-700 mt-1">
+                    Товар поступил на склад. Подтвердите допоставку или откажитесь.
+                  </p>
+                </div>
               </div>
               <Button
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold flex-shrink-0"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold flex-shrink-0 w-full sm:w-auto"
                 onClick={() => {
                   const el = document.getElementById("active-tab");
                   el?.click();
@@ -490,7 +493,7 @@ const Backorders = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -580,17 +583,17 @@ const Backorders = () => {
       </div>
 
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="active" id="active-tab">
+        <TabsList className="bg-gray-100 flex overflow-x-auto w-full">
+          <TabsTrigger value="active" id="active-tab" className="flex-shrink-0 text-xs md:text-sm">
             Активные ({activeItems.length})
           </TabsTrigger>
-          <TabsTrigger value="in-progress">
+          <TabsTrigger value="in-progress" className="flex-shrink-0 text-xs md:text-sm">
             В работе ({confirmedItems.length})
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            Завершенные ({completedItems.length})
+          <TabsTrigger value="completed" className="flex-shrink-0 text-xs md:text-sm">
+            <span className="hidden sm:inline">Завершенные </span>({completedItems.length})
           </TabsTrigger>
-          <TabsTrigger value="all">
+          <TabsTrigger value="all" className="flex-shrink-0 text-xs md:text-sm">
             Все ({items.length})
           </TabsTrigger>
         </TabsList>

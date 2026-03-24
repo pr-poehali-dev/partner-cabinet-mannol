@@ -49,18 +49,18 @@ const Profile = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Профиль партнера</h1>
-          <p className="text-gray-600 mt-1">Управление личными данными и настройками аккаунта</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Профиль партнера</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Управление личными данными и настройками аккаунта</p>
         </div>
-        <Badge className="bg-green-100 text-green-700 border-green-200 text-base px-4 py-2">
-          <Icon name="CheckCircle" size={18} className="mr-2" />
+        <Badge className="bg-green-100 text-green-700 border-green-200 text-sm md:text-base px-3 md:px-4 py-2 self-start sm:self-auto whitespace-nowrap">
+          <Icon name="CheckCircle" size={16} className="mr-2" />
           Активный партнер
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -97,7 +97,7 @@ const Profile = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="lastName" className="text-[#27265C] font-semibold">
                   Фамилия

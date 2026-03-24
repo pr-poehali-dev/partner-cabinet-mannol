@@ -27,6 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
 
   const notifications = [
@@ -69,6 +70,10 @@ const Layout = ({ children }: LayoutProps) => {
     }
   }, [location]);
 
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   const handleOpenNotificationPanel = () => {
     setIsNotificationPanelOpen(true);
     navigate('/notifications/panel');
@@ -93,10 +98,31 @@ const Layout = ({ children }: LayoutProps) => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const SidebarNav = ({ onItemClick }: { onItemClick?: () => void }) => (
+    <nav className="p-4 space-y-1">
+      {menuItems.map((item) => (
+        <Link key={item.path} to={item.path} onClick={onItemClick}>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start gap-3 ${
+              isActive(item.path)
+                ? "bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90"
+                : "text-white hover:bg-white/10"
+            }`}
+          >
+            <Icon name={item.icon as never} size={20} />
+            <span>{item.label}</span>
+          </Button>
+        </Link>
+      ))}
+    </nav>
+  );
+
   return (
     <div className="min-h-screen bg-[#F4F4F4]">
+      {/* Desktop sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-[#27265C] text-white transition-all duration-300 z-50 ${
+        className={`fixed left-0 top-0 h-full bg-[#27265C] text-white transition-all duration-300 z-50 hidden lg:block ${
           isSidebarOpen ? "w-64" : "w-20"
         }`}
       >
@@ -130,7 +156,7 @@ const Layout = ({ children }: LayoutProps) => {
                     : "text-white hover:bg-white/10"
                 } ${!isSidebarOpen && "justify-center"}`}
               >
-                <Icon name={item.icon as any} size={20} />
+                <Icon name={item.icon as never} size={20} />
                 {isSidebarOpen && <span>{item.label}</span>}
               </Button>
             </Link>
@@ -138,20 +164,69 @@ const Layout = ({ children }: LayoutProps) => {
         </nav>
       </aside>
 
+      {/* Mobile sidebar overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar drawer */}
+      <aside
+        className={`fixed left-0 top-0 h-full w-72 bg-[#27265C] text-white z-50 transition-transform duration-300 lg:hidden ${
+          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#FCC71E] rounded-lg flex items-center justify-center font-bold text-[#27265C] text-xl">
+              M
+            </div>
+            <span className="font-bold text-lg">MANNOL</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="text-white hover:bg-white/10"
+          >
+            <Icon name="X" size={20} />
+          </Button>
+        </div>
+        <SidebarNav onItemClick={() => setIsMobileSidebarOpen(false)} />
+      </aside>
+
       <div
-        className={`transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-20"}`}
+        className={`transition-all duration-300 lg:${isSidebarOpen ? "ml-64" : "ml-20"}`}
       >
         <DebtBanner />
-        
+
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-          <div className="flex items-center justify-between px-8 py-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-semibold text-[#27265C]">
+          <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
+            <div className="flex items-center gap-3">
+              {/* Mobile burger */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden text-[#27265C] hover:bg-gray-100 p-2"
+                onClick={() => setIsMobileSidebarOpen(true)}
+              >
+                <Icon name="Menu" size={22} />
+              </Button>
+              <h2 className="text-base md:text-xl font-semibold text-[#27265C] hidden sm:block">
                 Личный кабинет партнера
               </h2>
+              {/* Mobile logo */}
+              <div className="flex items-center gap-2 sm:hidden">
+                <div className="w-7 h-7 bg-[#FCC71E] rounded flex items-center justify-center font-bold text-[#27265C] text-sm">
+                  M
+                </div>
+                <span className="font-bold text-[#27265C]">MANNOL</span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <Sheet open={isNotificationPanelOpen} onOpenChange={(open) => !open && handleCloseNotificationPanel()}>
                 <SheetTrigger asChild>
                   <Button
@@ -177,10 +252,10 @@ const Layout = ({ children }: LayoutProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-3 hover:bg-gray-100"
+                    className="flex items-center gap-2 hover:bg-gray-100 px-2"
                   >
                     <Avatar className="w-8 h-8 bg-[#27265C]">
-                      <AvatarFallback className="bg-[#27265C] text-white font-semibold">
+                      <AvatarFallback className="bg-[#27265C] text-white font-semibold text-xs">
                         ИП
                       </AvatarFallback>
                     </Avatar>
@@ -190,7 +265,7 @@ const Layout = ({ children }: LayoutProps) => {
                       </p>
                       <p className="text-xs text-gray-500">Партнер</p>
                     </div>
-                    <Icon name="ChevronDown" size={16} className="text-gray-500" />
+                    <Icon name="ChevronDown" size={16} className="text-gray-500 hidden sm:block" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -227,33 +302,9 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </header>
 
-        <main className="p-8">{children}</main>
-
-        <footer className="bg-white border-t border-gray-200 mt-12">
-          <div className="px-8 py-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#27265C] rounded-lg flex items-center justify-center font-bold text-white text-sm">
-                  M
-                </div>
-                <span className="text-sm text-gray-600">
-                  © 2024 MANNOL. Все права защищены.
-                </span>
-              </div>
-              <div className="flex items-center gap-6 text-sm text-gray-600">
-                <a href="#" className="hover:text-[#27265C]">
-                  Поддержка
-                </a>
-                <a href="#" className="hover:text-[#27265C]">
-                  Документация
-                </a>
-                <a href="#" className="hover:text-[#27265C]">
-                  Контакты
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <main className="p-4 md:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

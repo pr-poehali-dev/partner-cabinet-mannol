@@ -304,56 +304,43 @@ const OrderNew = () => {
     <div className="space-y-0">
       {/* Sticky контекстная панель */}
       <div className="sticky top-0 z-30 bg-[#27265C] border-b border-[#27265C]/80 shadow-lg">
-        <div className="flex items-center justify-between px-6 py-3 gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Icon name="ShoppingCart" size={20} className="text-[#FCC71E]" />
-              <span className="font-bold text-white text-lg">Заказ {ORDER_ID}</span>
+        <div className="flex items-center justify-between px-3 md:px-6 py-3 gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Icon name="ShoppingCart" size={18} className="text-[#FCC71E]" />
+              <span className="font-bold text-white text-sm md:text-lg hidden sm:inline">{ORDER_ID}</span>
             </div>
-            <Separator orientation="vertical" className="h-6 bg-white/20" />
-            <div className="flex items-center gap-4 text-sm text-white/80">
-              <span>
-                <span className="font-semibold text-white">{totalPositions}</span>{" "}
-                {totalPositions === 1 ? "позиция" : totalPositions >= 2 && totalPositions <= 4 ? "позиции" : "позиций"}
-              </span>
+            <Separator orientation="vertical" className="h-5 bg-white/20 hidden sm:block" />
+            <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-white/80">
+              <span className="font-semibold text-white">{totalPositions} поз.</span>
+              <span className="text-white/40 hidden sm:inline">·</span>
+              <span className="hidden sm:inline"><span className="font-semibold text-white">{totalQty}</span> шт</span>
               <span className="text-white/40">·</span>
-              <span>
-                <span className="font-semibold text-white">{totalQty}</span> шт
-              </span>
-              <span className="text-white/40">·</span>
-              <span className="font-semibold text-[#FCC71E] text-base">
+              <span className="font-semibold text-[#FCC71E] text-xs md:text-base">
                 {formatCurrency(totalAmount)}
               </span>
-              {hasBackorders && (
-                <>
-                  <span className="text-white/40">·</span>
-                  <Badge className="bg-blue-500/30 text-blue-200 border-0 text-xs">
-                    <Icon name="Clock" size={10} className="mr-1" />
-                    Есть предзаказы
-                  </Badge>
-                </>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link to="/order/new">
+          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            <Link to="/order/new" className="hidden sm:block">
               <Button
                 size="sm"
                 variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 hover:text-white bg-transparent"
+                className="border-white/30 text-white hover:bg-white/10 hover:text-white bg-transparent text-xs"
               >
-                <Icon name="FilePlus" size={16} className="mr-1.5" />
-                Новый заказ
+                <Icon name="FilePlus" size={14} className="mr-1" />
+                Новый
               </Button>
             </Link>
             <Button
               size="sm"
-              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold"
+              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold text-xs md:text-sm"
               onClick={handleFinish}
             >
-              <Icon name="Send" size={16} className="mr-1.5" />
-              Отправить на согласование
+              <Icon name="Send" size={14} className="mr-1" />
+              <span className="hidden sm:inline">Отправить на согласование</span>
+              <span className="sm:hidden">Отправить</span>
             </Button>
           </div>
         </div>
@@ -428,97 +415,67 @@ const OrderNew = () => {
                 <p className="text-sm text-gray-400">Начните добавлять позиции из каталога ниже</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-2.5 px-3 text-gray-500 font-medium">Товар</th>
-                      <th className="text-center py-2.5 px-3 text-gray-500 font-medium w-40">Количество</th>
-                      <th className="text-right py-2.5 px-3 text-gray-500 font-medium w-28">Цена</th>
-                      <th className="text-right py-2.5 px-3 text-gray-500 font-medium w-32">Сумма</th>
-                      <th className="w-10" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {cartItems.map((item) => (
-                      <tr
-                        key={item.id}
-                        className={`hover:bg-gray-50/60 transition-colors ${item.isBackorder ? "bg-blue-50/30" : ""}`}
+              <div className="space-y-2">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border hover:bg-gray-50/60 transition-colors ${item.isBackorder ? "bg-blue-50/30 border-blue-200" : "border-gray-100"}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-[#27265C] leading-tight text-sm">{item.name}</p>
+                        {item.isBackorder && (
+                          <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
+                            <Icon name="Clock" size={10} className="mr-1" />
+                            Под заказ
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{item.sku} · {item.price.toLocaleString()} ₽/шт</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() => updateQuantity(item.id, item.quantity - 10)}
+                        >
+                          <Icon name="Minus" size={12} />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
+                          className="h-7 w-16 text-center font-bold text-sm p-1"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 w-7 p-0"
+                          onClick={() => updateQuantity(item.id, item.quantity + 10)}
+                        >
+                          <Icon name="Plus" size={12} />
+                        </Button>
+                      </div>
+                      <span className="font-bold text-[#27265C] text-sm w-24 text-right">
+                        {(item.quantity * item.price).toLocaleString()} ₽
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-gray-300 hover:text-red-500 hover:bg-red-50"
+                        onClick={() => removeItem(item.id)}
                       >
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-semibold text-[#27265C] leading-tight">{item.name}</p>
-                            {item.isBackorder && (
-                              <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
-                                <Icon name="Clock" size={10} className="mr-1" />
-                                Под заказ
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-400 mt-0.5">{item.sku}</p>
-                          {!item.isBackorder && item.stock <= 10 && (
-                            <p className="text-xs text-orange-500 mt-0.5">
-                              На складе: {item.stock} шт
-                            </p>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateQuantity(item.id, item.quantity - 10)}
-                            >
-                              <Icon name="Minus" size={12} />
-                            </Button>
-                            <Input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                              className="h-7 w-16 text-center font-bold text-sm p-1"
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateQuantity(item.id, item.quantity + 10)}
-                            >
-                              <Icon name="Plus" size={12} />
-                            </Button>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-right text-gray-600">
-                          {item.price.toLocaleString()} ₽
-                        </td>
-                        <td className="py-3 px-3 text-right font-bold text-[#27265C]">
-                          {(item.quantity * item.price).toLocaleString()} ₽
-                        </td>
-                        <td className="py-3 px-3">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-gray-300 hover:text-red-500 hover:bg-red-50"
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <Icon name="X" size={14} />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-gray-200">
-                      <td colSpan={3} className="py-3 px-3 text-right font-semibold text-gray-600">
-                        Итого:
-                      </td>
-                      <td className="py-3 px-3 text-right font-bold text-xl text-[#27265C]">
-                        {formatCurrency(totalAmount)}
-                      </td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
+                        <Icon name="X" size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-end pt-2 border-t border-gray-200">
+                  <span className="font-semibold text-gray-600 mr-3">Итого:</span>
+                  <span className="font-bold text-xl text-[#27265C]">{formatCurrency(totalAmount)}</span>
+                </div>
               </div>
             )}
           </CardContent>
@@ -577,11 +534,11 @@ const OrderNew = () => {
                   return (
                     <div
                       key={product.id}
-                      className="flex items-center gap-4 py-3.5 px-1 hover:bg-gray-50/60 rounded-lg transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center gap-3 py-3.5 px-1 hover:bg-gray-50/60 rounded-lg transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-[#27265C] leading-tight">{product.name}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-[#27265C] leading-tight text-sm md:text-base">{product.name}</p>
                           {inCartStock && (
                             <Badge className="bg-green-100 text-green-700 text-xs border-0">
                               <Icon name="Check" size={10} className="mr-1" />
@@ -629,8 +586,8 @@ const OrderNew = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className="text-sm font-semibold text-[#27265C] w-24 text-right">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
+                        <span className="text-sm font-semibold text-[#27265C]">
                           {product.price.toLocaleString()} ₽/шт
                         </span>
                       </div>

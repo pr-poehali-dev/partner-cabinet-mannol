@@ -190,14 +190,14 @@ const OrderDetails = () => {
       <div className="space-y-6 pb-12">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <Link to="/orders">
-                <Button variant="ghost" size="sm">
-                  <Icon name="ArrowLeft" size={18} className="mr-2" />
-                  Назад к заказам
+                <Button variant="ghost" size="sm" className="px-2 md:px-3">
+                  <Icon name="ArrowLeft" size={16} className="mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Назад к заказам</span>
                 </Button>
               </Link>
-              <h1 className="text-3xl font-bold text-[#27265C]">
+              <h1 className="text-xl md:text-3xl font-bold text-[#27265C]">
                 Заказ {order.id}
               </h1>
               <Badge
@@ -248,14 +248,15 @@ const OrderDetails = () => {
           <div className="flex gap-2 flex-wrap">
             <Button
               variant="outline"
+              size="sm"
               className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white"
             >
-              <Icon name="Printer" size={18} className="mr-2" />
-              Печать
+              <Icon name="Printer" size={16} className="mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Печать</span>
             </Button>
-            <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
-              <Icon name="Download" size={18} className="mr-2" />
-              Документы
+            <Button size="sm" className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
+              <Icon name="Download" size={16} className="mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Документы</span>
             </Button>
           </div>
         </div>
@@ -379,7 +380,7 @@ const OrderDetails = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           <Card className={`lg:col-span-1 ${order.orderType === "direct" ? "border-purple-300 border-2" : ""}`}>
             <CardHeader>
               <CardTitle className="text-[#27265C] flex items-center gap-2">
@@ -654,7 +655,7 @@ const OrderDetails = () => {
                     </div>
 
                     <div
-                      className={`flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2 text-right flex-shrink-0 ${
+                      className={`flex flex-row flex-wrap lg:flex-col items-start lg:items-end gap-3 lg:gap-2 text-left lg:text-right flex-shrink-0 ${
                         isRejected ? "opacity-60" : ""
                       }`}
                     >

@@ -941,8 +941,8 @@ const Orders = () => {
       {/* ── Page header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Заказы</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Заказы</h1>
+          <p className="text-gray-500 mt-1 text-sm">
             Управление заказами MANNOL B2B
           </p>
         </div>
@@ -951,13 +951,14 @@ const Orders = () => {
             variant="outline"
             className="border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white"
           >
-            <Icon name="Download" size={18} className="mr-2" />
-            Экспорт
+            <Icon name="Download" size={18} className="mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Экспорт</span>
           </Button>
           <Link to="/order/new">
             <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/80 font-semibold">
-              <Icon name="Plus" size={18} className="mr-2" />
-              Новый заказ
+              <Icon name="Plus" size={18} className="mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Новый заказ</span>
+              <span className="sm:hidden">Заказ</span>
             </Button>
           </Link>
         </div>
@@ -1038,21 +1039,21 @@ const Orders = () => {
 
       {/* ── Tabs ── */}
       <Tabs defaultValue="all">
-        <TabsList className="bg-[#27265C]/5">
-          <TabsTrigger value="all" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
+        <TabsList className="bg-[#27265C]/5 flex overflow-x-auto w-full">
+          <TabsTrigger value="all" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white flex-shrink-0 text-xs md:text-sm">
             Все ({allOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="active" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
-            <Icon name="Clock" size={14} className="mr-1.5" />
-            Активные ({activeOrders.length})
+          <TabsTrigger value="active" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white flex-shrink-0 text-xs md:text-sm">
+            <Icon name="Clock" size={13} className="mr-1" />
+            <span className="hidden sm:inline">Активные </span>({activeOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
-            <Icon name="CheckCircle" size={14} className="mr-1.5" />
-            Подтверждённые ({confirmedOrders.length})
+          <TabsTrigger value="confirmed" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white flex-shrink-0 text-xs md:text-sm">
+            <Icon name="CheckCircle" size={13} className="mr-1" />
+            <span className="hidden sm:inline">Подтверждённые </span>({confirmedOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="shipped" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white">
-            <Icon name="Truck" size={14} className="mr-1.5" />
-            Отгруженные ({shippedOrders.length})
+          <TabsTrigger value="shipped" className="data-[state=active]:bg-[#27265C] data-[state=active]:text-white flex-shrink-0 text-xs md:text-sm">
+            <Icon name="Truck" size={13} className="mr-1" />
+            <span className="hidden sm:inline">Отгруженные </span>({shippedOrders.length})
           </TabsTrigger>
         </TabsList>
 

@@ -107,9 +107,61 @@ const Catalog = () => {
   const totalAmount = getTotalCartAmount();
   const totalItems = getTotalCartItems();
 
+  const [isCatalogSidebarOpen, setIsCatalogSidebarOpen] = useState(false);
+
   return (
     <div className="flex gap-6">
-      <aside className="w-72 flex-shrink-0">
+      {/* Mobile sidebar overlay */}
+      {isCatalogSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsCatalogSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar drawer */}
+      <aside
+        className={`fixed left-0 top-0 h-full w-72 bg-white z-50 overflow-y-auto transition-transform duration-300 lg:hidden shadow-xl ${
+          isCatalogSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-[#27265C]">Категории</h3>
+            <Button variant="ghost" size="sm" onClick={() => setIsCatalogSidebarOpen(false)}>
+              <Icon name="X" size={18} />
+            </Button>
+          </div>
+          <Accordion type="multiple" className="space-y-2">
+            {catalogData.map(category => (
+              <AccordionItem key={category.id} value={category.id} className="border-none">
+                <AccordionTrigger className="py-2 px-3 hover:bg-gray-100 rounded-lg text-sm font-semibold text-[#27265C]">
+                  {category.name}
+                </AccordionTrigger>
+                <AccordionContent className="pb-0 pt-2">
+                  <div className="space-y-1 ml-2">
+                    {category.series.map(series => (
+                      <Button
+                        key={series.id}
+                        variant="ghost"
+                        className={`w-full justify-start text-sm ${
+                          seriesId === series.id ? 'bg-[#FCC71E] text-[#27265C] font-semibold' : 'text-gray-700'
+                        }`}
+                        onClick={() => { navigate(`/catalog/${category.id}/${series.id}`); setIsCatalogSidebarOpen(false); }}
+                      >
+                        {series.name}
+                      </Button>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="w-72 flex-shrink-0 hidden lg:block">
         <Card className="sticky top-4">
           <CardContent className="p-4">
             <h3 className="font-bold text-[#27265C] mb-4">Категории</h3>
@@ -142,33 +194,46 @@ const Catalog = () => {
         </Card>
       </aside>
 
-      <div className="flex-1 space-y-4">
-        <div className="flex items-center justify-between">
-          <nav className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200">
-            {breadcrumbs.map((crumb, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                {idx > 0 && <Icon name="ChevronRight" size={14} className="text-gray-400" />}
-                <Link 
-                  to={crumb.path}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                    idx === breadcrumbs.length - 1 
-                      ? 'text-[#27265C] font-semibold' 
-                      : 'text-gray-600 hover:text-[#27265C]'
-                  }`}
-                >
-                  {crumb.icon && <Icon name={crumb.icon} size={14} />}
-                  {crumb.label}
-                </Link>
-              </div>
-            ))}
-          </nav>
+      <div className="flex-1 space-y-4 min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {/* Mobile category button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="lg:hidden border-[#27265C] text-[#27265C]"
+              onClick={() => setIsCatalogSidebarOpen(true)}
+            >
+              <Icon name="SlidersHorizontal" size={16} className="mr-1" />
+              Категории
+            </Button>
+            <nav className="flex items-center gap-1 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 overflow-x-auto max-w-[calc(100vw-200px)] lg:max-w-none">
+              {breadcrumbs.map((crumb, idx) => (
+                <div key={idx} className="flex items-center gap-1 flex-shrink-0">
+                  {idx > 0 && <Icon name="ChevronRight" size={12} className="text-gray-400" />}
+                  <Link 
+                    to={crumb.path}
+                    className={`flex items-center gap-1 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+                      idx === breadcrumbs.length - 1 
+                        ? 'text-[#27265C] font-semibold' 
+                        : 'text-gray-600 hover:text-[#27265C]'
+                    }`}
+                  >
+                    {crumb.icon && <Icon name={crumb.icon} size={12} />}
+                    {crumb.label}
+                  </Link>
+                </div>
+              ))}
+            </nav>
+          </div>
           {totalItems > 0 && (
             <Button
               onClick={createOrder}
-              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold"
+              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold text-xs md:text-sm"
             >
-              <Icon name="ShoppingCart" size={18} className="mr-2" />
-              Создать заказ ({totalItems} шт • ₽{totalAmount.toLocaleString()})
+              <Icon name="ShoppingCart" size={16} className="mr-1 md:mr-2" />
+              <span className="hidden sm:inline">Создать заказ ({totalItems} шт • ₽{totalAmount.toLocaleString()})</span>
+              <span className="sm:hidden">Заказ ({totalItems}) ₽{totalAmount.toLocaleString()}</span>
             </Button>
           )}
         </div>

@@ -192,20 +192,20 @@ const Schedule = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">График отгрузок</h1>
-          <p className="text-gray-600 mt-1">Планирование и контроль дат отгрузки заказов</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">График отгрузок</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Планирование и контроль дат отгрузки заказов</p>
         </div>
         <Link to="/order/new">
-          <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold">
+          <Button className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold w-full sm:w-auto">
             <Icon name="Plus" size={18} className="mr-2" />
             Запланировать отгрузку
           </Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-gray-600">Запланировано</CardTitle>

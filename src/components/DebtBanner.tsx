@@ -61,60 +61,56 @@ const DebtBanner = () => {
           : "bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-500"
       } text-white shadow-lg animate-pulse`}
     >
-      <div className="container mx-auto px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center flex-shrink-0 animate-bounce">
+      <div className="container mx-auto px-4 md:px-8 py-3 md:py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-9 h-9 md:w-12 md:h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center flex-shrink-0 animate-bounce">
               <Icon
                 name={debtInfo.isOverdue ? "AlertTriangle" : "AlertCircle"}
-                size={24}
+                size={20}
                 className="text-white"
               />
             </div>
 
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-1">
-                <h3 className="text-xl font-bold">
-                  {debtInfo.isOverdue ? "⚠️ ВНИМАНИЕ! ПРОСРОЧЕННАЯ ЗАДОЛЖЕННОСТЬ" : "ЗАДОЛЖЕННОСТЬ"}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h3 className="text-sm md:text-xl font-bold leading-tight">
+                  {debtInfo.isOverdue ? "⚠️ ПРОСРОЧЕННАЯ ЗАДОЛЖЕННОСТЬ" : "ЗАДОЛЖЕННОСТЬ"}
                 </h3>
                 {debtInfo.isBlocked && (
-                  <span className="bg-white/30 backdrop-blur px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                  <span className="bg-white/30 backdrop-blur px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
                     🚫 ОТГРУЗКА ПРИОСТАНОВЛЕНА
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <Icon name="DollarSign" size={16} />
+              <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm">
+                <div className="flex items-center gap-1">
+                  <Icon name="DollarSign" size={14} />
                   <span className="font-semibold">
-                    Сумма задолженности: <span className="text-2xl font-bold">₽{debtInfo.amount.toLocaleString()}</span>
+                    <span className="hidden sm:inline">Сумма: </span>
+                    <span className="text-base md:text-2xl font-bold">₽{debtInfo.amount.toLocaleString()}</span>
                   </span>
                 </div>
 
                 {debtInfo.overdueDays && debtInfo.overdueDays > 0 && (
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur px-3 py-1.5 rounded-full">
-                    <Icon name="Clock" size={16} />
+                  <div className="flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-1 rounded-full">
+                    <Icon name="Clock" size={14} />
                     <span className="font-bold">
-                      Просрочка: {debtInfo.overdueDays} {debtInfo.overdueDays === 1 ? "день" : "дней"}
+                      {debtInfo.overdueDays} {debtInfo.overdueDays === 1 ? "день" : "дней"}
                     </span>
                   </div>
                 )}
               </div>
-
-              {debtInfo.isBlocked && (
-                <p className="mt-2 text-sm bg-white/20 backdrop-blur px-3 py-1.5 rounded inline-block">
-                  Для возобновления отгрузок необходимо погасить задолженность
-                </p>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Link to="/payments">
-              <Button className="bg-white text-red-600 hover:bg-white/90 font-bold text-lg px-6 py-6">
-                <Icon name="CreditCard" size={20} className="mr-2" />
-                Погасить долг
+              <Button className="bg-white text-red-600 hover:bg-white/90 font-bold text-xs md:text-base px-3 md:px-6 py-2 md:py-6 h-auto">
+                <Icon name="CreditCard" size={16} className="mr-1 md:mr-2" />
+                <span className="hidden sm:inline">Погасить долг</span>
+                <span className="sm:hidden">Оплатить</span>
               </Button>
             </Link>
 
@@ -122,11 +118,11 @@ const DebtBanner = () => {
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="text-white hover:bg-white/20 border-2 border-white font-semibold"
+                  className="text-white hover:bg-white/20 border-2 border-white font-semibold text-xs md:text-sm px-2 md:px-4 h-auto py-2"
                   onClick={handleOpenModal}
                 >
-                  <Icon name="Info" size={18} className="mr-2" />
-                  Подробнее
+                  <Icon name="Info" size={16} className="md:mr-2" />
+                  <span className="hidden md:inline">Подробнее</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onEscapeKeyDown={handleCloseModal}>

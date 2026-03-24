@@ -27,14 +27,14 @@ const DebtDetails = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Задолженность</h1>
-          <p className="text-gray-600 mt-1">Детальная информация по дебиторской задолженности</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Задолженность</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Детальная информация по дебиторской задолженности</p>
         </div>
         <Link to="/payments">
-          <Button className="bg-red-600 text-white hover:bg-red-700 font-bold text-lg px-6">
-            <Icon name="CreditCard" size={20} className="mr-2" />
+          <Button className="bg-red-600 text-white hover:bg-red-700 font-bold text-sm md:text-lg px-4 md:px-6 w-full sm:w-auto">
+            <Icon name="CreditCard" size={18} className="mr-2" />
             Погасить долг
           </Button>
         </Link>
