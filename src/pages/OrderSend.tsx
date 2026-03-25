@@ -106,8 +106,8 @@ const OrderSend = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-6">
-            <div className="relative">
-              <div className="flex items-start justify-between">
+            <div className="relative overflow-x-auto pb-1">
+              <div className="flex items-start justify-between min-w-[420px]">
                 {STATUS_STEPS.map((status, index) => {
                   const config = ORDER_STATUS_CONFIG[status];
                   const isCurrent = index === currentStepIndex;
@@ -440,10 +440,10 @@ const OrderSend = () => {
         </Card>
 
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <Button
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
               asChild
             >
               <Link to={`/order/${orderId}`}>
@@ -452,7 +452,7 @@ const OrderSend = () => {
               </Link>
             </Button>
             <Button
-              className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20"
+              className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20 w-full sm:w-auto"
               disabled={isSending}
               onClick={handleSend}
             >

@@ -194,7 +194,7 @@ const Analytics = () => {
           <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Аналитика и отчёты</h1>
           <p className="text-gray-600 mt-1 text-sm md:text-base">Подробная статистика продаж и эффективности</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             size="sm"
             variant={periodFilter === "month" ? "default" : "outline"}
@@ -322,8 +322,8 @@ const Analytics = () => {
             Сравнение плановых и фактических показателей продаж по месяцам
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
+        <CardContent className="min-w-0">
+          <ResponsiveContainer width="100%" height={280} className="min-w-0">
             <AreaChart data={monthlyOrders}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -385,9 +385,10 @@ const Analytics = () => {
               Распределение выручки по группам товаров
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             <div className="flex flex-col lg:flex-row items-center gap-8">
-              <ResponsiveContainer width="100%" height={250}>
+              <div className="w-full min-w-0">
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={categoryData}
@@ -410,7 +411,8 @@ const Analytics = () => {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="space-y-2 w-full lg:w-auto">
+              </div>
+              <div className="space-y-2 w-full lg:w-auto lg:flex-shrink-0">
                 {categoryData.map((cat, idx) => (
                   <div key={idx} className="flex items-center gap-3">
                     <div 
@@ -440,8 +442,8 @@ const Analytics = () => {
               Сравнение показателей 2023 и 2024 года
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+          <CardContent className="min-w-0">
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={quarterlyComparison}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
@@ -529,15 +531,15 @@ const Analytics = () => {
         </CardContent>
       </Card>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <Link to="/orders" className="flex-1">
-          <Button className="w-full bg-[#27265C] hover:bg-[#27265C]/90 text-white py-6">
+          <Button className="w-full bg-[#27265C] hover:bg-[#27265C]/90 text-white py-4 md:py-6">
             <Icon name="FileText" size={20} className="mr-2" />
             Все заказы
           </Button>
         </Link>
         <Link to="/catalog" className="flex-1">
-          <Button className="w-full bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] py-6">
+          <Button className="w-full bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] py-4 md:py-6">
             <Icon name="Package" size={20} className="mr-2" />
             Перейти в каталог
           </Button>

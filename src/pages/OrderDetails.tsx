@@ -277,7 +277,7 @@ const OrderDetails = () => {
                   отправки, он будет автоматически отменён. Свяжитесь с менеджером
                   для уточнения статуса.
                 </p>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
                     <Icon name="Phone" size={14} className="mr-1.5" />
                     Позвонить менеджеру
@@ -361,21 +361,23 @@ const OrderDetails = () => {
           </Card>
         )}
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between gap-1 relative">
-              <div className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200 -z-0" />
-              <div
-                className="absolute top-5 left-8 h-0.5 bg-[#27265C] transition-all -z-0"
-                style={{
-                  width: `calc(${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}% - 64px)`,
-                }}
-              />
-              {STATUS_STEPS.map((step, idx) => (
-                <div key={step} className="relative z-10">
-                  {renderStatusStep(step, idx)}
-                </div>
-              ))}
+        <Card className="overflow-hidden">
+          <CardContent className="p-4 md:p-6">
+            <div className="overflow-x-auto pb-1">
+              <div className="flex items-center justify-between gap-1 relative min-w-[480px]">
+                <div className="absolute top-5 left-8 right-8 h-0.5 bg-gray-200 -z-0" />
+                <div
+                  className="absolute top-5 left-8 h-0.5 bg-[#27265C] transition-all -z-0"
+                  style={{
+                    width: `calc(${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}% - 64px)`,
+                  }}
+                />
+                {STATUS_STEPS.map((step, idx) => (
+                  <div key={step} className="relative z-10">
+                    {renderStatusStep(step, idx)}
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -467,20 +469,20 @@ const OrderDetails = () => {
               <Separator />
 
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Сумма запрошенного</span>
-                  <span className="text-gray-600">
+                <div className="flex justify-between gap-2 text-sm flex-wrap">
+                  <span className="text-gray-500 flex-shrink-0">Сумма запрошенного</span>
+                  <span className="text-gray-600 min-w-0 text-right">
                     {formatCurrency(totalRequestedAmount)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm font-bold text-[#27265C]">
-                  <span>Сумма к отгрузке</span>
-                  <span>{formatCurrency(totalAmount)}</span>
+                <div className="flex justify-between gap-2 text-sm font-bold text-[#27265C] flex-wrap">
+                  <span className="flex-shrink-0">Сумма к отгрузке</span>
+                  <span className="min-w-0 text-right">{formatCurrency(totalAmount)}</span>
                 </div>
                 {totalShortageAmount > 0 && (
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>Сумма недопоставки</span>
-                    <span>{formatCurrency(totalShortageAmount)}</span>
+                  <div className="flex justify-between gap-2 text-sm text-red-600 flex-wrap">
+                    <span className="flex-shrink-0">Сумма недопоставки</span>
+                    <span className="min-w-0 text-right">{formatCurrency(totalShortageAmount)}</span>
                   </div>
                 )}
               </div>
@@ -938,11 +940,11 @@ const OrderDetails = () => {
         {(order.status === "confirmed" || order.status === "scheduled") && (
           <Card className="border-green-300 bg-green-50">
             <CardContent className="p-5">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                   <Icon name="CalendarCheck" size={22} className="text-green-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-green-800 text-lg">
                     Заказ подтверждён и поставлен в график отгрузки
                   </h3>
@@ -952,7 +954,7 @@ const OrderDetails = () => {
                       : "Менеджер назначит дату отгрузки в ближайшее время."}
                   </p>
                 </div>
-                <Button variant="outline" className="border-green-400 text-green-800 hover:bg-green-100 shrink-0" asChild>
+                <Button variant="outline" className="border-green-400 text-green-800 hover:bg-green-100 shrink-0 w-full sm:w-auto" asChild>
                   <Link to="/schedule">
                     <Icon name="Calendar" size={16} className="mr-1.5" />
                     График отгрузок

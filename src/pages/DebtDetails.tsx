@@ -114,9 +114,9 @@ const DebtDetails = () => {
                     : "bg-blue-50 border-blue-300"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h4 className="font-bold text-[#27265C]">{invoice.id}</h4>
                       <Badge
                         className={
@@ -144,12 +144,12 @@ const DebtDetails = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-[#27265C]">₽{invoice.amount.toLocaleString()}</div>
+                  <div className="flex sm:flex-col items-center sm:items-end gap-3 flex-shrink-0">
+                    <div className="text-xl sm:text-2xl font-bold text-[#27265C]">₽{invoice.amount.toLocaleString()}</div>
                     <Link to="/payments">
                       <Button
                         size="sm"
-                        className={`mt-2 ${
+                        className={`${
                           invoice.status === "Просрочен"
                             ? "bg-red-600 hover:bg-red-700"
                             : "bg-blue-600 hover:bg-blue-700"
@@ -174,17 +174,17 @@ const DebtDetails = () => {
         <CardContent>
           <div className="space-y-3">
             {paymentHistory.map((payment, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <div key={idx} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <Icon name="CheckCircle" size={20} className="text-green-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-[#27265C]">{payment.invoice}</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#27265C] truncate">{payment.invoice}</p>
                     <p className="text-sm text-gray-500">{payment.date}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <p className="text-lg font-bold text-green-600">₽{payment.amount.toLocaleString()}</p>
                   <Badge variant="outline" className="border-green-500 text-green-600">
                     {payment.status}

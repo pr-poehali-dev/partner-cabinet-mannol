@@ -47,10 +47,10 @@ const Settings = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="Package" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="Package" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="orderStatus" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Статус заказов
                   </Label>
@@ -64,10 +64,10 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="Sparkles" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="Sparkles" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="newProducts" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Новые товары
                   </Label>
@@ -81,10 +81,10 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="Tag" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="Tag" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="promotions" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Акции и спецпредложения
                   </Label>
@@ -98,10 +98,10 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="TrendingUp" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="TrendingUp" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="priceChanges" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Изменение цен
                   </Label>
@@ -115,10 +115,10 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="AlertCircle" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="AlertCircle" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="stockAlerts" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Наличие товаров
                   </Label>
@@ -132,10 +132,10 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg border">
-              <div className="flex items-start gap-3 flex-1">
-                <Icon name="Mail" size={20} className="text-[#27265C] mt-1" />
-                <div>
+            <div className="flex items-start justify-between gap-4 flex-wrap p-4 rounded-lg border">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <Icon name="Mail" size={20} className="text-[#27265C] mt-1 flex-shrink-0" />
+                <div className="min-w-0">
                   <Label htmlFor="newsletter" className="text-base font-semibold text-[#27265C] cursor-pointer">
                     Новостная рассылка
                   </Label>

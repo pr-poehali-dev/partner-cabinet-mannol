@@ -72,7 +72,7 @@ const OrderSuccess = () => {
           <Icon name={config.icon} className={`w-10 h-10 ${config.iconColor}`} />
         </div>
 
-        <h1 className="text-2xl font-bold text-[#27265C] mb-3">{config.title}</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-[#27265C] mb-3">{config.title}</h1>
         <p className="text-gray-500 text-sm leading-relaxed mb-8">
           {config.description}
         </p>

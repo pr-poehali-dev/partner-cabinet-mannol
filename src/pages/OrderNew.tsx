@@ -396,12 +396,12 @@ const OrderNew = () => {
                 <Icon name="Package" size={20} />
                 Товары в заказе
               </CardTitle>
-              <div className="flex items-center gap-3 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
                 <span>{totalPositions} позиций</span>
                 <span className="text-gray-300">·</span>
                 <span>{totalQty} шт</span>
-                <span className="text-gray-300">·</span>
-                <span className="font-semibold text-[#27265C]">{formatCurrency(totalAmount)}</span>
+                <span className="text-gray-300 hidden sm:inline">·</span>
+                <span className="font-semibold text-[#27265C] hidden sm:inline">{formatCurrency(totalAmount)}</span>
               </div>
             </div>
           </CardHeader>
@@ -458,7 +458,7 @@ const OrderNew = () => {
                           <Icon name="Plus" size={12} />
                         </Button>
                       </div>
-                      <span className="font-bold text-[#27265C] text-sm w-24 text-right">
+                      <span className="font-bold text-[#27265C] text-sm min-w-0 text-right whitespace-nowrap">
                         {(item.quantity * item.price).toLocaleString()} ₽
                       </span>
                       <Button
@@ -472,9 +472,9 @@ const OrderNew = () => {
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-end pt-2 border-t border-gray-200">
-                  <span className="font-semibold text-gray-600 mr-3">Итого:</span>
-                  <span className="font-bold text-xl text-[#27265C]">{formatCurrency(totalAmount)}</span>
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-gray-200">
+                  <span className="font-semibold text-gray-600">Итого:</span>
+                  <span className="font-bold text-xl text-[#27265C] min-w-0">{formatCurrency(totalAmount)}</span>
                 </div>
               </div>
             )}
@@ -666,14 +666,14 @@ const OrderNew = () => {
 
         {/* Нижние действия */}
         {cartItems.length > 0 && (
-          <div className="flex items-center justify-between pt-2">
-            <p className="text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+            <p className="text-sm text-gray-500 min-w-0">
               {totalPositions}{" "}
               {totalPositions === 1 ? "позиция" : totalPositions >= 2 && totalPositions <= 4 ? "позиции" : "позиций"}
               {" "}· {totalQty} шт · {formatCurrency(totalAmount)}
             </p>
             <Button
-              className="bg-[#27265C] text-white hover:bg-[#27265C]/90 font-bold px-8"
+              className="bg-[#27265C] text-white hover:bg-[#27265C]/90 font-bold px-6 w-full sm:w-auto"
               onClick={handleFinish}
             >
               <Icon name="Send" size={18} className="mr-2" />

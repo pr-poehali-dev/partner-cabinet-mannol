@@ -178,7 +178,7 @@ const Help = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="sticky top-4">
+          <Card className="md:sticky md:top-4">
             <CardHeader>
               <CardTitle className="text-[#27265C]">Контакты</CardTitle>
               <CardDescription>Свяжитесь с нами напрямую</CardDescription>

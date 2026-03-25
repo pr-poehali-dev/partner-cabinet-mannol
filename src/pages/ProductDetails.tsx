@@ -64,13 +64,13 @@ const ProductDetails = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-1 text-sm text-gray-600 overflow-x-auto flex-wrap">
         {breadcrumbs.map((crumb, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            {idx > 0 && <Icon name="ChevronRight" size={14} />}
+          <div key={idx} className="flex items-center gap-1 flex-shrink-0">
+            {idx > 0 && <Icon name="ChevronRight" size={14} className="flex-shrink-0" />}
             <Link 
               to={crumb.path}
-              className="hover:text-[#27265C] font-medium"
+              className="hover:text-[#27265C] font-medium whitespace-nowrap"
             >
               {crumb.label}
             </Link>
@@ -105,10 +105,10 @@ const ProductDetails = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs defaultValue="description" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="description">Описание</TabsTrigger>
-                  <TabsTrigger value="specs">Характеристики</TabsTrigger>
-                  <TabsTrigger value="application">Применение</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 h-auto">
+                  <TabsTrigger value="description" className="text-xs sm:text-sm py-2">Описание</TabsTrigger>
+                  <TabsTrigger value="specs" className="text-xs sm:text-sm py-2">Характер.</TabsTrigger>
+                  <TabsTrigger value="application" className="text-xs sm:text-sm py-2">Применение</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="description" className="space-y-4 pt-4">
@@ -181,7 +181,7 @@ const ProductDetails = () => {
         </div>
 
         <div className="space-y-6">
-          <Card className="sticky top-4">
+          <Card className="md:sticky md:top-4">
             <CardHeader>
               <CardTitle className="text-[#27265C]">Оформить заказ</CardTitle>
             </CardHeader>
@@ -228,6 +228,7 @@ const ProductDetails = () => {
                   <Button
                     size="sm"
                     variant="outline"
+                    className="flex-shrink-0 h-10 w-10"
                     onClick={() => setQuantity(Math.max(0, quantity - pack.palletQty))}
                   >
                     <Icon name="Minus" size={14} />
@@ -236,12 +237,13 @@ const ProductDetails = () => {
                     type="number"
                     value={quantity || ''}
                     onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                    className="text-center font-bold text-lg"
+                    className="text-center font-bold text-lg min-w-0"
                     placeholder="0"
                   />
                   <Button
                     size="sm"
                     variant="outline"
+                    className="flex-shrink-0 h-10 w-10"
                     onClick={() => setQuantity(quantity + pack.palletQty)}
                   >
                     <Icon name="Plus" size={14} />
@@ -281,18 +283,18 @@ const ProductDetails = () => {
               <Separator />
 
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Цена за единицу:</span>
-                  <span className="font-semibold text-[#27265C]">₽{pack.price.toLocaleString()}</span>
+                <div className="flex justify-between text-sm gap-2">
+                  <span className="text-gray-600 flex-shrink-0">Цена за единицу:</span>
+                  <span className="font-semibold text-[#27265C] min-w-0 truncate">₽{pack.price.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Количество:</span>
+                <div className="flex justify-between text-sm gap-2">
+                  <span className="text-gray-600 flex-shrink-0">Количество:</span>
                   <span className="font-semibold text-[#27265C]">{quantity} шт</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between">
                   <span className="font-bold text-[#27265C]">Итого:</span>
-                  <span className="text-2xl font-bold text-[#27265C]">
+                  <span className="text-xl sm:text-2xl font-bold text-[#27265C] min-w-0 truncate">
                     ₽{(quantity * pack.price).toLocaleString()}
                   </span>
                 </div>
@@ -301,7 +303,7 @@ const ProductDetails = () => {
               <Button
                 onClick={addToOrder}
                 disabled={quantity === 0}
-                className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold h-12 text-lg"
+                className="w-full bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold h-12 text-base sm:text-lg"
               >
                 <Icon name="ShoppingCart" size={20} className="mr-2" />
                 Добавить в заказ

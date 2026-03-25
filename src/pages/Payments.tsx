@@ -197,7 +197,7 @@ const Payments = () => {
         </div>
 
         <div className="space-y-4">
-          <Card className="sticky top-24">
+          <Card className="md:sticky md:top-24">
             <CardHeader>
               <CardTitle className="text-[#27265C]">Сводка по счетам</CardTitle>
             </CardHeader>

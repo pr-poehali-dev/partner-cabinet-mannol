@@ -193,12 +193,12 @@ const DebtBanner = () => {
                     </h4>
                     <div className="space-y-3">
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
                             <p className="font-semibold text-[#27265C]">INV-2024-1120</p>
                             <p className="text-sm text-gray-600">Выставлен: 15.11.2024 • Срок: 20.12.2024</p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0">
                             <p className="text-xl font-bold text-red-600">₽{debtInfo.amount.toLocaleString()}</p>
                             <Badge className="bg-red-500 text-white mt-1">Просрочен</Badge>
                           </div>
@@ -244,7 +244,7 @@ const DebtBanner = () => {
                 </div>
 
                 <div className="space-y-3 pt-4">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Link to="/payments" className="flex-1">
                       <Button className="w-full bg-red-600 text-white hover:bg-red-700 font-semibold">
                         <Icon name="CreditCard" size={18} className="mr-2" />
@@ -258,7 +258,7 @@ const DebtBanner = () => {
                       </Button>
                     </Link>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Link to="/orders">
                       <Button variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
                         <Icon name="Package" size={16} className="mr-2" />

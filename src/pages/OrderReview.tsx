@@ -297,8 +297,8 @@ const OrderReview = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-6">
-            <div className="relative">
-              <div className="flex items-start justify-between">
+            <div className="relative overflow-x-auto pb-1">
+              <div className="flex items-start justify-between min-w-[420px]">
                 {STATUS_STEPS.map((status, index) => {
                   const config = ORDER_STATUS_CONFIG[status];
                   const isCurrent = index === currentStepIndex;
@@ -563,7 +563,7 @@ const OrderReview = () => {
                   <p className="text-xs text-gray-500 mt-0.5">
                     {order.manager}
                   </p>
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
                     <span className="text-xs text-[#27265C] font-medium flex items-center gap-1">
                       <Icon name="Phone" className="w-3 h-3" />
                       {order.managerPhone}
@@ -580,10 +580,10 @@ const OrderReview = () => {
         </Card>
 
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <Button
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
               asChild
             >
               <Link to={`/order/${orderId}`}>
@@ -591,13 +591,10 @@ const OrderReview = () => {
                 Назад к заказу
               </Link>
             </Button>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <div className="hidden sm:block text-xs text-gray-400 text-right max-w-[160px] leading-tight">
-                Хотите добавить товары для более полной загрузки?
-              </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <Button
                 variant="outline"
-                className="border-[#27265C]/30 text-[#27265C] hover:bg-[#27265C]/5"
+                className="border-[#27265C]/30 text-[#27265C] hover:bg-[#27265C]/5 w-full sm:w-auto"
                 asChild
               >
                 <Link to={`/order/${orderId}/adjust`}>
@@ -606,7 +603,7 @@ const OrderReview = () => {
                 </Link>
               </Button>
               <Button
-                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20"
+                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20 w-full sm:w-auto"
                 asChild
               >
                 <Link to={`/order/${orderId}/confirm`}>

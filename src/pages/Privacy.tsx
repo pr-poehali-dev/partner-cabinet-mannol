@@ -5,13 +5,13 @@ import { Separator } from "@/components/ui/separator";
 const Privacy = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-[#27265C] rounded-lg flex items-center justify-center">
-          <Icon name="Shield" size={24} className="text-white" />
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 md:w-12 md:h-12 bg-[#27265C] rounded-lg flex items-center justify-center flex-shrink-0">
+          <Icon name="Shield" size={22} className="text-white" />
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-[#27265C]">Политика конфиденциальности</h1>
-          <p className="text-gray-600">Последнее обновление: 12 февраля 2026</p>
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Политика конфиденциальности</h1>
+          <p className="text-gray-600 text-sm md:text-base">Последнее обновление: 12 февраля 2026</p>
         </div>
       </div>
 

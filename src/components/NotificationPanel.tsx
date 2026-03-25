@@ -116,9 +116,9 @@ const NotificationPanel = ({ notifications, onMarkAsRead, onMarkAllAsRead }: Not
                     <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                       {notification.message}
                     </p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-1">
                       <span className="text-xs text-gray-400">{notification.time}</span>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-1">
                         {!notification.isRead && (
                           <Button
                             variant="ghost"

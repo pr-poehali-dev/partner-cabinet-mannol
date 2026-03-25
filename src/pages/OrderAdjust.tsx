@@ -357,7 +357,7 @@ const OrderAdjust = () => {
                       key={`${product.id}-${pack.size}`}
                       className={`px-5 py-4 transition-colors ${inCart ? "bg-[#FCC71E]/5" : "hover:bg-gray-50/80"}`}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                         {/* Левая часть: название + мета */}
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -400,7 +400,7 @@ const OrderAdjust = () => {
                         </div>
 
                         {/* Правая часть: упаковка + цена + кол-во + кнопка */}
-                        <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
                           {/* Выбор упаковки */}
                           <select
                             className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#27265C]/20 focus:border-[#27265C]/40"
@@ -523,10 +523,10 @@ const OrderAdjust = () => {
 
         {/* Нижняя панель действий */}
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <Button
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
               asChild
             >
               <Link to={`/order/${orderId}/review`}>
@@ -534,9 +534,9 @@ const OrderAdjust = () => {
                 Назад к результатам
               </Link>
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               {cart.length > 0 && (
-                <div className="hidden sm:block text-right">
+                <div className="hidden sm:block text-right shrink-0">
                   <p className="text-xs text-gray-500">К дозаказу</p>
                   <p className="text-sm font-bold text-[#FCC71E]">
                     +{formatCurrency(addedAmount)}
@@ -544,7 +544,7 @@ const OrderAdjust = () => {
                 </div>
               )}
               <Button
-                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20 disabled:opacity-50 disabled:shadow-none"
+                className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20 disabled:opacity-50 disabled:shadow-none w-full sm:w-auto"
                 disabled={cart.length === 0 || isSubmitting}
                 onClick={handleSubmit}
               >

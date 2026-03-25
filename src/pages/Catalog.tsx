@@ -110,18 +110,18 @@ const Catalog = () => {
   const [isCatalogSidebarOpen, setIsCatalogSidebarOpen] = useState(false);
 
   return (
-    <div className="flex gap-0 lg:gap-6">
+    <div className="flex flex-col md:flex-row gap-6">
       {/* Mobile sidebar overlay */}
       {isCatalogSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsCatalogSidebarOpen(false)}
         />
       )}
 
       {/* Mobile sidebar drawer */}
       <aside
-        className={`fixed left-0 top-0 h-full w-72 bg-white z-50 overflow-y-auto transition-transform duration-300 lg:hidden shadow-xl ${
+        className={`fixed left-0 top-0 h-full w-72 bg-white z-50 overflow-y-auto transition-transform duration-300 md:hidden shadow-xl ${
           isCatalogSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -161,7 +161,7 @@ const Catalog = () => {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="w-72 flex-shrink-0 hidden lg:block">
+      <aside className="hidden md:block w-64 flex-shrink-0">
         <Card className="sticky top-4">
           <CardContent className="p-4">
             <h3 className="font-bold text-[#27265C] mb-4">Категории</h3>
@@ -194,14 +194,14 @@ const Catalog = () => {
         </Card>
       </aside>
 
-      <div className="flex-1 space-y-4 min-w-0 w-full">
+      <div className="flex-1 space-y-4 min-w-0 w-full pb-24 md:pb-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {/* Mobile category button */}
             <Button
               variant="outline"
               size="sm"
-              className="lg:hidden border-[#27265C] text-[#27265C]"
+              className="md:hidden border-[#27265C] text-[#27265C]"
               onClick={() => setIsCatalogSidebarOpen(true)}
             >
               <Icon name="SlidersHorizontal" size={16} className="mr-1" />
@@ -261,7 +261,7 @@ const Catalog = () => {
 
         {selectedCategory && !selectedSeries && (
           <div className="space-y-4">
-            <h1 className="text-3xl font-bold text-[#27265C]">{selectedCategory.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">{selectedCategory.name}</h1>
             <p className="text-gray-600">{selectedCategory.description}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {selectedCategory.series.map(series => (
@@ -287,7 +287,7 @@ const Catalog = () => {
         {selectedSeries && (
           <div className="space-y-4">
             <div>
-              <h1 className="text-3xl font-bold text-[#27265C]">{selectedSeries.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">{selectedSeries.name}</h1>
               <p className="text-gray-600">{selectedSeries.description}</p>
             </div>
 
@@ -297,14 +297,14 @@ const Catalog = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Наименование</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Вязкость</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Характеристики</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Упаковка</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Цена</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Наличие</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Количество</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase"></th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Наименование</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Вязкость</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Характеристики</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Упаковка</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Цена</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Наличие</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Количество</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -316,11 +316,11 @@ const Catalog = () => {
                         
                         return (
                           <tr key={product.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4">
-                              <div className="space-y-1">
+                            <td className="px-4 py-4 min-w-[140px]">
+                              <div className="space-y-1 min-w-0">
                                 <Link 
                                   to={`/product/${product.id}`}
-                                  className="font-semibold text-[#27265C] hover:underline"
+                                  className="font-semibold text-[#27265C] hover:underline block"
                                 >
                                   {product.name}
                                 </Link>
@@ -380,7 +380,7 @@ const Catalog = () => {
                                   type="number"
                                   value={quantity || ''}
                                   onChange={(e) => updateQuantity(product.id, selectedPack.size, parseInt(e.target.value) || 0)}
-                                  className="w-20 text-center font-bold"
+                                  className="w-14 sm:w-20 text-center font-bold"
                                   placeholder="0"
                                 />
                                 <Button
@@ -433,13 +433,13 @@ const Catalog = () => {
               <Alert className="bg-[#FCC71E]/10 border-[#FCC71E]">
                 <Icon name="ShoppingCart" size={18} className="text-[#27265C]" />
                 <AlertDescription className="ml-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[#27265C]">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 flex-wrap">
+                    <span className="font-semibold text-[#27265C] min-w-0">
                       В корзине: {totalItems} шт на сумму ₽{totalAmount.toLocaleString()}
                     </span>
                     <Button 
                       onClick={createOrder}
-                      className="bg-[#27265C] text-white hover:bg-[#27265C]/90"
+                      className="bg-[#27265C] text-white hover:bg-[#27265C]/90 w-full sm:w-auto"
                     >
                       Оформить заказ
                     </Button>

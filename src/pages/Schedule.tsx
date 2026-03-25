@@ -271,7 +271,7 @@ const Schedule = () => {
                 {day.slots.map((slot, slotIdx) => (
                   <div
                     key={slotIdx}
-                    className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border-2 ${
                       slot.status === "Подтверждено"
                         ? "border-green-200 bg-green-50"
                         : slot.status === "Ожидание"
@@ -279,8 +279,8 @@ const Schedule = () => {
                           : "border-gray-200 bg-gray-50"
                     }`}
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-white border-2 border-current flex items-center justify-center">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white border-2 border-current flex items-center justify-center flex-shrink-0">
                         <Icon
                           name={
                             slot.status === "Подтверждено"
@@ -289,7 +289,7 @@ const Schedule = () => {
                                 ? "Clock"
                                 : "Calendar"
                           }
-                          size={24}
+                          size={22}
                           className={
                             slot.status === "Подтверждено"
                               ? "text-green-600"
@@ -300,9 +300,9 @@ const Schedule = () => {
                         />
                       </div>
 
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-[#27265C] text-lg">{slot.time}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="font-bold text-[#27265C] text-base md:text-lg">{slot.time}</span>
                           <Badge
                             className={
                               slot.status === "Подтверждено"
@@ -315,7 +315,7 @@ const Schedule = () => {
                             {slot.status}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Icon name="FileText" size={14} />
                             Заказ: <strong>{slot.order}</strong>
@@ -328,7 +328,7 @@ const Schedule = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 flex-shrink-0">
                       {slot.status === "Ожидание" && (
                         <Button size="sm" className="bg-green-500 text-white hover:bg-green-600">
                           <Icon name="Check" size={16} className="mr-1" />
@@ -409,7 +409,7 @@ const Schedule = () => {
               </DialogHeader>
 
               <div className="space-y-5">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-xs text-gray-500 mb-1">Дата и время</p>
                     <p className="font-semibold text-[#27265C]">
@@ -479,7 +479,7 @@ const Schedule = () => {
                     <Icon name="Truck" size={16} />
                     Транспорт и логистика
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-xs text-gray-500 mb-1">Водитель</p>
                       <p className="font-semibold text-[#27265C]">{selectedSlot.slot.driver}</p>
@@ -514,7 +514,7 @@ const Schedule = () => {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <Link to={`/order/${selectedSlot.slot.order}`} className="flex-1">
                     <Button
                       variant="outline"

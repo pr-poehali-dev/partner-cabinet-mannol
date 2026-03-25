@@ -394,7 +394,7 @@ const Backorders = () => {
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-3 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -405,7 +405,7 @@ const Backorders = () => {
                 История
               </Button>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {canAct && (
                   <>
                     <Button
@@ -539,8 +539,8 @@ const Backorders = () => {
               <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center">
                 <Icon name="Banknote" size={20} className="text-rose-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-rose-600">{totalShortageAmount.toLocaleString("ru-RU")} ₽</p>
+              <div className="min-w-0">
+                <p className="text-lg md:text-2xl font-bold text-rose-600 truncate">{totalShortageAmount.toLocaleString("ru-RU")} ₽</p>
                 <p className="text-xs text-gray-500">Сумма активных</p>
               </div>
             </div>
