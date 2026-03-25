@@ -25,23 +25,31 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const ALL_MONTHS = [
+  { month: "Янв'25", orders: 45, revenue: 2450000, plan: 2000000 },
+  { month: "Фев'25", orders: 52, revenue: 2680000, plan: 2000000 },
+  { month: "Мар'25", orders: 48, revenue: 2520000, plan: 2000000 },
+  { month: "Апр'25", orders: 55, revenue: 2850000, plan: 2500000 },
+  { month: "Май'25", orders: 62, revenue: 3120000, plan: 2500000 },
+  { month: "Июн'25", orders: 58, revenue: 2980000, plan: 2500000 },
+  { month: "Июл'25", orders: 51, revenue: 2650000, plan: 2500000 },
+  { month: "Авг'25", orders: 60, revenue: 3080000, plan: 2500000 },
+  { month: "Сен'25", orders: 57, revenue: 2920000, plan: 2500000 },
+  { month: "Окт'25", orders: 64, revenue: 3250000, plan: 3000000 },
+  { month: "Ноя'25", orders: 59, revenue: 3050000, plan: 3000000 },
+  { month: "Дек'25", orders: 42, revenue: 2400000, plan: 3000000 },
+  { month: "Янв'26", orders: 48, revenue: 2610000, plan: 3000000 },
+  { month: "Фев'26", orders: 55, revenue: 2950000, plan: 3000000 },
+];
+
 const Analytics = () => {
   const [periodFilter, setPeriodFilter] = useState("year");
 
-  const monthlyOrders = [
-    { month: "Янв", orders: 45, revenue: 2450000, plan: 2000000 },
-    { month: "Фев", orders: 52, revenue: 2680000, plan: 2000000 },
-    { month: "Мар", orders: 48, revenue: 2520000, plan: 2000000 },
-    { month: "Апр", orders: 55, revenue: 2850000, plan: 2500000 },
-    { month: "Май", orders: 62, revenue: 3120000, plan: 2500000 },
-    { month: "Июн", orders: 58, revenue: 2980000, plan: 2500000 },
-    { month: "Июл", orders: 51, revenue: 2650000, plan: 2500000 },
-    { month: "Авг", orders: 60, revenue: 3080000, plan: 2500000 },
-    { month: "Сен", orders: 57, revenue: 2920000, plan: 2500000 },
-    { month: "Окт", orders: 64, revenue: 3250000, plan: 3000000 },
-    { month: "Ноя", orders: 59, revenue: 3050000, plan: 3000000 },
-    { month: "Дек", orders: 42, revenue: 2400000, plan: 3000000 },
-  ];
+  const monthlyOrders = periodFilter === "month"
+    ? ALL_MONTHS.slice(-2)
+    : periodFilter === "quarter"
+    ? ALL_MONTHS.slice(-5)
+    : ALL_MONTHS;
 
   const categoryData = [
     { name: "Моторные масла", value: 58, amount: 14500000, color: "#3b82f6" },
@@ -100,14 +108,14 @@ const Analytics = () => {
   ];
 
   const quarterlyComparison = [
-    { quarter: "Q1 2023", revenue: 7650000 },
-    { quarter: "Q2 2023", revenue: 8920000 },
-    { quarter: "Q3 2023", revenue: 8450000 },
-    { quarter: "Q4 2023", revenue: 9180000 },
     { quarter: "Q1 2024", revenue: 8880000 },
     { quarter: "Q2 2024", revenue: 9750000 },
     { quarter: "Q3 2024", revenue: 9350000 },
     { quarter: "Q4 2024", revenue: 10120000 },
+    { quarter: "Q1 2025", revenue: 9420000 },
+    { quarter: "Q2 2025", revenue: 10350000 },
+    { quarter: "Q3 2025", revenue: 10100000 },
+    { quarter: "Q4 2025", revenue: 11200000 },
   ];
 
   const kpiStats = [
@@ -252,7 +260,7 @@ const Analytics = () => {
           <CardHeader>
             <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
               <Icon name="Calendar" size={18} />
-              Декабрь 2024
+              Февраль 2026
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -273,7 +281,7 @@ const Analytics = () => {
           <CardHeader>
             <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
               <Icon name="BarChart3" size={18} />
-              Q4 2024
+              Q1 2026
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -294,7 +302,7 @@ const Analytics = () => {
           <CardHeader>
             <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
               <Icon name="TrendingUp" size={18} />
-              Год 2024
+              Год 2025
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

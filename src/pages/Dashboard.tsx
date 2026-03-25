@@ -1,298 +1,241 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { Link } from "react-router-dom";
 
-const Dashboard = () => {
-  const mainStats = [
-    { 
-      title: "Активные заказы", 
-      value: "12", 
-      description: "В работе сейчас — в пределах нормы",
-      icon: "CheckCircle2", 
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-600",
-      status: "Всё время сегодня в срок",
-      statusColor: "text-emerald-600",
-      link: "/orders" 
-    },
-    { 
-      title: "На складе", 
-      value: "847", 
-      description: "позиций в наличии — хватает",
-      icon: "Package", 
-      iconBg: "bg-blue-100",
-      iconColor: "text-blue-600",
-      status: "Товары в наличии, можно заказывать",
-      statusColor: "text-blue-600",
-      link: "/catalog" 
-    },
-    { 
-      title: "Сумма заказов", 
-      value: "₽2,4М", 
-      description: "за месяц",
-      icon: "TrendingUp", 
-      iconBg: "bg-rose-100",
-      iconColor: "text-rose-600",
-      trend: "+5,5%",
-      status: "На 15% больше, чем в прошлом месяце",
-      statusColor: "text-rose-600",
-      link: "/analytics" 
-    },
-  ];
+/* ─── shared mock data (consistent with Orders.tsx) ─── */
+const RECENT_ORDERS = [
+  { id: "ORD-2026-0201", date: "17.02.2026", status: "draft" as const, amount: 389500, items: 3 },
+  { id: "ORD-2026-0198", date: "13.02.2026", status: "processing" as const, amount: 1842600, items: 5 },
+  { id: "ORD-2026-0189", date: "08.02.2026", status: "confirmed" as const, amount: 2480000, items: 3 },
+];
 
-  const additionalInfo = [
-    {
-      icon: "Clock",
-      iconBg: "bg-emerald-50",
-      iconColor: "text-emerald-500",
-      text: "Всё время сегодня в срок",
-      link: "/orders"
-    },
-    {
-      icon: "Package",
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-500",
-      text: "Товары по унита",
-      subtext: "заказано",
-      link: "/backorders"
-    },
-    {
-      icon: "AlertCircle",
-      iconBg: "bg-rose-50",
-      iconColor: "text-rose-500",
-      text: "Програзов в 6 регионах",
-      link: "/backorders"
-    }
-  ];
+const STATUS_LABEL: Record<string, { label: string; bg: string; color: string }> = {
+  draft:      { label: "Черновик",     bg: "bg-slate-100", color: "text-slate-600" },
+  processing: { label: "В обработке",  bg: "bg-amber-100", color: "text-amber-700" },
+  confirmed:  { label: "Подтверждён",  bg: "bg-emerald-100", color: "text-emerald-700" },
+  shipped:    { label: "Отгружен",     bg: "bg-blue-100", color: "text-blue-700" },
+};
 
-  const recentOrders = [
-    { id: "ORD-2026-0198", date: "от 15 февраля", status: "Требует согласования", statusColor: "bg-orange-100 text-orange-700", amount: "₽2,458,900" },
-    { id: "ORD-2026-0195", date: "от 14 февраля", status: "Подтверждён", statusColor: "bg-green-100 text-green-700", amount: "₽1,320,000" },
-    { id: "ORD-2026-0192", date: "от 12 февраля", status: "Отправлен", statusColor: "bg-blue-100 text-blue-700", amount: "₽890,400" },
-  ];
+function fmt(n: number) {
+  return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", minimumFractionDigits: 0 }).format(n);
+}
 
-  const notifications = [
-    {
-      id: 1,
-      priority: "high",
-      icon: "AlertCircle",
-      iconBg: "bg-red-50",
-      iconColor: "text-red-600",
-      title: "Просроченная задолженность!",
-      description: "Оплатите счета на сумму ₽410,000 до 30 апреля, чтобы избежать блокировки отгрузок",
-      tag: "эк рисков.",
-      actionText: "Оплатить счета",
-      actionLink: "/payments",
-      detailsLink: "/debt-details"
-    },
-    {
-      id: 2,
-      priority: "info",
-      icon: "Truck",
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-600",
-      title: "Бесплатная доставка при заказе от ₽100,000",
-      description: "Доступна по вашему региону, воспользуйтесь выгодными условиями",
-      actionText: "Все уведомления",
-      actionLink: "/notifications",
-      detailsLink: "/notifications"
-    }
-  ];
-
+export default function Dashboard() {
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Личный кабинет партнера</h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">Добрый день! Готовы к новым заказам MANNOL?</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Личный кабинет партнёра</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Добрый день! Управляйте заказами MANNOL</p>
         </div>
+        <Link to="/order/new">
+          <Button className="bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-bold h-11 px-5 shadow-sm">
+            <Icon name="Plus" size={17} className="mr-2" />
+            Новый заказ
+          </Button>
+        </Link>
       </div>
 
-      <Card className="bg-gradient-to-r from-amber-50 to-amber-100/50 border-amber-200">
-        <CardContent className="p-4 md:p-8">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg md:text-2xl font-bold text-[#27265C] mb-2">Создать новый заказ</h2>
-              <Link to="/order/new">
-                <Button className="bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C] font-semibold px-4 md:px-8 py-3 md:py-6 text-sm md:text-base mt-2 md:mt-4">
-                  <Icon name="ShoppingCart" size={18} className="mr-2" />
-                  Создать новый заказ
-                </Button>
-              </Link>
-            </div>
-            <div className="hidden lg:block flex-shrink-0">
-              <img 
-                src="https://cdn.poehali.dev/projects/5fb2cde2-4a6e-45ad-96cc-fea77357ddc8/bucket/242f1f87-ca29-40a8-881c-509c272c8e5b.png" 
-                alt="MANNOL Products" 
-                className="h-32 object-contain"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {mainStats.map((stat, idx) => (
-          <Link key={idx} to={stat.link}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
-                      <Icon name={stat.icon} className={stat.iconColor} size={24} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-3xl font-bold text-[#27265C]">{stat.value}</span>
-                        {stat.trend && (
-                          <span className="text-sm font-semibold text-emerald-600">{stat.trend}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Icon name="MessageCircle" size={20} className="text-gray-400" />
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link to="/orders">
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#27265C]/8 flex items-center justify-center">
+                  <Icon name="ShoppingCart" size={19} className="text-[#27265C]" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-700 mb-2">
-                  <span className="font-medium">{stat.description}</span>
-                </p>
-                <p className={`text-xs ${stat.statusColor}`}>{stat.status}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                <Icon name="ChevronRight" size={16} className="text-muted-foreground/40 mt-1" />
+              </div>
+              <p className="text-3xl font-extrabold text-[#27265C]">6</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Активных заказов</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {additionalInfo.map((info, idx) => (
-          <Link key={idx} to={info.link}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg ${info.iconBg} flex items-center justify-center flex-shrink-0`}>
-                    <Icon name={info.icon} className={info.iconColor} size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 truncate">{info.text}</p>
-                    {info.subtext && (
-                      <p className="text-xs text-gray-500">{info.subtext}</p>
-                    )}
-                  </div>
-                  <Icon name="ChevronRight" size={18} className="text-gray-400 flex-shrink-0" />
+        <Link to="/orders?tab=confirmed">
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <Icon name="CheckCircle" size={19} className="text-emerald-600" />
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                <Icon name="ChevronRight" size={16} className="text-muted-foreground/40 mt-1" />
+              </div>
+              <p className="text-3xl font-extrabold text-emerald-600">1</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Подтверждено</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/backorders">
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <Icon name="PackageX" size={19} className="text-orange-600" />
+                </div>
+                <Icon name="ChevronRight" size={16} className="text-muted-foreground/40 mt-1" />
+              </div>
+              <p className="text-3xl font-extrabold text-orange-600">3</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Недопоставки</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link to="/analytics">
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#FCC71E]/20 flex items-center justify-center">
+                  <Icon name="TrendingUp" size={19} className="text-[#27265C]" />
+                </div>
+                <Icon name="ChevronRight" size={16} className="text-muted-foreground/40 mt-1" />
+              </div>
+              <p className="text-xl font-extrabold text-[#27265C] truncate">{fmt(7449500)}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Заказов за месяц</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl text-[#27265C]">Последние заказы</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentOrders.map((order, idx) => (
-                <Link key={idx} to={`/order/${order.id}`}>
-                  <div className="flex items-center justify-between gap-3 p-3 md:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <p className="font-semibold text-[#27265C] truncate">{order.id}</p>
-                      <p className="text-sm text-gray-500">{order.date}</p>
-                      <Badge className={`${order.statusColor} text-xs`}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                    <div className="text-right space-y-1 flex-shrink-0">
-                      <p className="font-bold text-[#27265C] text-base md:text-lg">{order.amount}</p>
-                      <Icon name="ChevronRight" size={18} className="text-gray-400 ml-auto" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-              <div className="pt-2 flex gap-2">
-                <Link to="/catalog" className="flex-1">
-                  <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                    Каталог товаров
-                    <Icon name="ArrowRight" size={16} className="ml-2" />
-                  </Button>
-                </Link>
-                <Link to="/catalog" className="flex-1">
-                  <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                    Рекомендации
-                    <Icon name="ArrowRight" size={16} className="ml-2" />
+      {/* Main 2-col */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Recent orders */}
+        <div className="lg:col-span-2">
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm h-full">
+            <CardHeader className="px-6 py-5 border-b border-[#F0F0F0]">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-[#27265C]">Последние заказы</CardTitle>
+                <Link to="/orders">
+                  <Button variant="ghost" size="sm" className="h-8 text-xs text-[#27265C]/60 hover:text-[#27265C]">
+                    Все заказы
+                    <Icon name="ChevronRight" size={14} className="ml-1" />
                   </Button>
                 </Link>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl text-[#27265C]">Важные уведомления</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {notifications.map((notif) => (
-                <div 
-                  key={notif.id} 
-                  className={`p-4 rounded-lg ${notif.priority === 'high' ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}
-                >
-                  <div className="flex gap-3">
-                    <div className={`w-10 h-10 rounded-lg ${notif.iconBg} flex items-center justify-center flex-shrink-0`}>
-                      <Icon name={notif.icon} className={notif.iconColor} size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2 mb-2">
-                        <Badge variant="destructive" className="text-xs bg-red-600 shrink-0">
-                          {notif.id}
-                        </Badge>
-                        <h3 className="font-semibold text-[#27265C] text-sm">{notif.title}</h3>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">{notif.description}</p>
-                      {notif.tag && (
-                        <div className="flex items-center gap-2 mb-3">
-                          <Icon name="Star" size={14} className="text-amber-500" />
-                          <span className="text-xs text-gray-600">{notif.tag}</span>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-[#F4F4F4]">
+                {RECENT_ORDERS.map((order) => {
+                  const s = STATUS_LABEL[order.status];
+                  return (
+                    <Link key={order.id} to={`/order/${order.id}`}>
+                      <div className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-[#FAFAFA] transition-colors">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-9 h-9 rounded-xl bg-[#27265C]/5 flex items-center justify-center flex-shrink-0">
+                            <Icon name="FileText" size={15} className="text-[#27265C]/50" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#27265C] truncate">{order.id}</p>
+                            <p className="text-xs text-muted-foreground">{order.date} · {order.items} поз.</p>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Link to={notif.actionLink}>
-                          <Button 
-                            size="sm" 
-                            className={`${notif.priority === 'high' ? 'bg-[#FCC71E] hover:bg-[#FCC71E]/90 text-[#27265C]' : 'bg-[#27265C] hover:bg-[#27265C]/90 text-white'} font-semibold`}
-                          >
-                            {notif.actionText}
-                            <Icon name="ArrowRight" size={14} className="ml-1" />
-                          </Button>
-                        </Link>
-                        <Link to={notif.detailsLink}>
-                          <Button size="sm" variant="ghost" className="text-gray-600 hover:text-[#27265C]">
-                            Подробнее
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <Badge className={`${s.bg} ${s.color} border-0 text-xs font-medium hidden sm:flex`}>
+                            {s.label}
+                          </Badge>
+                          <p className="text-sm font-bold text-[#27265C]">{fmt(order.amount)}</p>
+                          <Icon name="ChevronRight" size={15} className="text-muted-foreground/40" />
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="px-6 py-4 border-t border-[#F4F4F4]">
+                <Link to="/order/new">
+                  <Button className="w-full bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-bold h-10">
+                    <Icon name="Plus" size={16} className="mr-2" />
+                    Создать новый заказ
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-4">
+
+          {/* Debt alert */}
+          <Card className="border-2 border-red-200 rounded-2xl shadow-sm bg-red-50">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="AlertCircle" size={17} className="text-red-600" />
                 </div>
-              ))}
-              <Link to="/notifications">
-                <Button variant="outline" className="w-full border-[#27265C] text-[#27265C] hover:bg-[#27265C] hover:text-white">
-                  Все уведомления
-                  <Icon name="ArrowRight" size={16} className="ml-2" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-red-700">Просроченная задолженность</p>
+                  <p className="text-xs text-red-600/80 mt-0.5">До блокировки отгрузок</p>
+                </div>
+              </div>
+              <p className="text-2xl font-extrabold text-red-700 mb-3">{fmt(410000)}</p>
+              <div className="flex gap-2">
+                <Link to="/payments" className="flex-1">
+                  <Button size="sm" className="w-full h-9 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">
+                    Оплатить
+                  </Button>
+                </Link>
+                <Link to="/debt-details">
+                  <Button size="sm" variant="outline" className="h-9 border-red-300 text-red-600 hover:bg-red-100 text-xs">
+                    Детали
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Next shipment */}
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="CalendarDays" size={17} className="text-indigo-600" />
+                </div>
+                <p className="text-sm font-semibold text-[#27265C]">Ближайшая отгрузка</p>
+              </div>
+              <p className="text-base font-bold text-[#27265C] mb-0.5">19 февраля 2026</p>
+              <p className="text-xs text-muted-foreground mb-3">ORD-2026-0189 · Москва (Подольск)</p>
+              <Link to="/schedule">
+                <Button variant="outline" size="sm" className="w-full h-9 border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 text-xs font-medium">
+                  <Icon name="Calendar" size={13} className="mr-1.5" />
+                  График отгрузок
                 </Button>
               </Link>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Quick links */}
+          <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Быстрые действия</p>
+              <div className="space-y-1">
+                {[
+                  { to: "/catalog",    icon: "Package",     label: "Каталог товаров" },
+                  { to: "/backorders", icon: "PackageX",    label: "Недопоставки" },
+                  { to: "/analytics",  icon: "BarChart2",   label: "Аналитика" },
+                  { to: "/payments",   icon: "Banknote",    label: "Оплата счетов" },
+                ].map((item) => (
+                  <Link key={item.to} to={item.to}>
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F7F7F7] transition-colors group">
+                      <Icon name={item.icon} size={15} className="text-[#27265C]/50 group-hover:text-[#27265C] transition-colors flex-shrink-0" />
+                      <span className="text-sm text-[#27265C]/70 group-hover:text-[#27265C] transition-colors font-medium">{item.label}</span>
+                      <Icon name="ChevronRight" size={13} className="text-muted-foreground/30 ml-auto" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

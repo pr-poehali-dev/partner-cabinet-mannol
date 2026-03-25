@@ -1,452 +1,224 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import Icon from "@/components/ui/icon";
-import {
-  MOCK_ORDER,
-  ORDER_STATUS_CONFIG,
-  STATUS_STEPS,
-  LINE_STATUS_CONFIG,
-  formatCurrency,
-  OrderData,
-  OrderItem,
-} from "@/types/order";
+import { formatCurrency, MOCK_ORDER } from "@/types/order";
 
-const OrderConfirm = () => {
+/* meta per order */
+const ORDERS_META: Record<string, { date: string; shipDate: string; warehouse: string; manager: string; totalAmount: number }> = {
+  "ORD-2026-0189": { date: "08.02.2026", shipDate: "19.02.2026", warehouse: "Москва (Подольск)", manager: "Козлов А.П.", totalAmount: 2480000 },
+};
+
+export default function OrderConfirm() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const id = orderId || "ORD-2026-0189";
+  const meta = ORDERS_META[id] || ORDERS_META["ORD-2026-0189"];
+
   const [agreed, setAgreed] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
-  const order: OrderData = {
-    ...MOCK_ORDER,
-    id: orderId || MOCK_ORDER.id,
-    status: "needs-approval",
-  };
-
-  const currentStepIndex = 3;
-  const nextStepIndex = 4;
-
-  const includedItems = useMemo(
-    () =>
-      order.items.filter(
-        (i) =>
-          i.lineStatus !== "rejected-auto" &&
-          !(i.lineStatus === "rejected-manager" && i.qtyConfirmed === 0)
-      ),
-    [order.items]
+  const items = MOCK_ORDER.items;
+  const includedItems = items.filter(
+    (i) => i.lineStatus !== "rejected-auto" && !(i.lineStatus === "rejected-manager" && i.qtyConfirmed === 0)
+  );
+  const excludedItems = items.filter(
+    (i) => i.lineStatus === "rejected-auto" || (i.lineStatus === "rejected-manager" && i.qtyConfirmed === 0)
   );
 
-  const excludedEntries = useMemo(() => {
-    const entries: { item: OrderItem; reason: string }[] = [];
-    order.items.forEach((item) => {
-      if (item.lineStatus === "rejected-auto") {
-        entries.push({
-          item,
-          reason: "Нет остатков",
-        });
-      }
-      if (item.lineStatus === "rejected-manager" && item.qtyShortage > 0) {
-        entries.push({
-          item,
-          reason: `${item.qtyShortage} шт не включены`,
-        });
-      }
-      if (item.lineStatus === "backorder" && item.qtyShortage > 0) {
-        entries.push({
-          item,
-          reason: `${item.qtyShortage} шт в недопоставке`,
-        });
-      }
-    });
-    return entries;
-  }, [order.items]);
+  const confirmedSum = includedItems.reduce((s, i) => {
+    const qty = i.qtyConfirmed > 0 ? i.qtyConfirmed : i.qtyRequested;
+    return s + qty * i.price;
+  }, 0);
+  const totalQty = includedItems.reduce((s, i) => s + (i.qtyConfirmed > 0 ? i.qtyConfirmed : i.qtyRequested), 0);
 
-  const getShipQty = (item: OrderItem) => {
-    if (item.lineStatus === "pending" || item.lineStatus === "preorder") {
-      return item.qtyRequested;
-    }
-    return item.qtyConfirmed;
-  };
-
-  const totalQty = useMemo(
-    () => includedItems.reduce((s, i) => s + getShipQty(i), 0),
-    [includedItems]
-  );
-
-  const totalAmount = useMemo(
-    () => includedItems.reduce((s, i) => s + getShipQty(i) * i.price, 0),
-    [includedItems]
-  );
-
-  const handleConfirm = () => {
-    setIsConfirming(true);
-    setTimeout(() => {
-      navigate(`/order/${orderId}/success?type=confirmed`);
-    }, 1500);
-  };
+  function handleConfirm() {
+    if (!agreed) return;
+    setConfirming(true);
+    setTimeout(() => navigate(`/order/${id}/success?type=confirmed`), 1200);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link
-            to={`/order/${orderId}/review`}
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#27265C] transition-colors mb-4"
-          >
-            <Icon name="ArrowLeft" className="w-4 h-4" />
-            <span>Назад к результатам</span>
-          </Link>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">
-                Финальное подтверждение заказа
-              </h1>
-              <p className="text-gray-500 mt-1 text-sm">
-                Заказ {order.id} — проверьте состав и подтвердите
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className="bg-orange-100 text-orange-700 border-orange-200 shrink-0 self-start"
-            >
-              <Icon name="RotateCcw" className="w-3.5 h-3.5 mr-1" />
-              Требует согласования
-            </Badge>
-          </div>
-        </div>
+    <div className="max-w-2xl mx-auto space-y-6">
 
-        <div className="mb-6 rounded-xl bg-amber-50 border-2 border-amber-300 p-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center shrink-0">
-              <Icon name="ShieldCheck" className="w-6 h-6 text-white" />
+      {/* Breadcrumbs */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link to="/orders" className="hover:text-[#27265C] font-medium transition-colors">Заказы</Link>
+        <Icon name="ChevronRight" size={14} className="text-muted-foreground/50" />
+        <Link to={`/order/${id}`} className="hover:text-[#27265C] transition-colors">{id}</Link>
+        <Icon name="ChevronRight" size={14} className="text-muted-foreground/50" />
+        <span className="text-[#27265C] font-semibold">Подтверждение</span>
+      </nav>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-[#27265C]">Подтвердить заказ</h1>
+        <p className="text-sm text-muted-foreground mt-1">Проверьте финальный состав и подтвердите заказ</p>
+      </div>
+
+      {/* Warning */}
+      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+        <Icon name="AlertTriangle" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-amber-800">После подтверждения изменения невозможны</p>
+          <p className="text-xs text-amber-700 mt-0.5">
+            Заказ будет передан в работу. Все позиции зафиксируются в системе.
+          </p>
+        </div>
+      </div>
+
+      {/* Order summary card */}
+      <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
+        <CardHeader className="px-6 py-4 bg-[#27265C]">
+          <div className="flex items-center gap-3">
+            <Icon name="FileText" size={17} className="text-[#FCC71E]" />
+            <CardTitle className="text-sm font-semibold text-white">{id} — Подтверждённый состав</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="px-6 py-5 bg-white">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Дата создания</p>
+              <p className="text-sm font-semibold text-[#27265C]">{meta.date}</p>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-amber-900">
-                Точка невозврата
-              </h2>
-              <p className="text-sm text-amber-800 mt-1 leading-relaxed">
-                После подтверждения заказ будет заблокирован. Изменения невозможны.
-                Заказ будет передан в график отгрузки.
-              </p>
+              <p className="text-xs text-muted-foreground mb-0.5">Дата отгрузки</p>
+              <p className="text-sm font-semibold text-[#27265C]">{meta.shipDate}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Склад</p>
+              <p className="text-sm font-semibold text-[#27265C]">{meta.warehouse}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Менеджер</p>
+              <p className="text-sm font-semibold text-[#27265C]">{meta.manager}</p>
             </div>
           </div>
-        </div>
 
-        <Card className="mb-6 border-0 shadow-sm overflow-hidden">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold text-[#27265C] flex items-center gap-2">
-              <Icon name="GitBranch" className="w-4.5 h-4.5 text-[#27265C]/70" />
-              Статус заказа
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pb-6">
-            <div className="relative overflow-x-auto pb-1">
-              <div className="flex items-start justify-between min-w-[420px]">
-                {STATUS_STEPS.map((status, index) => {
-                  const config = ORDER_STATUS_CONFIG[status];
-                  const isCurrent = index === currentStepIndex;
-                  const isNext = index === nextStepIndex;
-                  const isPast = index < currentStepIndex;
-                  const isFuture = index > nextStepIndex;
+          <Separator className="mb-4" />
 
+          {/* Included items */}
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Позиции к отгрузке ({includedItems.length})
+          </p>
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#F7F7F7] border-b border-[#EBEBEB]">
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-2.5 whitespace-nowrap">Товар</th>
+                  <th className="text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2.5 whitespace-nowrap">Кол-во</th>
+                  <th className="text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-2.5 whitespace-nowrap">Сумма</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4F4F4]">
+                {includedItems.map((item) => {
+                  const qty = item.qtyConfirmed > 0 ? item.qtyConfirmed : item.qtyRequested;
                   return (
-                    <div
-                      key={status}
-                      className="flex flex-col items-center relative z-10"
-                      style={{ width: `${100 / STATUS_STEPS.length}%` }}
-                    >
-                      <div
-                        className={`
-                          w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all
-                          ${
-                            isCurrent
-                              ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20"
-                              : isNext
-                              ? "bg-green-500 border-green-500 text-white shadow-md shadow-green-500/30 animate-pulse"
-                              : isPast
-                              ? "bg-green-500 border-green-500 text-white"
-                              : "bg-white border-gray-200 text-gray-400"
-                          }
-                        `}
-                      >
-                        {isPast ? (
-                          <Icon name="Check" className="w-4 h-4" />
-                        ) : (
-                          <Icon name={config.icon} className="w-4 h-4" />
-                        )}
-                      </div>
-                      <span
-                        className={`
-                          text-[10px] leading-tight text-center mt-2 max-w-[80px] font-medium
-                          ${
-                            isCurrent
-                              ? "text-orange-700 font-bold"
-                              : isNext
-                              ? "text-green-700 font-bold"
-                              : isPast
-                              ? "text-green-600"
-                              : "text-gray-400"
-                          }
-                        `}
-                      >
-                        {config.label}
-                      </span>
-                      {isNext && (
-                        <span className="text-[9px] text-green-600 font-bold mt-0.5 uppercase tracking-wider">
-                          далее
-                        </span>
-                      )}
-                    </div>
+                    <tr key={item.id} className="hover:bg-[#FAFAFA]">
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-medium text-[#27265C] leading-snug">{item.name}</p>
+                        <p className="text-xs font-mono text-muted-foreground">{item.sku}</p>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-sm font-bold text-[#27265C]">{qty}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-sm font-semibold text-[#27265C]">{formatCurrency(qty * item.price)}</span>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-              <div className="absolute top-[18px] left-[7%] right-[7%] h-0.5 bg-gray-200 -z-0">
-                <div
-                  className="h-full bg-green-500 transition-all duration-500"
-                  style={{
-                    width: `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-            <div className="mt-5 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
-              <Icon name="ArrowRight" className="w-4 h-4 text-green-600 shrink-0" />
-              <span className="text-xs text-green-800">
-                После подтверждения статус изменится с{" "}
-                <span className="font-semibold">Требует согласования</span> на{" "}
-                <span className="font-semibold">Подтверждён</span>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+              </tbody>
+            </table>
+          </div>
 
-        <Card className="mb-6 border-0 shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-[#27265C] flex items-center gap-2">
-                <Icon name="ClipboardList" className="w-4.5 h-4.5 text-[#27265C]/70" />
-                Состав заказа к отгрузке
-              </CardTitle>
-              <Badge
-                variant="outline"
-                className="bg-green-50 text-green-700 border-green-200 text-xs font-semibold"
-              >
-                {includedItems.length} позиций
-              </Badge>
+          {/* Total */}
+          <div className="flex items-center justify-between bg-[#27265C]/5 rounded-xl px-4 py-3">
+            <div>
+              <span className="text-sm font-bold text-[#27265C]">Итого к отгрузке</span>
+              <span className="text-xs text-muted-foreground ml-2">{totalQty} шт.</span>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-0">
-              {includedItems.map((item, index) => {
-                const shipQty = getShipQty(item);
-                const lineTotal = shipQty * item.price;
-                const lineWeight = shipQty * item.weightPerUnit;
-                const lineConfig = LINE_STATUS_CONFIG[item.lineStatus];
-                const isPartial =
-                  item.qtyConfirmed > 0 &&
-                  item.qtyConfirmed < item.qtyRequested;
+            <span className="text-xl font-extrabold text-[#27265C]">{formatCurrency(confirmedSum)}</span>
+          </div>
 
-                return (
-                  <div key={item.id}>
-                    {index > 0 && <Separator className="my-0" />}
-                    <div className="py-3.5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-400 font-mono">
-                              {item.sku}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] px-1.5 py-0 h-4 ${lineConfig.bgColor} ${lineConfig.color} border`}
-                            >
-                              {lineConfig.label}
-                            </Badge>
-                            {isPartial && (
-                              <span className="text-[10px] text-amber-600 font-medium">
-                                ({item.qtyConfirmed} из {item.qtyRequested})
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-[#27265C]">
-                            {item.name}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1">
-                            <span className="text-xs text-gray-500">
-                              {shipQty} шт x {formatCurrency(item.price)}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {formatWeight(lineWeight)}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-sm font-bold text-[#27265C] shrink-0">
-                          {formatCurrency(lineTotal)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {excludedEntries.length > 0 && (
-          <Card className="mb-6 border-0 shadow-sm bg-gray-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-red-700 flex items-center gap-2">
-                <Icon name="Ban" className="w-4.5 h-4.5 text-red-500" />
-                Не включено в заказ
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-0">
-                {excludedEntries.map((entry, index) => (
-                  <div key={`${entry.item.id}-${index}`}>
-                    {index > 0 && <Separator className="my-0" />}
-                    <div className="flex items-center justify-between py-3 gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-gray-500 truncate">
-                          {entry.item.name}
-                        </p>
-                        <span className="text-xs text-gray-400 font-mono">
-                          {entry.item.sku}
-                        </span>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="bg-red-50 text-red-600 border-red-200 text-xs shrink-0"
-                      >
-                        <Icon name="XCircle" className="w-3 h-3 mr-1" />
-                        {entry.reason}
-                      </Badge>
+          {/* Excluded items */}
+          {excludedItems.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Исключённые позиции ({excludedItems.length})
+              </p>
+              <div className="space-y-2">
+                {excludedItems.map((item) => (
+                  <div key={item.id} className="flex items-start gap-3 p-3 bg-red-50 rounded-xl">
+                    <Icon name="XCircle" size={15} className="text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-red-700 font-medium line-through">{item.name}</p>
+                      {item.rejectReason && (
+                        <p className="text-xs text-red-500 mt-0.5">{item.rejectReason}</p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="mb-6 border-0 shadow-lg bg-[#27265C] text-white overflow-hidden">
-          <CardContent className="pt-6 pb-6">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Icon name="Receipt" className="w-5 h-5 text-[#FCC71E]" />
-              </div>
-              <h3 className="text-lg font-bold">Итоговая сводка</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="bg-white/10 rounded-xl p-3.5">
-                <p className="text-[11px] text-white/60 font-medium mb-1">Позиций</p>
-                <p className="text-xl font-bold">{includedItems.length}</p>
-              </div>
-              <div className="bg-white/10 rounded-xl p-3.5">
-                <p className="text-[11px] text-white/60 font-medium mb-1">Количество</p>
-                <p className="text-xl font-bold min-w-0">{totalQty.toLocaleString("ru-RU")} шт</p>
-              </div>
-            </div>
-            <div className="bg-white/10 rounded-xl p-4 mb-5">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-white/70">Итого к оплате</span>
-              </div>
-              <p className="text-3xl font-bold text-[#FCC71E]">
-                {formatCurrency(totalAmount)}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="bg-white/10 rounded-xl p-3.5 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Icon name="CalendarDays" className="w-4 h-4 text-white/60" />
-                  <div>
-                    <p className="text-[11px] text-white/60">Дата отгрузки</p>
-                    <p className="text-sm font-semibold">
-                      {order.orderType === "direct"
-                        ? "Прямой заказ"
-                        : order.desiredShipmentDate}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icon name="Warehouse" className="w-4 h-4 text-white/60" />
-                  <div>
-                    <p className="text-[11px] text-white/60">Склад</p>
-                    <p className="text-sm font-semibold">{order.warehouse}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Agreement */}
+      <div
+        className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+          agreed ? "bg-emerald-50 border-emerald-300" : "bg-white border-[#E8E8E8]"
+        }`}
+        onClick={() => setAgreed(!agreed)}
+      >
+        <Checkbox
+          checked={agreed}
+          onCheckedChange={(v) => setAgreed(!!v)}
+          className="mt-0.5 flex-shrink-0"
+        />
+        <p className="text-sm text-[#27265C] leading-relaxed select-none">
+          Я проверил состав заказа и подтверждаю его отправку в работу. Понимаю, что после подтверждения изменения невозможны.
+        </p>
+      </div>
 
-        <Card className="mb-8 border-0 shadow-sm">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="confirm-agreement"
-                checked={agreed}
-                onCheckedChange={(checked) => setAgreed(checked === true)}
-                className="mt-0.5 h-5 w-5 border-2 border-[#27265C]/40 data-[state=checked]:bg-[#27265C] data-[state=checked]:border-[#27265C]"
-              />
-              <label
-                htmlFor="confirm-agreement"
-                className="text-sm text-gray-700 leading-relaxed cursor-pointer select-none"
-              >
-                Я подтверждаю состав заказа и понимаю, что после подтверждения
-                изменения невозможны. Заказ будет передан в график отгрузки в
-                текущем составе.
-              </label>
-            </div>
-            {!agreed && (
-              <div className="mt-3 ml-8 flex items-center gap-1.5 text-xs text-amber-600">
-                <Icon name="AlertTriangle" className="w-3.5 h-3.5" />
-                <span>Необходимо подтвердить для продолжения</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
-              asChild
-            >
-              <Link to={`/order/${orderId}/adjust`}>
-                <Icon name="ArrowLeft" className="w-4 h-4 mr-2" />
-                Вернуться к дозаказу
-              </Link>
-            </Button>
-            <Button
-              className="bg-[#27265C] hover:bg-[#27265C]/90 text-white px-6 shadow-lg shadow-[#27265C]/20 disabled:opacity-50 disabled:shadow-none w-full sm:w-auto"
-              disabled={!agreed || isConfirming}
-              onClick={handleConfirm}
-            >
-              {isConfirming ? (
-                <>
-                  <Icon name="Loader2" className="w-4 h-4 mr-2 animate-spin" />
-                  Подтверждение...
-                </>
-              ) : (
-                <>
-                  <Icon name="CheckCircle" className="w-4 h-4 mr-2" />
-                  Подтвердить заказ
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link to={`/order/${id}`} className="flex-1">
+          <Button
+            variant="outline"
+            className="w-full border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 h-12 font-medium"
+          >
+            <Icon name="ArrowLeft" size={16} className="mr-2" />
+            Вернуться к заказу
+          </Button>
+        </Link>
+        <Button
+          className={`flex-1 h-12 font-bold shadow-sm ${
+            agreed
+              ? "bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C]"
+              : "bg-[#F4F4F4] text-muted-foreground cursor-not-allowed"
+          }`}
+          onClick={handleConfirm}
+          disabled={!agreed || confirming}
+        >
+          {confirming ? (
+            <>
+              <Icon name="Loader" size={16} className="mr-2 animate-spin" />
+              Подтверждаем...
+            </>
+          ) : (
+            <>
+              <Icon name="CheckCircle" size={16} className="mr-2" />
+              Подтвердить заказ
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
-};
-
-export default OrderConfirm;
+}

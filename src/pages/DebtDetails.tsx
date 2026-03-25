@@ -1,195 +1,214 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { Link } from "react-router-dom";
 
-const DebtDetails = () => {
-  const debtInfo = {
-    totalDebt: 124500,
-    currentDebt: 45000,
-    overdueDebt: 79500,
-    overdueDays: 5,
-    isBlocked: false
-  };
+function fmt(n: number) {
+  return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", minimumFractionDigits: 0 }).format(n);
+}
 
-  const invoices = [
-    { id: "INV-2024-1120", date: "15.11.2024", dueDate: "20.12.2024", amount: 79500, status: "Просрочен", overdueDays: 5 },
-    { id: "INV-2024-1145", date: "01.12.2024", dueDate: "28.12.2024", amount: 45000, status: "Текущий", overdueDays: 0 }
-  ];
+/* ─── данные синхронизированы с Payments.tsx ─── */
+const INVOICES = [
+  {
+    id: "INV-2026-0042",
+    date: "10.01.2026",
+    dueDate: "10.02.2026",
+    amount: 410000,
+    status: "overdue" as const,
+    overdueDays: 14,
+    order: "ORD-2026-0185",
+  },
+  {
+    id: "INV-2026-0051",
+    date: "01.02.2026",
+    dueDate: "01.03.2026",
+    amount: 256000,
+    status: "current" as const,
+    overdueDays: 0,
+    order: "ORD-2026-0194",
+  },
+];
 
-  const paymentHistory = [
-    { date: "10.12.2024", amount: 150000, invoice: "INV-2024-1089", status: "Проведен" },
-    { date: "25.11.2024", amount: 95000, invoice: "INV-2024-1045", status: "Проведен" },
-    { date: "15.11.2024", amount: 120000, invoice: "INV-2024-1012", status: "Проведен" }
-  ];
+const PAYMENT_HISTORY = [
+  { date: "20.01.2026", amount: 380000, invoice: "INV-2026-0038", method: "Банковский перевод" },
+  { date: "05.01.2026", amount: 215000, invoice: "INV-2026-0031", method: "Банковский перевод" },
+  { date: "18.12.2025", amount: 490000, invoice: "INV-2025-0124", method: "Банковский перевод" },
+];
 
+const overdueAmount = INVOICES.filter(i => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+const currentAmount = INVOICES.filter(i => i.status === "current").reduce((s, i) => s + i.amount, 0);
+const totalAmount = overdueAmount + currentAmount;
+
+export default function DebtDetails() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#27265C]">Задолженность</h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">Детальная информация по дебиторской задолженности</p>
+          <p className="text-muted-foreground mt-1 text-sm">Дебиторская задолженность по счетам</p>
         </div>
         <Link to="/payments">
-          <Button className="bg-red-600 text-white hover:bg-red-700 font-bold text-sm md:text-lg px-4 md:px-6 w-full sm:w-auto">
-            <Icon name="CreditCard" size={18} className="mr-2" />
-            Погасить долг
+          <Button className="bg-red-600 hover:bg-red-700 text-white font-bold h-10 px-5">
+            <Icon name="CreditCard" size={16} className="mr-2" />
+            Оплатить счета
           </Button>
         </Link>
       </div>
 
-      {debtInfo.overdueDebt > 0 && (
-        <Card className="border-2 border-red-500 bg-red-50">
-          <CardContent className="p-6">
+      {/* Overdue alert */}
+      {overdueAmount > 0 && (
+        <Card className="border-2 border-red-300 rounded-2xl bg-red-50 shadow-sm">
+          <CardContent className="p-5">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icon name="AlertTriangle" size={24} className="text-white" />
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertTriangle" size={18} className="text-red-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-red-900 mb-2">⚠️ Просроченная задолженность</h3>
-                <p className="text-red-800 mb-4">
-                  У вас имеется просроченная задолженность на сумму <span className="font-bold text-2xl">₽{debtInfo.overdueDebt.toLocaleString()}</span>. 
-                  Просрочка составляет {debtInfo.overdueDays} дней.
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-red-800 mb-1">Просроченная задолженность</p>
+                <p className="text-sm text-red-700 mb-3">
+                  Просрочка {INVOICES.find(i => i.status === "overdue")?.overdueDays} дней.
+                  Во избежание блокировки отгрузок оплатите счёт как можно скорее.
                 </p>
-                {debtInfo.isBlocked && (
-                  <div className="bg-white/50 border border-red-300 rounded-lg p-3">
-                    <p className="text-red-900 font-semibold">
-                      🚫 Отгрузка товаров приостановлена до полного погашения задолженности
-                    </p>
-                  </div>
-                )}
+                <p className="text-2xl font-extrabold text-red-700">{fmt(overdueAmount)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-red-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C]">Общая задолженность</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-600">₽{debtInfo.totalDebt.toLocaleString()}</div>
-            <p className="text-sm text-gray-500 mt-2">Требует оплаты</p>
+      {/* KPI tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[#27265C]/8 flex items-center justify-center flex-shrink-0">
+                <Icon name="Banknote" size={17} className="text-[#27265C]" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Всего</p>
+            </div>
+            <p className="text-2xl font-extrabold text-[#27265C]">{fmt(totalAmount)}</p>
           </CardContent>
         </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C]">Просроченная</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">₽{debtInfo.overdueDebt.toLocaleString()}</div>
-            <p className="text-sm text-gray-500 mt-2">Просрочка {debtInfo.overdueDays} дней</p>
+        <Card className="border border-red-200 rounded-2xl shadow-sm bg-red-50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertCircle" size={17} className="text-red-600" />
+              </div>
+              <p className="text-xs font-semibold text-red-500 uppercase tracking-wider">Просрочено</p>
+            </div>
+            <p className="text-2xl font-extrabold text-red-700">{fmt(overdueAmount)}</p>
           </CardContent>
         </Card>
-
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader>
-            <CardTitle className="text-[#27265C]">Текущая</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">₽{debtInfo.currentDebt.toLocaleString()}</div>
-            <p className="text-sm text-gray-500 mt-2">Не просрочена</p>
+        <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Icon name="Clock" size={17} className="text-amber-600" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Текущее</p>
+            </div>
+            <p className="text-2xl font-extrabold text-[#27265C]">{fmt(currentAmount)}</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[#27265C]">Неоплаченные счета</CardTitle>
-          <CardDescription>Список счетов требующих оплаты</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {invoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className={`p-4 rounded-lg border-2 ${
-                  invoice.status === "Просрочен"
-                    ? "bg-red-50 border-red-300"
-                    : "bg-blue-50 border-blue-300"
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h4 className="font-bold text-[#27265C]">{invoice.id}</h4>
-                      <Badge
-                        className={
-                          invoice.status === "Просрочен"
-                            ? "bg-red-500 text-white"
-                            : "bg-blue-500 text-white"
-                        }
-                      >
-                        {invoice.status}
-                      </Badge>
-                      {invoice.overdueDays > 0 && (
-                        <Badge className="bg-orange-500 text-white">
-                          Просрочка {invoice.overdueDays} дней
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500">Дата выставления</p>
-                        <p className="font-semibold text-[#27265C]">{invoice.date}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Срок оплаты</p>
-                        <p className="font-semibold text-[#27265C]">{invoice.dueDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex sm:flex-col items-center sm:items-end gap-3 flex-shrink-0">
-                    <div className="text-xl sm:text-2xl font-bold text-[#27265C]">₽{invoice.amount.toLocaleString()}</div>
-                    <Link to="/payments">
-                      <Button
-                        size="sm"
-                        className={`${
-                          invoice.status === "Просрочен"
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-blue-600 hover:bg-blue-700"
-                        } text-white font-semibold`}
-                      >
-                        Оплатить
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
+      {/* Invoices table */}
+      <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
+        <CardHeader className="px-6 py-5 border-b border-[#F0F0F0] bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#27265C]/8 flex items-center justify-center">
+                <Icon name="FileText" size={15} className="text-[#27265C]" />
               </div>
-            ))}
+              <CardTitle className="text-base font-semibold text-[#27265C]">Неоплаченные счета</CardTitle>
+            </div>
+            <Link to="/payments">
+              <Button size="sm" className="h-8 px-3 bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-semibold text-xs">
+                <Icon name="CreditCard" size={13} className="mr-1.5" />
+                Оплатить
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#F7F7F7] border-b border-[#EBEBEB]">
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3 whitespace-nowrap">Счёт</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 py-3 whitespace-nowrap">Заказ</th>
+                  <th className="text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 py-3 whitespace-nowrap">Срок оплаты</th>
+                  <th className="text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 py-3 whitespace-nowrap">Статус</th>
+                  <th className="text-right text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3 whitespace-nowrap">Сумма</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4F4F4]">
+                {INVOICES.map((inv) => (
+                  <tr key={inv.id} className={`hover:bg-[#FAFAFA] transition-colors ${inv.status === "overdue" ? "bg-red-50/40" : ""}`}>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-bold text-[#27265C]">{inv.id}</p>
+                      <p className="text-xs text-muted-foreground">от {inv.date}</p>
+                    </td>
+                    <td className="px-3 py-4">
+                      <Link to={`/order/${inv.order}`} className="text-sm font-medium text-[#27265C] hover:underline">
+                        {inv.order}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-4 text-center">
+                      <p className="text-sm font-medium text-[#27265C]">{inv.dueDate}</p>
+                      {inv.status === "overdue" && (
+                        <p className="text-xs text-red-500 font-semibold">просрочен {inv.overdueDays} дн.</p>
+                      )}
+                    </td>
+                    <td className="px-3 py-4 text-center">
+                      {inv.status === "overdue" ? (
+                        <Badge className="bg-red-100 text-red-700 border-0 font-semibold">Просрочен</Badge>
+                      ) : (
+                        <Badge className="bg-amber-100 text-amber-700 border-0 font-semibold">Текущий</Badge>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <p className={`text-base font-extrabold ${inv.status === "overdue" ? "text-red-600" : "text-[#27265C]"}`}>
+                        {fmt(inv.amount)}
+                      </p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[#27265C]">История платежей</CardTitle>
-          <CardDescription>Последние проведенные платежи</CardDescription>
+      {/* Payment history */}
+      <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
+        <CardHeader className="px-6 py-5 border-b border-[#F0F0F0]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <Icon name="CheckCircle" size={15} className="text-emerald-600" />
+            </div>
+            <CardTitle className="text-base font-semibold text-[#27265C]">История платежей</CardTitle>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {paymentHistory.map((payment, idx) => (
-              <div key={idx} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Icon name="CheckCircle" size={20} className="text-green-600" />
+        <CardContent className="p-0 bg-white">
+          <div className="divide-y divide-[#F4F4F4]">
+            {PAYMENT_HISTORY.map((p, i) => (
+              <div key={i} className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-[#FAFAFA] transition-colors">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <Icon name="Check" size={14} className="text-emerald-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#27265C] truncate">{payment.invoice}</p>
-                    <p className="text-sm text-gray-500">{payment.date}</p>
+                    <p className="text-sm font-semibold text-[#27265C]">{p.invoice}</p>
+                    <p className="text-xs text-muted-foreground">{p.date} · {p.method}</p>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-green-600">₽{payment.amount.toLocaleString()}</p>
-                  <Badge variant="outline" className="border-green-500 text-green-600">
-                    {payment.status}
-                  </Badge>
-                </div>
+                <p className="text-base font-bold text-emerald-600 flex-shrink-0">{fmt(p.amount)}</p>
               </div>
             ))}
           </div>
@@ -197,6 +216,4 @@ const DebtDetails = () => {
       </Card>
     </div>
   );
-};
-
-export default DebtDetails;
+}
