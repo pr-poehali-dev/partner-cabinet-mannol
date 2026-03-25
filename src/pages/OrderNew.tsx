@@ -1,30 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { formatCurrency } from "@/types/order";
 
-export interface CartItem {
+interface OrderItem {
   id: string;
   name: string;
   sku: string;
   price: number;
   quantity: number;
   unit: string;
-  /** Сколько единиц есть на складе прямо сейчас (0 = товар под заказ) */
-  stock: number;
-  /** true = позиция идёт как предзаказ/под заказ (нет на складе) */
   isBackorder: boolean;
 }
 
@@ -34,656 +34,559 @@ interface CatalogProduct {
   sku: string;
   price: number;
   unit: string;
-  category: string;
   inStock: boolean;
   stock: number;
+  category: string;
 }
 
-const ORDER_ID = "ORD-2026-0215";
-
-
-const CATALOG: CatalogProduct[] = [
-  { id: "p1",  name: "MANNOL Energy Formula OP 5W-30",            sku: "MN7917-4",  price: 1450, unit: "шт", category: "Моторные масла",           inStock: true,  stock: 24 },
-  { id: "p2",  name: "MANNOL Diesel Extra 10W-40",                sku: "MN7504-4",  price: 1100, unit: "шт", category: "Моторные масла",           inStock: true,  stock: 6  },
-  { id: "p3",  name: "MANNOL ATF AG52 Automatic Special",         sku: "MN8211-4",  price: 980,  unit: "шт", category: "Трансмиссионные масла",    inStock: true,  stock: 40 },
-  { id: "p4",  name: "MANNOL Longlife 504/507 5W-30",             sku: "MN7715-4",  price: 1680, unit: "шт", category: "Моторные масла",           inStock: false, stock: 0  },
-  { id: "p5",  name: "MANNOL Classic 10W-40 API SN/CF",           sku: "MN7501-4",  price: 1050, unit: "шт", category: "Моторные масла",           inStock: true,  stock: 18 },
-  { id: "p6",  name: "MANNOL Compressor Oil ISO 100",             sku: "MN2902-4",  price: 890,  unit: "шт", category: "Компрессорные масла",      inStock: true,  stock: 12 },
-  { id: "p7",  name: "MANNOL Antifreeze AG13 -40C",               sku: "MN4013-5",  price: 520,  unit: "шт", category: "Охлаждающие жидкости",     inStock: true,  stock: 50 },
-  { id: "p8",  name: "MANNOL Radiator Flush 0.5L",                sku: "MN9711-05", price: 320,  unit: "шт", category: "Автохимия",                inStock: true,  stock: 8  },
-  { id: "p9",  name: "MANNOL Transmission Fluid ATF Dexron VI",   sku: "MN8207-4",  price: 1200, unit: "шт", category: "Трансмиссионные масла",    inStock: true,  stock: 30 },
-  { id: "p10", name: "MANNOL Brake Fluid DOT 4",                  sku: "MN8818-1",  price: 280,  unit: "шт", category: "Тормозные жидкости",       inStock: true,  stock: 5  },
+const MOCK_CATALOG: CatalogProduct[] = [
+  { id: "p1", name: "Моторное масло MANNOL 5W-30 4л", sku: "MN7707-4", price: 2490, unit: "шт", inStock: true, stock: 240, category: "Масла моторные" },
+  { id: "p2", name: "Моторное масло MANNOL 5W-40 4л", sku: "MN7914-4", price: 2750, unit: "шт", inStock: true, stock: 185, category: "Масла моторные" },
+  { id: "p3", name: "Трансмиссионное масло MANNOL ATF-A 1л", sku: "MN8212-1", price: 890, unit: "шт", inStock: true, stock: 72, category: "Масла трансмиссионные" },
+  { id: "p4", name: "Тормозная жидкость MANNOL DOT 4 0.5л", sku: "MN8812-05", price: 320, unit: "шт", inStock: true, stock: 310, category: "Тормозные жидкости" },
+  { id: "p5", name: "Антифриз MANNOL AF12 Plus 1л", sku: "MN4012-1", price: 420, unit: "шт", inStock: false, stock: 0, category: "Антифриз" },
+  { id: "p6", name: "Промывка двигателя MANNOL Motor Flush 0.35л", sku: "MN9900-035", price: 560, unit: "шт", inStock: true, stock: 44, category: "Автохимия" },
+  { id: "p7", name: "Очиститель карбюратора MANNOL 400мл", sku: "MN9678-04", price: 380, unit: "шт", inStock: true, stock: 96, category: "Автохимия" },
+  { id: "p8", name: "Моторное масло MANNOL Classic 10W-40 4л", sku: "MN7501-4", price: 1890, unit: "шт", inStock: true, stock: 320, category: "Масла моторные" },
 ];
 
-/** Вспомогательная функция: сколько данного товара уже зарезервировано в корзине */
-function reservedInCart(cartItems: CartItem[], productId: string): number {
-  return cartItems.find((i) => i.id === productId && !i.isBackorder)?.quantity ?? 0;
-}
+const DEFAULT_ITEMS: OrderItem[] = [
+  { id: "i1", name: "Моторное масло MANNOL 5W-30 4л", sku: "MN7707-4", price: 2490, quantity: 10, unit: "шт", isBackorder: false },
+  { id: "i2", name: "Моторное масло MANNOL 5W-40 4л", sku: "MN7914-4", price: 2750, quantity: 5, unit: "шт", isBackorder: false },
+  { id: "i3", name: "Антифриз MANNOL AF12 Plus 1л", sku: "MN4012-1", price: 420, quantity: 20, unit: "шт", isBackorder: true },
+];
 
-const OrderNew = () => {
+const DISCOUNT_PERCENT = 7;
+
+export default function OrderNew() {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [addQty, setAddQty] = useState<Record<string, number>>({});
-  const [desiredDate, setDesiredDate] = useState("");
 
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return CATALOG;
-    const q = searchQuery.toLowerCase();
-    return CATALOG.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-    );
-  }, [searchQuery]);
+  const [items, setItems] = useState<OrderItem[]>(DEFAULT_ITEMS);
+  const [search, setSearch] = useState("");
+  const [comment, setComment] = useState("");
+  const [counterparty, setCounterparty] = useState("");
+  const [warehouse, setWarehouse] = useState("");
+  const [shipDate, setShipDate] = useState("");
+  const [manager] = useState("Иванова Мария Сергеевна");
 
-  const totalPositions = cartItems.length;
-  const totalQty = cartItems.reduce((s, i) => s + i.quantity, 0);
-  const totalAmount = cartItems.reduce((s, i) => s + i.quantity * i.price, 0);
-  const hasBackorders = cartItems.some((i) => i.isBackorder);
+  const today = new Date().toISOString().split("T")[0];
 
-  // ── Изменение количества в таблице корзины ─────────────────────────────────
-  const updateQuantity = (id: string, qty: number) => {
-    const item = cartItems.find((i) => i.id === id);
-    if (!item) return;
+  const filteredCatalog = MOCK_CATALOG.filter((p) => {
+    const q = search.toLowerCase();
+    return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+  });
 
-    const newQty = Math.max(0, qty);
+  const showCatalog = search.length > 1;
 
-    if (newQty === 0) {
-      setCartItems((prev) => prev.filter((i) => i.id !== id));
-      toast("Позиция удалена из заказа");
-      return;
-    }
+  function updateQty(id: string, val: string) {
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1) return;
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, quantity: num } : it)));
+  }
 
-    // Для товаров с остатком — не даём превысить складской лимит
-    if (!item.isBackorder && newQty > item.stock) {
-      toast.warning(`Максимально доступно: ${item.stock} шт`, {
-        description: "Нельзя заказать больше, чем есть на складе. Оставшееся количество можно добавить через «Под заказ».",
-        duration: 4000,
-      });
-      setCartItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, quantity: item.stock } : i))
-      );
-      return;
-    }
+  function removeItem(id: string) {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+    toast.success("Позиция удалена");
+  }
 
-    setCartItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: newQty } : i))
-    );
-  };
-
-  // ── Удаление позиции ───────────────────────────────────────────────────────
-  const removeItem = (id: string) => {
-    setCartItems((prev) => prev.filter((i) => i.id !== id));
-    toast("Позиция удалена из заказа");
-  };
-
-  // ── Добавление товара в корзину ────────────────────────────────────────────
-  const addToOrder = (product: CatalogProduct) => {
-    const requested = addQty[product.id] ?? 10;
-
-    // ── Случай 1: товар «Под заказ» (нет на складе) ───────────────────────
-    if (!product.inStock) {
-      const existing = cartItems.find((i) => i.id === product.id && i.isBackorder);
-      if (existing) {
-        setCartItems((prev) =>
-          prev.map((i) =>
-            i.id === product.id && i.isBackorder
-              ? { ...i, quantity: i.quantity + requested }
-              : i
-          )
-        );
-        toast.info("Количество обновлено", {
-          description: `${product.name} — теперь ${existing.quantity + requested} шт (предзаказ)`,
-          duration: 3000,
-        });
-      } else {
-        setCartItems((prev) => [
-          ...prev,
-          {
-            id: product.id,
-            name: product.name,
-            sku: product.sku,
-            price: product.price,
-            quantity: requested,
-            unit: product.unit,
-            stock: 0,
-            isBackorder: true,
-          },
-        ]);
-        toast.info("Добавлено в предзаказ", {
-          description: `${product.name} — ${requested} шт. Менеджер уточнит срок поставки.`,
-          duration: 4000,
-        });
-      }
-      setAddQty((prev) => ({ ...prev, [product.id]: 10 }));
-      return;
-    }
-
-    // ── Случай 2: товар в наличии ─────────────────────────────────────────
-    const alreadyReserved = reservedInCart(cartItems, product.id);
-    const freeStock = Math.max(0, product.stock - alreadyReserved);
-
-    if (freeStock === 0) {
-      toast.warning("Весь доступный остаток уже в заказе", {
-        description: (
-          <div className="text-sm space-y-1 mt-1">
-            <p>На складе: <strong>{product.stock} шт</strong> — всё уже добавлено.</p>
-            <p className="text-gray-600">Нужно больше? Добавьте нужное количество как «Под заказ» — менеджер включит в допоставку.</p>
-          </div>
-        ),
-        duration: 6000,
-        action: {
-          label: "Под заказ",
-          onClick: () => {
-            setCartItems((prev) => {
-              const backorderExists = prev.find((i) => i.id === product.id && i.isBackorder);
-              if (backorderExists) {
-                return prev.map((i) =>
-                  i.id === product.id && i.isBackorder
-                    ? { ...i, quantity: i.quantity + requested }
-                    : i
-                );
-              }
-              return [
-                ...prev,
-                {
-                  id: product.id + "_bo",
-                  name: product.name,
-                  sku: product.sku,
-                  price: product.price,
-                  quantity: requested,
-                  unit: product.unit,
-                  stock: 0,
-                  isBackorder: true,
-                },
-              ];
-            });
-            toast.info(`${product.name} — ${requested} шт добавлено в предзаказ`);
-          },
-        },
-      });
-      return;
-    }
-
-    const added = Math.min(requested, freeStock);
-    const shortage = requested - added;
-
-    const existing = cartItems.find((i) => i.id === product.id && !i.isBackorder);
-    if (existing) {
-      setCartItems((prev) =>
-        prev.map((i) =>
-          i.id === product.id && !i.isBackorder
-            ? { ...i, quantity: i.quantity + added }
-            : i
+  function addFromCatalog(product: CatalogProduct) {
+    const exists = items.find((it) => it.sku === product.sku && !it.isBackorder);
+    if (exists) {
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === exists.id ? { ...it, quantity: it.quantity + 1 } : it
         )
       );
+      toast.success(`Количество увеличено: ${product.name}`);
     } else {
-      setCartItems((prev) => [
-        ...prev,
-        {
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          price: product.price,
-          quantity: added,
-          unit: product.unit,
-          stock: product.stock,
-          isBackorder: false,
-        },
-      ]);
+      const newItem: OrderItem = {
+        id: `i${Date.now()}`,
+        name: product.name,
+        sku: product.sku,
+        price: product.price,
+        quantity: 1,
+        unit: product.unit,
+        isBackorder: !product.inStock,
+      };
+      setItems((prev) => [...prev, newItem]);
+      toast.success(`Добавлено: ${product.name}`);
     }
+    setSearch("");
+  }
 
-    setAddQty((prev) => ({ ...prev, [product.id]: 10 }));
+  const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+  const discount = Math.round(subtotal * (DISCOUNT_PERCENT / 100));
+  const total = subtotal - discount;
+  const totalQty = items.reduce((s, it) => s + it.quantity, 0);
 
-    if (shortage > 0) {
-      // Часть добавлена со склада, часть — нехватка
-      toast.warning(`Добавлено ${added} шт из ${requested} запрошенных`, {
-        description: (
-          <div className="text-sm space-y-2 mt-1">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-gray-700">
-              <span>Со склада:</span><span className="font-semibold text-green-700">{added} шт — в заказе</span>
-              <span>Не хватает:</span><span className="font-semibold text-amber-700">{shortage} шт</span>
-            </div>
-            <p className="text-gray-600 pt-0.5">
-              Нехватку можно добавить как «Под заказ» — менеджер включит в допоставку.
-            </p>
-          </div>
-        ),
-        duration: 8000,
-        action: {
-          label: "Добавить под заказ",
-          onClick: () => {
-            setCartItems((prev) => {
-              const backorderExists = prev.find((i) => i.id === product.id && i.isBackorder);
-              if (backorderExists) {
-                return prev.map((i) =>
-                  i.id === product.id && i.isBackorder
-                    ? { ...i, quantity: i.quantity + shortage }
-                    : i
-                );
-              }
-              return [
-                ...prev,
-                {
-                  id: product.id + "_bo",
-                  name: product.name,
-                  sku: product.sku,
-                  price: product.price,
-                  quantity: shortage,
-                  unit: product.unit,
-                  stock: 0,
-                  isBackorder: true,
-                },
-              ];
-            });
-            toast.info(`${product.name} — ${shortage} шт добавлено в предзаказ`);
-          },
-        },
-      });
-    } else {
-      toast.success("Добавлено в заказ", {
-        description: `${product.name} — ${added} шт`,
-        duration: 2500,
-      });
-    }
-  };
+  function handleSaveDraft() {
+    toast.success("Черновик сохранён", { description: "Вы можете вернуться к нему позже" });
+  }
 
-  // ── Завершение / отправка ──────────────────────────────────────────────────
-  const handleFinish = () => {
-    if (cartItems.length === 0) {
-      toast.error("Добавьте хотя бы один товар перед отправкой");
-      return;
-    }
-    if (!desiredDate) {
-      toast.error("Укажите желаемую дату отгрузки");
-      return;
-    }
-    navigate(`/order/${ORDER_ID}/send`, { state: { cartItems, desiredDate } });
-  };
+  function handleCreate() {
+    if (!counterparty) { toast.error("Выберите контрагента"); return; }
+    if (!warehouse) { toast.error("Выберите склад"); return; }
+    if (!shipDate) { toast.error("Укажите желаемую дату отгрузки"); return; }
+    if (items.length === 0) { toast.error("Добавьте хотя бы один товар"); return; }
+    toast.success("Заказ создан!", { description: "ORD-2026-0216 отправлен на согласование" });
+    setTimeout(() => navigate("/orders"), 1200);
+  }
 
   return (
-    <div className="space-y-0">
-      {/* Sticky контекстная панель */}
-      <div className="sticky top-0 z-30 bg-[#27265C] border-b border-[#27265C]/80 shadow-lg">
-        <div className="flex items-center justify-between px-3 md:px-6 py-3 gap-2 md:gap-4">
-          <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Icon name="ShoppingCart" size={18} className="text-[#FCC71E]" />
-              <span className="font-bold text-white text-sm md:text-lg hidden sm:inline">{ORDER_ID}</span>
+    <TooltipProvider>
+      <div className="min-h-screen bg-[#F4F4F4]">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-5">
+
+          {/* Breadcrumbs */}
+          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Link to="/orders" className="hover:text-[#27265C] transition-colors">Заказы</Link>
+            <Icon name="ChevronRight" size={14} className="text-muted-foreground/60" />
+            <span className="text-[#27265C] font-medium">Новый заказ</span>
+          </nav>
+
+          {/* Page header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-[#27265C] leading-tight">Новый заказ</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Заполните форму и отправьте на согласование</p>
             </div>
-            <Separator orientation="vertical" className="h-5 bg-white/20 hidden sm:block" />
-            <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-white/80">
-              <span className="font-semibold text-white">{totalPositions} поз.</span>
-              <span className="text-white/40 hidden sm:inline">·</span>
-              <span className="hidden sm:inline"><span className="font-semibold text-white">{totalQty}</span> шт</span>
-              <span className="text-white/40">·</span>
-              <span className="font-semibold text-[#FCC71E] text-xs md:text-base">
-                {formatCurrency(totalAmount)}
-              </span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                className="border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 h-10"
+                onClick={handleSaveDraft}
+              >
+                <Icon name="Save" size={16} className="mr-2" />
+                Сохранить черновик
+              </Button>
+              <Button
+                className="bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-semibold h-10 shadow-sm"
+                onClick={handleCreate}
+              >
+                <Icon name="Send" size={16} className="mr-2" />
+                Создать заказ
+              </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-            <Link to="/order/new" className="hidden sm:block">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 hover:text-white bg-transparent text-xs"
-              >
-                <Icon name="FilePlus" size={14} className="mr-1" />
-                Новый
-              </Button>
-            </Link>
-            <Button
-              size="sm"
-              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-bold text-xs md:text-sm"
-              onClick={handleFinish}
-            >
-              <Icon name="Send" size={14} className="mr-1" />
-              <span className="hidden sm:inline">Отправить на согласование</span>
-              <span className="sm:hidden">Отправить</span>
-            </Button>
+          {/* Main 2-column layout */}
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+
+            {/* ─── LEFT COLUMN ─── */}
+            <div className="flex-1 min-w-0 space-y-5">
+
+              {/* Card 1 — Основная информация */}
+              <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
+                <CardHeader className="pb-4 pt-5 px-6 bg-white border-b border-[#F0F0F0]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#27265C]/10 flex items-center justify-center flex-shrink-0">
+                      <Icon name="FileText" size={16} className="text-[#27265C]" />
+                    </div>
+                    <CardTitle className="text-base font-semibold text-[#27265C]">Основная информация</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 py-5 bg-white">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Контрагент *</label>
+                      <Select value={counterparty} onValueChange={setCounterparty}>
+                        <SelectTrigger className="h-10 border-[#E2E2E2] focus:border-[#27265C] focus:ring-[#27265C]/20">
+                          <SelectValue placeholder="Выберите контрагента" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ooo-avtodetal">ООО «Автодеталь»</SelectItem>
+                          <SelectItem value="ip-sidorov">ИП Сидоров А.В.</SelectItem>
+                          <SelectItem value="zao-motortorg">ЗАО «Моторторг»</SelectItem>
+                          <SelectItem value="ooo-specauto">ООО «Спецавто»</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Склад отгрузки *</label>
+                      <Select value={warehouse} onValueChange={setWarehouse}>
+                        <SelectTrigger className="h-10 border-[#E2E2E2] focus:border-[#27265C] focus:ring-[#27265C]/20">
+                          <SelectValue placeholder="Выберите склад" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="msk-main">Москва — Главный склад</SelectItem>
+                          <SelectItem value="msk-south">Москва — Склад Юг</SelectItem>
+                          <SelectItem value="spb">Санкт-Петербург</SelectItem>
+                          <SelectItem value="ekb">Екатеринбург</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Желаемая дата отгрузки *</label>
+                      <Input
+                        type="date"
+                        min={today}
+                        value={shipDate}
+                        onChange={(e) => setShipDate(e.target.value)}
+                        className="h-10 border-[#E2E2E2] focus:border-[#27265C] focus:ring-[#27265C]/20"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Менеджер</label>
+                      <div className="h-10 px-3 flex items-center gap-2 rounded-md border border-[#E2E2E2] bg-muted/40">
+                        <div className="w-6 h-6 rounded-full bg-[#27265C] flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-[10px] font-bold">ИМ</span>
+                        </div>
+                        <span className="text-sm text-[#27265C] truncate">{manager}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 2 — Состав заказа */}
+              <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
+                <CardHeader className="pb-4 pt-5 px-6 bg-[#27265C] border-b border-[#27265C]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#FCC71E]/20 flex items-center justify-center flex-shrink-0">
+                        <Icon name="ShoppingCart" size={16} className="text-[#FCC71E]" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base font-semibold text-white">Состав заказа</CardTitle>
+                        {items.length > 0 && (
+                          <p className="text-xs text-white/60 mt-0.5">{items.length} позиций · {totalQty} шт.</p>
+                        )}
+                      </div>
+                    </div>
+                    {items.length > 0 && (
+                      <Badge className="bg-[#FCC71E] text-[#27265C] font-bold text-sm px-3 py-1 shadow-none border-0">
+                        {formatCurrency(subtotal)}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-0 bg-white">
+                  {/* Search + add */}
+                  <div className="px-6 py-4 border-b border-[#F0F0F0] bg-[#FAFAFA]">
+                    <div className="relative">
+                      <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Поиск по названию или артикулу..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-9 h-10 border-[#E2E2E2] focus:border-[#27265C] focus:ring-[#27265C]/20 bg-white"
+                      />
+                      {search && (
+                        <button
+                          onClick={() => setSearch("")}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <Icon name="X" size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Catalog dropdown */}
+                    {showCatalog && (
+                      <div className="mt-2 border border-[#E2E2E2] rounded-lg overflow-hidden shadow-md bg-white z-10 relative">
+                        {filteredCatalog.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                            <Icon name="PackageSearch" size={24} className="mx-auto mb-2 opacity-40" />
+                            Товары не найдены
+                          </div>
+                        ) : (
+                          <div className="max-h-64 overflow-y-auto divide-y divide-[#F0F0F0]">
+                            {filteredCatalog.map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#F7F7F7] cursor-pointer group transition-colors"
+                                onClick={() => addFromCatalog(p)}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-[#27265C] truncate">{p.name}</p>
+                                  <p className="text-xs text-muted-foreground">{p.sku} · {p.category}</p>
+                                </div>
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                  <div className="text-right">
+                                    <p className="text-sm font-semibold text-[#27265C]">{formatCurrency(p.price)}</p>
+                                    {p.inStock ? (
+                                      <p className="text-[11px] text-emerald-600">в наличии {p.stock} шт</p>
+                                    ) : (
+                                      <p className="text-[11px] text-orange-500">под заказ</p>
+                                    )}
+                                  </div>
+                                  <div className="w-7 h-7 rounded-full bg-[#27265C] group-hover:bg-[#FCC71E] flex items-center justify-center transition-colors flex-shrink-0">
+                                    <Icon name="Plus" size={14} className="text-white group-hover:text-[#27265C]" />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Items table */}
+                  {items.length === 0 ? (
+                    <div className="px-6 py-16 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-[#27265C]/5 flex items-center justify-center mx-auto mb-4">
+                        <Icon name="ShoppingCart" size={28} className="text-[#27265C]/30" />
+                      </div>
+                      <p className="text-sm font-medium text-[#27265C]/60">Товары не добавлены</p>
+                      <p className="text-xs text-muted-foreground mt-1">Используйте поиск выше для добавления товаров</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-[#F7F7F7] border-b border-[#EBEBEB]">
+                            <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-6 py-3 whitespace-nowrap">Товар</th>
+                            <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 py-3 whitespace-nowrap">Артикул</th>
+                            <th className="text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 py-3 whitespace-nowrap">Кол-во</th>
+                            <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 py-3 whitespace-nowrap">Цена</th>
+                            <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 py-3 whitespace-nowrap">Сумма</th>
+                            <th className="px-4 py-3 w-10"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F0F0F0]">
+                          {items.map((item, idx) => (
+                            <tr key={item.id} className="group hover:bg-[#FAFAFA] transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-[#27265C]/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-xs font-bold text-[#27265C]/40">{idx + 1}</span>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-[#27265C] leading-tight">{item.name}</p>
+                                    {item.isBackorder && (
+                                      <Badge className="mt-1 bg-orange-100 text-orange-700 border-0 text-[10px] font-semibold px-1.5 py-0">
+                                        под заказ
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-3 py-4">
+                                <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">{item.sku}</span>
+                              </td>
+                              <td className="px-3 py-4">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => updateQty(item.id, String(item.quantity - 1))}
+                                    disabled={item.quantity <= 1}
+                                    className="w-7 h-7 rounded-md border border-[#E2E2E2] flex items-center justify-center text-[#27265C] hover:border-[#27265C] hover:bg-[#27265C]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                                  >
+                                    <Icon name="Minus" size={12} />
+                                  </button>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={item.quantity}
+                                    onChange={(e) => updateQty(item.id, e.target.value)}
+                                    className="w-14 h-7 text-center text-sm font-semibold border-[#E2E2E2] focus:border-[#27265C] px-1"
+                                  />
+                                  <button
+                                    onClick={() => updateQty(item.id, String(item.quantity + 1))}
+                                    className="w-7 h-7 rounded-md border border-[#E2E2E2] flex items-center justify-center text-[#27265C] hover:border-[#27265C] hover:bg-[#27265C]/5 transition-colors flex-shrink-0"
+                                  >
+                                    <Icon name="Plus" size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-3 py-4 text-right">
+                                <span className="text-sm text-[#27265C] whitespace-nowrap">{formatCurrency(item.price)}</span>
+                                <span className="text-xs text-muted-foreground block">/{item.unit}</span>
+                              </td>
+                              <td className="px-3 py-4 text-right">
+                                <span className="text-sm font-semibold text-[#27265C] whitespace-nowrap">{formatCurrency(item.price * item.quantity)}</span>
+                              </td>
+                              <td className="px-4 py-4">
+                                <button
+                                  onClick={() => removeItem(item.id)}
+                                  className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <Icon name="Trash2" size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-[#F7F7F7] border-t-2 border-[#E2E2E2]">
+                            <td colSpan={2} className="px-6 py-3">
+                              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Итого позиций: {items.length}</span>
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <span className="text-sm font-bold text-[#27265C]">{totalQty} шт.</span>
+                            </td>
+                            <td className="px-3 py-3 text-right">
+                              <span className="text-xs text-muted-foreground">до скидки</span>
+                            </td>
+                            <td className="px-3 py-3 text-right">
+                              <span className="text-sm font-bold text-[#27265C] whitespace-nowrap">{formatCurrency(subtotal)}</span>
+                            </td>
+                            <td className="px-4 py-3"></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Quick link to catalog */}
+                  <div className="px-6 py-4 border-t border-[#F0F0F0] bg-[#FAFAFA] flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">Не нашли нужный товар?</p>
+                    <Link to="/catalog">
+                      <Button variant="ghost" size="sm" className="text-[#27265C] hover:bg-[#27265C]/5 h-8 text-xs">
+                        <Icon name="Package" size={13} className="mr-1.5" />
+                        Перейти в каталог
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card 3 — Комментарий */}
+              <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
+                <CardHeader className="pb-4 pt-5 px-6 bg-white border-b border-[#F0F0F0]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#27265C]/10 flex items-center justify-center flex-shrink-0">
+                      <Icon name="MessageSquare" size={16} className="text-[#27265C]" />
+                    </div>
+                    <CardTitle className="text-base font-semibold text-[#27265C]">Комментарий к заказу</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 py-5 bg-white">
+                  <Textarea
+                    placeholder="Введите комментарий — пожелания по упаковке, приоритет позиций, особые требования..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows={4}
+                    className="border-[#E2E2E2] focus:border-[#27265C] focus:ring-[#27265C]/20 resize-none text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">{comment.length}/500 символов</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* ─── RIGHT COLUMN (Sticky summary) ─── */}
+            <div className="w-full lg:w-80 flex-shrink-0 lg:sticky lg:top-6 space-y-4">
+
+              {/* Summary card */}
+              <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
+                <CardHeader className="pb-3 pt-5 px-5 bg-[#27265C]">
+                  <div className="flex items-center gap-2.5">
+                    <Icon name="BarChart2" size={18} className="text-[#FCC71E]" />
+                    <CardTitle className="text-base font-semibold text-white">Итог заказа</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5 bg-white space-y-0">
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-[#F7F7F7] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#27265C]">{items.length}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">позиций</p>
+                    </div>
+                    <div className="bg-[#F7F7F7] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#27265C]">{totalQty}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">штук всего</p>
+                    </div>
+                  </div>
+
+                  <Separator className="mb-4" />
+
+                  {/* Amounts */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground flex-shrink-0">Сумма товаров</span>
+                      <span className="text-sm font-medium text-[#27265C] text-right">{formatCurrency(subtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground flex-shrink-0">Скидка {DISCOUNT_PERCENT}%</span>
+                      <span className="text-sm font-medium text-emerald-600 text-right">−{formatCurrency(discount)}</span>
+                    </div>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between gap-3 bg-[#27265C]/5 rounded-lg px-3 py-3">
+                    <span className="text-base font-bold text-[#27265C] flex-shrink-0">Итого</span>
+                    <span className="text-xl font-extrabold text-[#27265C] text-right leading-tight">{formatCurrency(total)}</span>
+                  </div>
+
+                  {/* Ship date */}
+                  <div className="mt-4 p-3 rounded-lg border border-[#E2E2E2] bg-[#FAFAFA]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon name="CalendarDays" size={14} className="text-[#27265C]/60 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Дата отгрузки</span>
+                    </div>
+                    {shipDate ? (
+                      <p className="text-sm font-semibold text-[#27265C] pl-5">
+                        {new Date(shipDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground pl-5 italic">не указана</p>
+                    )}
+                  </div>
+
+                  {/* Backorders warning */}
+                  {items.some((it) => it.isBackorder) && (
+                    <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-100 flex items-start gap-2">
+                      <Icon name="AlertCircle" size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-orange-700 leading-relaxed">
+                        В заказе есть позиции <span className="font-semibold">«под заказ»</span> — срок поставки уточните у менеджера.
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    className="w-full mt-5 bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-bold h-11 text-base shadow-sm"
+                    onClick={handleCreate}
+                  >
+                    <Icon name="Send" size={16} className="mr-2" />
+                    Создать заказ
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2 text-[#27265C]/60 hover:text-[#27265C] hover:bg-[#27265C]/5 h-9 text-sm"
+                    onClick={handleSaveDraft}
+                  >
+                    <Icon name="Save" size={14} className="mr-2" />
+                    Сохранить черновик
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Manager contact card */}
+              <Card className="shadow-sm border-0 rounded-xl overflow-hidden">
+                <CardContent className="p-4 bg-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#27265C] flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-xs font-bold">ИМ</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">Ваш менеджер</p>
+                      <p className="text-sm font-semibold text-[#27265C] truncate">{manager}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm" className="h-8 text-xs border-[#E2E2E2] text-[#27265C] hover:bg-[#27265C]/5">
+                      <Icon name="Phone" size={12} className="mr-1.5" />
+                      Позвонить
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 text-xs border-[#E2E2E2] text-[#27265C] hover:bg-[#27265C]/5">
+                      <Icon name="Mail" size={12} className="mr-1.5" />
+                      Написать
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="space-y-6 p-4 md:p-6">
-        {/* Блок: дата отгрузки */}
-        <Card className="border-dashed border-gray-300 bg-gray-50/60">
-          <CardContent className="pt-5 pb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon name="CalendarDays" size={17} className="text-gray-500" />
-              <span className="font-semibold text-gray-700 text-sm">Желаемая дата отгрузки</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="cursor-help">
-                      <Icon name="Info" size={15} className="text-gray-400" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-56 text-xs leading-relaxed">
-                    Это предпочтительная дата. Окончательная дата отгрузки будет подтверждена менеджером после обработки заказа.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="max-w-xs">
-              <Input
-                type="date"
-                value={desiredDate}
-                onChange={(e) => setDesiredDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className={`bg-white border-gray-300 text-[#27265C] ${!desiredDate ? "border-amber-300 focus:border-amber-400" : ""}`}
-              />
-            </div>
-            {!desiredDate ? (
-              <p className="mt-2 text-xs text-amber-600 flex items-center gap-1">
-                <Icon name="AlertCircle" size={12} />
-                Укажите желаемую дату — менеджер постарается её учесть
-              </p>
-            ) : (
-              <p className="mt-2.5 text-xs text-gray-400 leading-snug">
-                Плановая дата отгрузки будет назначена менеджером после согласования заказа.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Блок: товары в заказе */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-[#27265C] flex items-center gap-2">
-                <Icon name="Package" size={20} />
-                Товары в заказе
-              </CardTitle>
-              <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-                <span>{totalPositions} позиций</span>
-                <span className="text-gray-300">·</span>
-                <span>{totalQty} шт</span>
-                <span className="text-gray-300 hidden sm:inline">·</span>
-                <span className="font-semibold text-[#27265C] hidden sm:inline">{formatCurrency(totalAmount)}</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {cartItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                  <Icon name="ShoppingCart" size={32} className="text-gray-300" />
-                </div>
-                <p className="text-gray-600 font-medium mb-1">В заказе пока нет товаров</p>
-                <p className="text-sm text-gray-400">Начните добавлять позиции из каталога ниже</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border hover:bg-gray-50/60 transition-colors ${item.isBackorder ? "bg-blue-50/30 border-blue-200" : "border-gray-100"}`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-[#27265C] leading-tight text-sm">{item.name}</p>
-                        {item.isBackorder && (
-                          <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
-                            <Icon name="Clock" size={10} className="mr-1" />
-                            Под заказ
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-400 mt-0.5">{item.sku} · {item.price.toLocaleString()} ₽/шт</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 w-7 p-0"
-                          onClick={() => updateQuantity(item.id, item.quantity - 10)}
-                        >
-                          <Icon name="Minus" size={12} />
-                        </Button>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                          className="h-7 w-16 text-center font-bold text-sm p-1"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 w-7 p-0"
-                          onClick={() => updateQuantity(item.id, item.quantity + 10)}
-                        >
-                          <Icon name="Plus" size={12} />
-                        </Button>
-                      </div>
-                      <span className="font-bold text-[#27265C] text-sm min-w-0 text-right whitespace-nowrap">
-                        {(item.quantity * item.price).toLocaleString()} ₽
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 text-gray-300 hover:text-red-500 hover:bg-red-50"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        <Icon name="X" size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-gray-200">
-                  <span className="font-semibold text-gray-600">Итого:</span>
-                  <span className="font-bold text-xl text-[#27265C] min-w-0">{formatCurrency(totalAmount)}</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Пояснение по предзаказам */}
-        {hasBackorders && (
-          <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
-            <Icon name="Info" size={16} className="text-blue-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold mb-0.5">В заказе есть позиции «Под заказ»</p>
-              <p className="text-blue-700 leading-relaxed">
-                Менеджер подтвердит наличие и срок поставки. Цена может измениться. Позиции «Под заказ» отгружаются отдельно после поступления на склад.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Блок: добавление товаров из каталога */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[#27265C] flex items-center gap-2">
-              <Icon name="Search" size={20} />
-              Добавление товаров
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative">
-              <Icon
-                name="Search"
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <Input
-                placeholder="Поиск по названию или артикулу..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <Icon name="SearchX" size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Ничего не найдено по запросу «{searchQuery}»</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {filteredProducts.map((product) => {
-                  const inCartStock = cartItems.find((i) => i.id === product.id && !i.isBackorder);
-                  const inCartBackorder = cartItems.find((i) => i.id === product.id && i.isBackorder);
-                  const qty = addQty[product.id] ?? 10;
-                  const freeStock = Math.max(0, product.stock - (inCartStock?.quantity ?? 0));
-                  const stockLow = product.stock > 0 && product.stock <= 10;
-
-                  return (
-                    <div
-                      key={product.id}
-                      className="flex flex-col sm:flex-row sm:items-center gap-3 py-3.5 px-1 hover:bg-gray-50/60 rounded-lg transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-[#27265C] leading-tight text-sm md:text-base">{product.name}</p>
-                          {inCartStock && (
-                            <Badge className="bg-green-100 text-green-700 text-xs border-0">
-                              <Icon name="Check" size={10} className="mr-1" />
-                              В заказе: {inCartStock.quantity} шт
-                            </Badge>
-                          )}
-                          {inCartBackorder && (
-                            <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
-                              <Icon name="Clock" size={10} className="mr-1" />
-                              Под заказ: {inCartBackorder.quantity} шт
-                            </Badge>
-                          )}
-                          {!product.inStock ? (
-                            <Badge className="bg-blue-100 text-blue-700 text-xs border-0">
-                              Под заказ
-                            </Badge>
-                          ) : freeStock === 0 ? (
-                            <Badge className="bg-amber-100 text-amber-700 text-xs border-0">
-                              Остаток исчерпан
-                            </Badge>
-                          ) : stockLow ? (
-                            <Badge className="bg-orange-100 text-orange-700 text-xs border-0">
-                              Мало на складе
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <div className="flex items-center gap-3 mt-0.5 text-sm text-gray-500">
-                          <span>Арт: {product.sku}</span>
-                          <span className="text-gray-300">·</span>
-                          <span className="text-gray-400">{product.category}</span>
-                          {product.inStock && (
-                            <>
-                              <span className="text-gray-300">·</span>
-                              <span className={
-                                freeStock === 0
-                                  ? "text-amber-600 font-medium"
-                                  : stockLow
-                                  ? "text-orange-500 font-medium"
-                                  : "text-gray-400"
-                              }>
-                                Свободно: {freeStock} шт
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between sm:justify-end gap-2 flex-shrink-0">
-                        <span className="text-sm font-semibold text-[#27265C]">
-                          {product.price.toLocaleString()} ₽/шт
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() =>
-                              setAddQty((prev) => ({
-                                ...prev,
-                                [product.id]: Math.max(1, (prev[product.id] ?? 10) - 10),
-                              }))
-                            }
-                          >
-                            <Icon name="Minus" size={12} />
-                          </Button>
-                          <Input
-                            type="number"
-                            value={qty}
-                            onChange={(e) =>
-                              setAddQty((prev) => ({
-                                ...prev,
-                                [product.id]: Math.max(1, parseInt(e.target.value) || 1),
-                              }))
-                            }
-                            className="h-8 w-16 text-center font-bold text-sm p-1"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() =>
-                              setAddQty((prev) => ({
-                                ...prev,
-                                [product.id]: (prev[product.id] ?? 10) + 10,
-                              }))
-                            }
-                          >
-                            <Icon name="Plus" size={12} />
-                          </Button>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                className={
-                                  !product.inStock
-                                    ? "bg-blue-600 text-white hover:bg-blue-700 font-semibold h-8 whitespace-nowrap"
-                                    : "bg-[#FCC71E] text-[#27265C] hover:bg-[#FCC71E]/90 font-semibold h-8 whitespace-nowrap"
-                                }
-                                onClick={() => addToOrder(product)}
-                              >
-                                <Icon name={!product.inStock ? "Clock" : "Plus"} size={14} className="mr-1" />
-                                {!product.inStock ? "Под заказ" : "В заказ"}
-                              </Button>
-                            </TooltipTrigger>
-                            {!product.inStock && (
-                              <TooltipContent className="max-w-52 text-xs">
-                                Товара нет на складе. Будет добавлен как предзаказ — менеджер уточнит срок поставки.
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Нижние действия */}
-        {cartItems.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
-            <p className="text-sm text-gray-500 min-w-0">
-              {totalPositions}{" "}
-              {totalPositions === 1 ? "позиция" : totalPositions >= 2 && totalPositions <= 4 ? "позиции" : "позиций"}
-              {" "}· {totalQty} шт · {formatCurrency(totalAmount)}
-            </p>
-            <Button
-              className="bg-[#27265C] text-white hover:bg-[#27265C]/90 font-bold px-6 w-full sm:w-auto"
-              onClick={handleFinish}
-            >
-              <Icon name="Send" size={18} className="mr-2" />
-              Отправить на согласование
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+    </TooltipProvider>
   );
-};
-
-export default OrderNew;
+}
