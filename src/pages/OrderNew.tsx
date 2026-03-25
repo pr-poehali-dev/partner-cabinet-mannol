@@ -48,6 +48,7 @@ interface CatalogProduct {
 }
 
 type OrderStatus = "draft" | "pending" | "confirmed" | "urgent";
+type OrderType = "regular" | "direct";
 
 interface StatusOption {
   value: OrderStatus;
@@ -124,6 +125,8 @@ export default function OrderNew() {
   const [warehouse, setWarehouse] = useState("");
   const [shipDate, setShipDate] = useState("");
   const [manager] = useState("Иванова Мария Сергеевна");
+
+  const [orderType, setOrderType] = useState<OrderType>("regular");
 
   // confirmation dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -346,6 +349,95 @@ export default function OrderNew() {
                         </Badge>
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Card 1b: Тип заказа ── */}
+              <Card className="shadow-sm border border-[#E8E8E8] rounded-2xl overflow-hidden">
+                <CardHeader className="px-6 py-5 bg-white border-b border-[#F0F0F0]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#27265C]/8 flex items-center justify-center flex-shrink-0">
+                      <Icon name="Truck" size={17} className="text-[#27265C]" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold text-[#27265C]">
+                        Тип заказа
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Выберите схему поставки
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 py-5 bg-white">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                    {/* Regular */}
+                    <button
+                      type="button"
+                      onClick={() => setOrderType("regular")}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        orderType === "regular"
+                          ? "border-[#27265C] bg-[#27265C]/5"
+                          : "border-[#E8E8E8] bg-white hover:border-[#C8C8C8]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          orderType === "regular" ? "bg-[#27265C]" : "bg-[#F4F4F4]"
+                        }`}>
+                          <Icon name="Warehouse" size={15} className={orderType === "regular" ? "text-white" : "text-muted-foreground"} />
+                        </div>
+                        <div>
+                          <p className={`text-sm font-bold ${orderType === "regular" ? "text-[#27265C]" : "text-[#27265C]"}`}>
+                            Со склада
+                          </p>
+                          {orderType === "regular" && (
+                            <Icon name="CheckCircle" size={13} className="text-[#27265C] inline ml-1" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Отгрузка с регионального склада. Стандартные сроки, максимальный ассортимент в наличии.
+                      </p>
+                    </button>
+
+                    {/* Direct */}
+                    <button
+                      type="button"
+                      onClick={() => setOrderType("direct")}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        orderType === "direct"
+                          ? "border-[#FCC71E] bg-[#FCC71E]/8"
+                          : "border-[#E8E8E8] bg-white hover:border-[#C8C8C8]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          orderType === "direct" ? "bg-[#FCC71E]" : "bg-[#F4F4F4]"
+                        }`}>
+                          <Icon name="Factory" size={15} className={orderType === "direct" ? "text-[#27265C]" : "text-muted-foreground"} />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <p className={`text-sm font-bold ${orderType === "direct" ? "text-[#27265C]" : "text-[#27265C]"}`}>
+                            Прямо с завода
+                          </p>
+                          {orderType === "direct" && (
+                            <Icon name="CheckCircle" size={13} className="text-amber-600" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Отгрузка напрямую с производства. Крупные объёмы, возможен предзаказ под выпуск.
+                      </p>
+                      {orderType === "direct" && (
+                        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold bg-amber-50 rounded-lg px-2.5 py-1.5">
+                          <Icon name="AlertCircle" size={11} />
+                          Сроки согласовываются с менеджером
+                        </div>
+                      )}
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -824,6 +916,13 @@ export default function OrderNew() {
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Сводка заказа
               </p>
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="text-muted-foreground flex-shrink-0">Тип заказа</span>
+                <span className={`font-semibold text-right flex items-center gap-1.5 ${orderType === "direct" ? "text-amber-700" : "text-[#27265C]"}`}>
+                  <Icon name={orderType === "direct" ? "Factory" : "Warehouse"} size={13} />
+                  {orderType === "direct" ? "Прямо с завода" : "Со склада"}
+                </span>
+              </div>
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-muted-foreground flex-shrink-0">Контрагент</span>
                 <span className="font-semibold text-[#27265C] text-right truncate">
