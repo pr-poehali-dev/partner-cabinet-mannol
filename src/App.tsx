@@ -33,6 +33,7 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import B2BPortal from "./pages/B2BPortal";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/activation" element={<Activation />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/b2b" element={<B2BPortal />} />
         </Routes>
         <Layout>
           <Routes>
