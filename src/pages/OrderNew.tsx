@@ -326,7 +326,7 @@ export default function OrderNew() {
   /* ══════════════════════════ RENDER ══════════════════════════ */
   return (
     <TooltipProvider>
-      <div className="pb-24 lg:pb-0">
+      <div className="pb-24 md:pb-0">
 
         {/* ── Breadcrumbs ── */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4 md:mb-6">
@@ -369,7 +369,7 @@ export default function OrderNew() {
         </div>
 
         {/* ── 2-Column Layout ── */}
-        <div className="flex flex-col lg:flex-row gap-5 lg:gap-7 items-start">
+        <div className="flex flex-col md:flex-row gap-5 md:gap-7 items-start">
 
           {/* ╔══════════ LEFT / MAIN COLUMN ══════════╗ */}
           <div className="flex-1 min-w-0 space-y-4 md:space-y-5 w-full">
@@ -641,7 +641,7 @@ export default function OrderNew() {
                 ) : (
                   <>
                     {/* Mobile/Tablet: card list */}
-                    <div className="divide-y divide-[#F4F4F4] lg:hidden">
+                    <div className="divide-y divide-[#F4F4F4] md:hidden">
                       {items.map((item, idx) => (
                         <div key={item.id} className="px-4 py-4">
                           <div className="flex items-start justify-between gap-3 mb-3">
@@ -715,7 +715,7 @@ export default function OrderNew() {
                     </div>
 
                     {/* Desktop: table */}
-                    <div className="overflow-x-auto hidden lg:block">
+                    <div className="overflow-x-auto hidden md:block">
                       <table className="w-full">
                         <thead>
                           <tr className="bg-[#F7F7F7] border-b border-[#EBEBEB]">
@@ -862,7 +862,7 @@ export default function OrderNew() {
           {/* ╚══════════ END LEFT ══════════╝ */}
 
           {/* ╔══════════ RIGHT COLUMN (desktop sticky) ══════════╗ */}
-          <div className="hidden lg:block w-[300px] xl:w-[320px] flex-shrink-0 sticky top-6 space-y-4">
+          <div className="hidden md:block w-[280px] xl:w-[320px] flex-shrink-0 sticky top-6 space-y-4">
             <Card className="shadow-sm border border-[#E8E8E8] rounded-2xl overflow-hidden">
               <CardHeader className="px-5 py-5 bg-[#27265C]">
                 <div className="flex items-center gap-2.5">
@@ -910,7 +910,7 @@ export default function OrderNew() {
       {/* ════════════════════════════════════════
           MOBILE STICKY FOOTER BAR
       ════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
         {/* Totals strip */}
         {items.length > 0 && (
           <div className="bg-[#27265C] px-4 py-2.5 flex items-center justify-between gap-3">

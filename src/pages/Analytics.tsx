@@ -230,7 +230,7 @@ const Analytics = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {kpiStats.map((stat, idx) => (
           <Card key={idx} className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6">
@@ -255,7 +255,7 @@ const Analytics = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className={`${salesPlan.month.percent >= 100 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-500'}`}>
           <CardHeader>
             <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
@@ -382,7 +382,7 @@ const Analytics = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
@@ -394,7 +394,7 @@ const Analytics = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="min-w-0">
-            <div className="flex flex-col lg:flex-row items-center gap-8">
+            <div className="flex flex-col sm:flex-row items-center gap-8">
               <div className="w-full min-w-0">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>

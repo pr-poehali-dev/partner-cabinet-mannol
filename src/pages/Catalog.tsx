@@ -132,7 +132,7 @@ const Catalog = () => {
 
       {/* Root: category cards */}
       {!selectedCategory && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {catalogData.map(category => (
             <Card
               key={category.id}
@@ -185,7 +185,7 @@ const Catalog = () => {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Наименование</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Вязкость</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap hidden lg:table-cell">Характеристики</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap hidden md:table-cell">Характеристики</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Упаковка</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Цена</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase whitespace-nowrap hidden sm:table-cell">Наличие</th>
@@ -216,7 +216,7 @@ const Catalog = () => {
                               {product.viscosity}
                             </Badge>
                           </td>
-                          <td className="px-4 py-4 hidden lg:table-cell">
+                          <td className="px-4 py-4 hidden md:table-cell">
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               {product.specifications.slice(0, 2).map((spec, idx) => (
                                 <div key={idx}>{spec}</div>

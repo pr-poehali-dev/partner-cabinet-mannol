@@ -155,7 +155,7 @@ export default function OrderDetails() {
       </Card>
 
       {/* Main 2-col */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-6 items-start">
 
         {/* Left: items */}
         <div className="flex-1 min-w-0 space-y-5">
@@ -276,7 +276,7 @@ export default function OrderDetails() {
         </div>
 
         {/* Right: summary */}
-        <div className="w-full lg:w-72 flex-shrink-0 space-y-4 lg:sticky lg:top-6">
+        <div className="w-full md:w-72 flex-shrink-0 space-y-4 md:sticky md:top-6">
 
           {/* Summary */}
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">

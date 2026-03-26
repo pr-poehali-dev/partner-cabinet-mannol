@@ -122,7 +122,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-[#F4F4F4]">
       {/* Desktop sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-[#27265C] text-white transition-all duration-300 z-50 hidden lg:block ${
+        className={`fixed left-0 top-0 h-full bg-[#27265C] text-white transition-all duration-300 z-50 hidden md:block ${
           isSidebarOpen ? "w-64" : "w-20"
         }`}
       >
@@ -167,14 +167,14 @@ const Layout = ({ children }: LayoutProps) => {
       {/* Mobile sidebar overlay */}
       {isMobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
 
       {/* Mobile sidebar drawer */}
       <aside
-        className={`fixed left-0 top-0 h-full w-72 bg-[#27265C] text-white z-50 transition-transform duration-300 lg:hidden ${
+        className={`fixed left-0 top-0 h-full w-72 bg-[#27265C] text-white z-50 transition-transform duration-300 md:hidden ${
           isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -198,7 +198,7 @@ const Layout = ({ children }: LayoutProps) => {
       </aside>
 
       <div
-        className={`transition-all duration-300 ${isSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}
+        className={`transition-all duration-300 ${isSidebarOpen ? "md:ml-64" : "md:ml-20"}`}
       >
         <DebtBanner />
 
@@ -209,7 +209,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden text-[#27265C] hover:bg-gray-100 p-2"
+                className="md:hidden text-[#27265C] hover:bg-gray-100 p-2"
                 onClick={() => setIsMobileSidebarOpen(true)}
               >
                 <Icon name="Menu" size={22} />

@@ -78,8 +78,8 @@ const ProductDetails = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-        <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="md:col-span-2 space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between gap-4">

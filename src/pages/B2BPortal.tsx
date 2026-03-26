@@ -109,7 +109,7 @@ export default function B2BPortal() {
       {/* Mobile overlay */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
@@ -120,7 +120,7 @@ export default function B2BPortal() {
           transition-all duration-300 shadow-xl
           ${sidebarOpen ? "w-60" : "w-[72px]"}
           ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
+          md:translate-x-0
         `}
       >
         {/* Logo */}
@@ -162,7 +162,7 @@ export default function B2BPortal() {
         </nav>
 
         {/* Sidebar collapse toggle (desktop) */}
-        <div className="hidden lg:flex border-t border-white/10 p-3 flex-shrink-0">
+        <div className="hidden md:flex border-t border-white/10 p-3 flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 text-xs transition-all ${!sidebarOpen && "justify-center"}`}
@@ -174,7 +174,7 @@ export default function B2BPortal() {
       </aside>
 
       {/* ──────────────────── MAIN AREA ──────────────────── */}
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? "lg:ml-60" : "lg:ml-[72px]"}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? "md:ml-60" : "md:ml-[72px]"}`}>
 
         {/* ──────────────────── HEADER ──────────────────── */}
         <header className="bg-white border-b border-[#E8E9EF] sticky top-0 z-30 flex-shrink-0">
@@ -182,7 +182,7 @@ export default function B2BPortal() {
             {/* Left */}
             <div className="flex items-center gap-3">
               <button
-                className="lg:hidden p-2 rounded-lg hover:bg-[#F5F6F8] text-[#2F2C6A] transition"
+                className="md:hidden p-2 rounded-lg hover:bg-[#F5F6F8] text-[#2F2C6A] transition"
                 onClick={() => setMobileSidebarOpen(true)}
               >
                 <Icon name="Menu" size={20} />
