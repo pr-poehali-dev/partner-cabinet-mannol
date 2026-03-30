@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import Icon from "@/components/ui/icon";
 import { formatCurrency, MOCK_ORDER } from "@/types/order";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 /* meta per order */
 const ORDERS_META: Record<string, { date: string; shipDate: string; warehouse: string; manager: string; totalAmount: number }> = {
@@ -54,9 +55,17 @@ export default function OrderConfirm() {
         <span className="text-[#27265C] font-semibold">Подтверждение</span>
       </nav>
 
+      {/* Order Flow Progress */}
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Этапы оформления заказа
+        </p>
+        <OrderFlowStatus current="confirm" />
+      </div>
+
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#27265C]">Подтвердить заказ</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">Подтвердить заказ</h1>
         <p className="text-sm text-muted-foreground mt-1">Проверьте финальный состав и подтвердите заказ</p>
       </div>
 

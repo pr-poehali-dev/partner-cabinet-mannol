@@ -12,6 +12,7 @@ import {
   formatCurrency,
 } from "@/types/order";
 import { catalogData, type Product } from "@/data/catalogData";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 interface AdjustItem {
   product: Product;
@@ -150,7 +151,7 @@ const OrderAdjust = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 md:px-8">
 
         {/* Шапка */}
         <div className="mb-6">
@@ -161,9 +162,18 @@ const OrderAdjust = () => {
             <Icon name="ArrowLeft" className="w-4 h-4" />
             <span>Назад к результатам</span>
           </Link>
+
+          {/* Order Flow Progress */}
+          <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm mb-5">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Этапы оформления заказа
+            </p>
+            <OrderFlowStatus current="adjust" />
+          </div>
+
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[#27265C]">Дозаказ товаров</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">Дозаказ товаров</h1>
               <p className="text-gray-500 mt-1 text-sm">
                 Заказ {order.id} — добавьте позиции к заказу
               </p>

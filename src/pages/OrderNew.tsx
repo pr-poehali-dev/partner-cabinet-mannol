@@ -30,6 +30,7 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Icon from "@/components/ui/icon";
 import { formatCurrency } from "@/types/order";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 /* ─── types ─── */
 interface OrderItem {
@@ -329,7 +330,7 @@ export default function OrderNew() {
       <div className="pb-24 md:pb-0">
 
         {/* ── Breadcrumbs ── */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4 md:mb-6">
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4 md:mb-5">
           <Link to="/orders" className="hover:text-[#27265C] transition-colors font-medium">
             Заказы
           </Link>
@@ -337,10 +338,18 @@ export default function OrderNew() {
           <span className="text-[#27265C] font-semibold">Новый заказ</span>
         </nav>
 
+        {/* ── Order Flow Progress ── */}
+        <div className="mb-5 md:mb-7 bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Этапы оформления заказа
+          </p>
+          <OrderFlowStatus current="new" />
+        </div>
+
         {/* ── Page Header ── */}
         <div className="flex items-start justify-between gap-3 mb-5 md:mb-7">
           <div>
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#27265C] leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-[#27265C] leading-tight">
               Новый заказ
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground mt-1">

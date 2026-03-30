@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { formatCurrency, MOCK_ORDER } from "@/types/order";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 /* Данные заказа по ID (mock) */
 const ORDERS_META: Record<string, { date: string; shipDate: string; warehouse: string; manager: string; totalAmount: number }> = {
@@ -42,9 +43,17 @@ export default function OrderSend() {
         <span className="text-[#27265C] font-semibold">Отправка</span>
       </nav>
 
+      {/* Order Flow Progress */}
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Этапы оформления заказа
+        </p>
+        <OrderFlowStatus current="send" />
+      </div>
+
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#27265C]">Отправить на согласование</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">Отправить на согласование</h1>
         <p className="text-sm text-muted-foreground mt-1">Проверьте заказ перед отправкой менеджеру</p>
       </div>
 

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { formatCurrency, MOCK_ORDER } from "@/types/order";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 export default function OrderReview() {
   const { orderId } = useParams();
@@ -33,10 +34,18 @@ export default function OrderReview() {
         <span className="text-[#27265C] font-semibold">Ответ менеджера</span>
       </nav>
 
+      {/* Order Flow Progress */}
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Этапы оформления заказа
+        </p>
+        <OrderFlowStatus current="review" />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#27265C]">Ответ менеджера по заказу</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">Ответ менеджера по заказу</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Менеджер проверил позиции заказа {id} и подготовил ответ
           </p>

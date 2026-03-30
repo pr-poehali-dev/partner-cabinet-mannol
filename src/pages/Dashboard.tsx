@@ -42,7 +42,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Link to="/orders">
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardContent className="p-5">
@@ -105,10 +105,10 @@ export default function Dashboard() {
       </div>
 
       {/* Main 2-col */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
         {/* Recent orders */}
-        <div className="md:col-span-2">
+        <div className="sm:col-span-2">
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm h-full">
             <CardHeader className="px-6 py-5 border-b border-[#F0F0F0]">
               <div className="flex items-center justify-between">

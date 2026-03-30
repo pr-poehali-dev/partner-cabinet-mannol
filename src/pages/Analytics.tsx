@@ -255,7 +255,7 @@ const Analytics = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <Card className={`${salesPlan.month.percent >= 100 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-amber-500'}`}>
           <CardHeader>
             <CardTitle className="text-lg text-[#27265C] flex items-center gap-2">
@@ -382,7 +382,7 @@ const Analytics = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl text-[#27265C] flex items-center gap-2">
@@ -420,7 +420,7 @@ const Analytics = () => {
                 </PieChart>
               </ResponsiveContainer>
               </div>
-              <div className="space-y-2 w-full lg:w-auto lg:flex-shrink-0">
+              <div className="space-y-2 w-full md:w-auto md:flex-shrink-0">
                 {categoryData.map((cat, idx) => (
                   <div key={idx} className="flex items-center gap-3">
                     <div 

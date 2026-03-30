@@ -1,6 +1,7 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
+import OrderFlowStatus from "@/components/OrderFlowStatus";
 
 type SuccessType = "sent" | "adjusted" | "confirmed";
 
@@ -10,6 +11,7 @@ const CONFIGS: Record<
     icon: string;
     iconBg: string;
     iconColor: string;
+    ringColor: string;
     title: string;
     description: string;
     nextLabel: string;
@@ -20,8 +22,9 @@ const CONFIGS: Record<
 > = {
   sent: {
     icon: "Send",
-    iconBg: "bg-blue-100",
+    iconBg: "bg-blue-50",
     iconColor: "text-blue-600",
+    ringColor: "ring-blue-100",
     title: "Заказ отправлен на согласование",
     description:
       "Менеджер получил ваш заказ и рассмотрит его в течение 1–2 рабочих дней. Мы уведомим вас о результатах.",
@@ -32,8 +35,9 @@ const CONFIGS: Record<
   },
   adjusted: {
     icon: "PackagePlus",
-    iconBg: "bg-purple-100",
+    iconBg: "bg-purple-50",
     iconColor: "text-purple-600",
+    ringColor: "ring-purple-100",
     title: "Дозаказ отправлен",
     description:
       "Дополнительные позиции добавлены и переданы менеджеру. Перейдите к финальному подтверждению заказа.",
@@ -44,8 +48,9 @@ const CONFIGS: Record<
   },
   confirmed: {
     icon: "CheckCircle2",
-    iconBg: "bg-green-100",
-    iconColor: "text-green-600",
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    ringColor: "ring-emerald-100",
     title: "Заказ подтверждён",
     description:
       "Заказ передан в график отгрузки. Ожидайте уведомления о дате отправки.",
@@ -63,51 +68,69 @@ const OrderSuccess = () => {
   const config = CONFIGS[type] || CONFIGS.sent;
   const id = orderId || "";
 
+  const flowStep = type === "confirmed" ? "success" : type === "adjusted" ? "adjust" : "review";
+
   return (
-    <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full text-center">
-        <div
-          className={`w-20 h-20 ${config.iconBg} rounded-3xl flex items-center justify-center mx-auto mb-6`}
-        >
-          <Icon name={config.icon} className={`w-10 h-10 ${config.iconColor}`} />
+    <div className="max-w-xl mx-auto py-6 px-4 space-y-6">
+
+      {/* Order Flow Progress */}
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Этапы оформления заказа
+        </p>
+        <OrderFlowStatus current={flowStep} />
+      </div>
+
+      {/* Success card */}
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-10 text-center">
+          <div className={`w-20 h-20 ${config.iconBg} ring-8 ${config.ringColor} rounded-3xl flex items-center justify-center mx-auto mb-6`}>
+            <Icon name={config.icon as never} size={36} className={config.iconColor} />
+          </div>
+
+          <h1 className="text-xl md:text-2xl font-bold text-[#27265C] mb-3">{config.title}</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
+            {config.description}
+          </p>
         </div>
 
-        <h1 className="text-xl md:text-2xl font-bold text-[#27265C] mb-3">{config.title}</h1>
-        <p className="text-gray-500 text-sm leading-relaxed mb-8">
-          {config.description}
-        </p>
-
-        <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 mb-8 text-left shadow-sm">
+        <div className="border-t border-[#F0F0F0] px-6 py-4 bg-[#FAFAFA]">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">
-              Заказ
+            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+              Номер заказа
             </span>
-            <span className="text-sm font-semibold text-[#27265C]">{id}</span>
+            <span className="text-sm font-bold text-[#27265C] font-mono">{id}</span>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col gap-3">
+      {/* Actions */}
+      <div className="flex flex-col gap-3">
+        <Button
+          asChild
+          className="bg-[#FCC71E] hover:bg-[#e6b41a] text-[#27265C] font-bold h-12 rounded-xl text-[15px]"
+        >
+          <Link to={config.nextTo(id)}>
+            <Icon name="ArrowRight" size={16} className="mr-2" />
+            {config.nextLabel}
+          </Link>
+        </Button>
+
+        {config.secondaryLabel && config.secondaryTo && (
           <Button
             asChild
-            className="bg-[#27265C] hover:bg-[#27265C]/90 text-white h-12 rounded-xl"
+            variant="outline"
+            className="border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 h-12 rounded-xl font-medium"
           >
-            <Link to={config.nextTo(id)}>
-              {config.nextLabel}
+            <Link to={config.secondaryTo(id)}>
+              {config.secondaryLabel}
             </Link>
           </Button>
+        )}
 
-          {config.secondaryLabel && config.secondaryTo && (
-            <Button
-              asChild
-              variant="ghost"
-              className="text-gray-500 hover:text-[#27265C] h-12"
-            >
-              <Link to={config.secondaryTo(id)}>
-                {config.secondaryLabel}
-              </Link>
-            </Button>
-          )}
-        </div>
+        <Link to="/orders" className="text-center text-sm text-muted-foreground hover:text-[#27265C] transition-colors py-1">
+          Вернуться ко всем заказам
+        </Link>
       </div>
     </div>
   );

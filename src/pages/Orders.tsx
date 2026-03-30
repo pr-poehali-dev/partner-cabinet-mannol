@@ -355,7 +355,7 @@ const Orders = () => {
       </div>
 
       {/* KPI tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#27265C]/8 flex items-center justify-center flex-shrink-0">
