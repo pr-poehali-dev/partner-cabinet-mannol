@@ -214,7 +214,7 @@ export default function Catalog() {
               const activePkg = getActivePkg(product);
               const qty       = getQty(product.id, activePkg.size);
               const pallets   = calcPallets(qty, activePkg.palletQty);
-              const isBumped  = bump[product.id];
+
               const lineTotal = qty * activePkg.price;
 
               return (
