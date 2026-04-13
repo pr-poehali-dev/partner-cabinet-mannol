@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,8 @@ export default function Catalog() {
   const navigate = useNavigate();
 
   /* ── state ── */
-  const [cart,    setCart]    = useState<Record<string, Record<string, number>>>({});
-  const [selPkg,  setSelPkg]  = useState<Record<string, string>>({});
-  const [bump,    setBump]    = useState<Record<string, boolean>>({}); // add-to-cart feedback
+  const [cart,   setCart]   = useState<Record<string, Record<string, number>>>({});
+  const [selPkg, setSelPkg] = useState<Record<string, string>>({});
 
   /* ── derived data ── */
   const selectedCategory = useMemo(() => categoryId ? catalogData.find(c => c.id === categoryId) ?? null : null, [categoryId]);
@@ -46,16 +45,12 @@ export default function Catalog() {
     return product.packaging.find(p => p.size === size) ?? product.packaging[0];
   };
 
-  const addQty = (id: string, size: string, delta: number, palletQty: number) => {
+  const addQty = (id: string, size: string, delta: number) => {
     setCart(prev => {
       const cur = prev[id]?.[size] ?? 0;
       const next = Math.max(0, cur + delta);
       return { ...prev, [id]: { ...(prev[id] ?? {}), [size]: next } };
     });
-    if (delta > 0) {
-      setBump(p => ({ ...p, [id]: true }));
-      setTimeout(() => setBump(p => ({ ...p, [id]: false })), 500);
-    }
   };
 
   const setQtyDirect = (id: string, size: string, val: string) => {
@@ -313,40 +308,27 @@ export default function Catalog() {
                     </div>
 
                     {/* Qty stepper */}
-                    {qty === 0 ? (
-                      <Button
-                        onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
-                        className={`h-10 px-4 font-bold text-sm shrink-0 transition-all duration-200 ${
-                          isBumped
-                            ? "bg-emerald-500 text-white scale-95"
-                            : "bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a]"
-                        }`}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => addQty(product.id, activePkg.size, -1)}
+                        className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
                       >
-                        <Icon name={isBumped ? "Check" : "Plus"} size={15} className="mr-1" />
-                        {isBumped ? "Добавлено" : `+1 паллета`}
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => addQty(product.id, activePkg.size, -activePkg.palletQty, activePkg.palletQty)}
-                          className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
-                        >
-                          <Icon name="Minus" size={14} />
-                        </button>
-                        <Input
-                          type="number"
-                          value={qty}
-                          onChange={e => setQtyDirect(product.id, activePkg.size, e.target.value)}
-                          className="w-16 text-center font-bold h-9 text-sm border-[#E0E0E0]"
-                        />
-                        <button
-                          onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
-                          className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors"
-                        >
-                          <Icon name="Plus" size={14} />
-                        </button>
-                      </div>
-                    )}
+                        <Icon name="Minus" size={14} />
+                      </button>
+                      <Input
+                        type="number"
+                        value={qty || ""}
+                        placeholder="0"
+                        onChange={e => setQtyDirect(product.id, activePkg.size, e.target.value)}
+                        className="w-16 text-center font-bold h-9 text-sm border-[#E0E0E0]"
+                      />
+                      <button
+                        onClick={() => addQty(product.id, activePkg.size, 1)}
+                        className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors"
+                      >
+                        <Icon name="Plus" size={14} />
+                      </button>
+                    </div>
 
                     <Link to={`/product/${product.id}`} className="shrink-0">
                       <button className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C]/50 hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors">
@@ -404,9 +386,8 @@ export default function Catalog() {
                   const inCart    = qty > 0;
 
                   return (
-                    <>
+                    <React.Fragment key={product.id}>
                       <tr
-                        key={product.id}
                         className={`transition-colors ${inCart ? "bg-[#27265C]/[0.025]" : "hover:bg-[#FAFAFA]"}`}
                       >
                         {/* Название */}
@@ -460,7 +441,7 @@ export default function Catalog() {
                         <td className="px-4 py-4">
                           <div className="flex items-center justify-center gap-1">
                             <button
-                              onClick={() => addQty(product.id, activePkg.size, -activePkg.palletQty, activePkg.palletQty)}
+                              onClick={() => addQty(product.id, activePkg.size, -1)}
                               className="w-8 h-8 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
                             >
                               <Icon name="Minus" size={12} />
@@ -473,7 +454,7 @@ export default function Catalog() {
                               className="w-16 text-center font-bold h-8 text-sm border-[#E0E0E0]"
                             />
                             <button
-                              onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
+                              onClick={() => addQty(product.id, activePkg.size, 1)}
                               className="w-8 h-8 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors"
                             >
                               <Icon name="Plus" size={12} />
@@ -516,7 +497,7 @@ export default function Catalog() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
