@@ -179,7 +179,119 @@ const Catalog = () => {
         <div className="space-y-4">
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+
+              {/* ── Mobile cards (< sm) ── */}
+              <div className="sm:hidden divide-y divide-[#F4F4F4] bg-white">
+                {displayProducts.map(product => {
+                  const selectedSize = getSelectedPackage(product.id);
+                  const selectedPack = product.packaging.find(p => p.size === selectedSize) || product.packaging[0];
+                  const quantity = getProductQuantity(product.id, selectedPack.size);
+                  const palletInfo = calculatePallets(quantity, selectedPack.palletQty);
+
+                  return (
+                    <div key={product.id} className="px-4 py-4 space-y-3">
+                      {/* Row 1: name + availability */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to={`/product/${product.id}`}
+                            className="font-semibold text-[#27265C] hover:underline text-sm leading-snug block"
+                          >
+                            {product.name}
+                          </Link>
+                          <p className="text-xs text-muted-foreground mt-0.5">Арт: {product.id}</p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {product.availability === 'in-stock' && (
+                            <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">В наличии</Badge>
+                          )}
+                          {product.availability === 'pre-order' && (
+                            <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px]">Предзаказ</Badge>
+                          )}
+                          {product.availability === 'out-of-stock' && (
+                            <Badge className="bg-red-100 text-red-700 border-0 text-[10px]">Нет</Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Row 2: viscosity + specs */}
+                      <div className="flex items-start gap-2 flex-wrap">
+                        {product.viscosity && (
+                          <Badge variant="outline" className="font-mono text-xs flex-shrink-0">
+                            {product.viscosity}
+                          </Badge>
+                        )}
+                        <div className="text-xs text-muted-foreground leading-relaxed">
+                          {product.specifications.slice(0, 2).join(' · ')}
+                        </div>
+                      </div>
+
+                      {/* Row 3: packaging + price + qty */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          className="text-sm border border-[#E8E8E8] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#27265C] flex-shrink-0"
+                          value={selectedSize}
+                          onChange={e => setSelectedPackaging({ ...selectedPackaging, [product.id]: e.target.value })}
+                        >
+                          {product.packaging.map(pack => (
+                            <option key={pack.size} value={pack.size}>{pack.size}</option>
+                          ))}
+                        </select>
+                        <div className="flex-shrink-0">
+                          <p className="font-bold text-[#27265C] text-sm">₽{selectedPack.price.toLocaleString()}</p>
+                          <p className="text-[10px] text-muted-foreground">за 1 шт</p>
+                        </div>
+                      </div>
+
+                      {/* Row 4: qty controls + link */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 w-9 p-0 flex-shrink-0"
+                            onClick={() => updateQuantity(product.id, selectedPack.size, quantity - selectedPack.palletQty)}
+                          >
+                            <Icon name="Minus" size={13} />
+                          </Button>
+                          <Input
+                            type="number"
+                            value={quantity || ''}
+                            onChange={e => updateQuantity(product.id, selectedPack.size, parseInt(e.target.value) || 0)}
+                            className="w-16 text-center font-bold h-9 text-sm"
+                            placeholder="0"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 w-9 p-0 flex-shrink-0"
+                            onClick={() => updateQuantity(product.id, selectedPack.size, quantity + selectedPack.palletQty)}
+                          >
+                            <Icon name="Plus" size={13} />
+                          </Button>
+                          {quantity > 0 && (
+                            <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                              palletInfo.isExact ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                            }`}>
+                              <Icon name={palletInfo.isExact ? "CheckCircle" : "AlertCircle"} size={11} />
+                              {palletInfo.fullPallets > 0 && `${palletInfo.fullPallets} пал.`}
+                              {palletInfo.remainder > 0 && ` +${palletInfo.remainder}`}
+                            </span>
+                          )}
+                        </div>
+                        <Link to={`/product/${product.id}`} className="flex-shrink-0">
+                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-[#27265C] hover:text-white" title="Подробнее">
+                            <Icon name="Info" size={15} />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── Desktop table (≥ sm) ── */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-[#27265C]">
                     <tr>
@@ -188,7 +300,7 @@ const Catalog = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap hidden md:table-cell">Характеристики</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Упаковка</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Цена</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase whitespace-nowrap hidden sm:table-cell">Наличие</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Наличие</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase whitespace-nowrap">Количество</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -238,7 +350,7 @@ const Catalog = () => {
                             <p className="font-bold text-[#27265C] text-sm">₽{selectedPack.price.toLocaleString()}</p>
                             <p className="text-xs text-muted-foreground">за 1 шт</p>
                           </td>
-                          <td className="px-4 py-4 text-center hidden sm:table-cell">
+                          <td className="px-4 py-4 text-center">
                             {product.availability === 'in-stock' && (
                               <Badge className="bg-emerald-100 text-emerald-700 border-0">В наличии</Badge>
                             )}
@@ -307,6 +419,7 @@ const Catalog = () => {
                   </tbody>
                 </table>
               </div>
+
             </CardContent>
           </Card>
 
