@@ -1,263 +1,296 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import Icon from "@/components/ui/icon";
 import { catalogData, type Product } from "@/data/catalogData";
 
-/* ─── helpers ─── */
-function availBadge(a: Product["availability"]) {
-  if (a === "in-stock")    return <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] px-1.5 py-0.5 shrink-0">В наличии</Badge>;
-  if (a === "pre-order")   return <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] px-1.5 py-0.5 shrink-0">Предзаказ</Badge>;
-  return                          <Badge className="bg-red-100 text-red-700 border-0 text-[10px] px-1.5 py-0.5 shrink-0">Нет</Badge>;
+/* ─── tiny helpers ─── */
+const fmt = (n: number) => n.toLocaleString("ru-RU");
+
+function AvailDot({ a }: { a: Product["availability"] }) {
+  if (a === "in-stock")  return <span className="flex items-center gap-1 text-emerald-600 font-medium text-xs"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />В наличии</span>;
+  if (a === "pre-order") return <span className="flex items-center gap-1 text-blue-600 font-medium text-xs"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />Предзаказ</span>;
+  return                        <span className="flex items-center gap-1 text-red-500 font-medium text-xs"><span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />Нет</span>;
 }
 
-/* ════════════════════════════════════════════════════ */
-const Catalog = () => {
+function AvailBadge({ a }: { a: Product["availability"] }) {
+  if (a === "in-stock")  return <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">В наличии</Badge>;
+  if (a === "pre-order") return <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px]">Предзаказ</Badge>;
+  return                        <Badge className="bg-red-100 text-red-700 border-0 text-[10px]">Нет в наличии</Badge>;
+}
+
+/* ════════════════════════════════════════════════════════ */
+export default function Catalog() {
   const { categoryId, seriesId } = useParams<{ categoryId?: string; seriesId?: string }>();
   const navigate = useNavigate();
 
-  const [cart, setCart]           = useState<Record<string, Record<string, number>>>({});
-  const [selPkg, setSelPkg]       = useState<Record<string, string>>({});
-  const [added, setAdded]         = useState<Record<string, boolean>>({});   // pulse animation
+  /* ── state ── */
+  const [cart,    setCart]    = useState<Record<string, Record<string, number>>>({});
+  const [selPkg,  setSelPkg]  = useState<Record<string, string>>({});
+  const [bump,    setBump]    = useState<Record<string, boolean>>({}); // add-to-cart feedback
 
-  const selectedCategory = categoryId ? catalogData.find(c => c.id === categoryId) : null;
-  const selectedSeries   = seriesId && selectedCategory
-    ? selectedCategory.series.find(s => s.id === seriesId)
-    : null;
-
-  const displayProducts = selectedSeries?.products ?? [];
+  /* ── derived data ── */
+  const selectedCategory = useMemo(() => categoryId ? catalogData.find(c => c.id === categoryId) ?? null : null, [categoryId]);
+  const selectedSeries   = useMemo(() =>
+    seriesId && selectedCategory ? selectedCategory.series.find(s => s.id === seriesId) ?? null : null,
+    [seriesId, selectedCategory]);
+  const products = selectedSeries?.products ?? [];
 
   /* ── cart helpers ── */
-  const getQty  = (id: string, size: string) => cart[id]?.[size] ?? 0;
-  const getPkg  = (id: string)               => selPkg[id] ?? displayProducts.find(p => p.id === id)?.packaging[0]?.size ?? "4л";
+  const getQty = (id: string, size: string) => cart[id]?.[size] ?? 0;
+  const getActivePkg = (product: Product) => {
+    const size = selPkg[product.id] ?? product.packaging[0].size;
+    return product.packaging.find(p => p.size === size) ?? product.packaging[0];
+  };
 
-  const setQty = (id: string, size: string, qty: number) => {
-    setCart(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), [size]: Math.max(0, qty) } }));
-    if (qty > 0) {
-      setAdded(prev => ({ ...prev, [id]: true }));
-      setTimeout(() => setAdded(prev => ({ ...prev, [id]: false })), 600);
+  const addQty = (id: string, size: string, delta: number, palletQty: number) => {
+    setCart(prev => {
+      const cur = prev[id]?.[size] ?? 0;
+      const next = Math.max(0, cur + delta);
+      return { ...prev, [id]: { ...(prev[id] ?? {}), [size]: next } };
+    });
+    if (delta > 0) {
+      setBump(p => ({ ...p, [id]: true }));
+      setTimeout(() => setBump(p => ({ ...p, [id]: false })), 500);
     }
   };
 
-  const totalItems  = Object.values(cart).flatMap(s => Object.values(s)).reduce((a, b) => a + b, 0);
-  const totalAmount = displayProducts.reduce((sum, p) =>
-    sum + p.packaging.reduce((s, pk) => s + getQty(p.id, pk.size) * pk.price, 0), 0);
+  const setQtyDirect = (id: string, size: string, val: string) => {
+    const n = parseInt(val) || 0;
+    setCart(prev => ({ ...prev, [id]: { ...(prev[id] ?? {}), [size]: Math.max(0, n) } }));
+  };
+
+  const totalQty    = useMemo(() => Object.values(cart).flatMap(s => Object.values(s)).reduce((a, b) => a + b, 0), [cart]);
+  const totalAmount = useMemo(() => products.reduce((sum, p) =>
+    sum + p.packaging.reduce((s, pk) => s + getQty(p.id, pk.size) * pk.price, 0), 0), [cart, products]);
+
+  const cartLineCount = useMemo(() =>
+    Object.values(cart).flatMap(s => Object.entries(s).filter(([, v]) => v > 0)).length, [cart]);
 
   const calcPallets = (qty: number, palletQty: number) => {
-    const full      = Math.floor(qty / palletQty);
-    const remainder = qty % palletQty;
-    return { full, remainder, exact: remainder === 0 };
+    const full = Math.floor(qty / palletQty);
+    const rem  = qty % palletQty;
+    return { full, rem, exact: rem === 0 && qty > 0 };
   };
 
   const createOrder = () => {
     const items: { product: Product; size: string; quantity: number; price: number }[] = [];
-    displayProducts.forEach(p =>
-      p.packaging.forEach(pk => {
-        const q = getQty(p.id, pk.size);
-        if (q > 0) items.push({ product: p, size: pk.size, quantity: q, price: pk.price });
-      })
-    );
+    products.forEach(p => p.packaging.forEach(pk => {
+      const q = getQty(p.id, pk.size);
+      if (q > 0) items.push({ product: p, size: pk.size, quantity: q, price: pk.price });
+    }));
     if (items.length > 0) navigate("/order/new", { state: { orderItems: items } });
   };
 
-  /* ════════════════════ RENDER ════════════════════ */
+  /* ════════════════════════════════════════════════════════
+     RENDER
+  ════════════════════════════════════════════════════════ */
   return (
-    <div className="space-y-5 pb-28 md:pb-6">
+    <div className="min-h-full">
 
-      {/* ── Breadcrumbs ── */}
-      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
-        <Link to="/" className="hover:text-[#27265C] transition-colors">
-          <Icon name="Home" size={13} />
-        </Link>
-        <Icon name="ChevronRight" size={13} className="opacity-40" />
-        <Link to="/catalog" className={`transition-colors font-medium ${!selectedCategory ? "text-[#27265C]" : "hover:text-[#27265C]"}`}>
+      {/* ── Breadcrumb ── */}
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap mb-4">
+        <Link to="/" className="hover:text-[#27265C] transition-colors p-0.5"><Icon name="Home" size={13} /></Link>
+        <Icon name="ChevronRight" size={12} className="opacity-30" />
+        <Link to="/catalog" className={`transition-colors font-medium hover:text-[#27265C] ${!selectedCategory ? "text-[#27265C]" : ""}`}>
           Каталог
         </Link>
-        {selectedCategory && (
-          <>
-            <Icon name="ChevronRight" size={13} className="opacity-40" />
-            <Link to={`/catalog/${selectedCategory.id}`} className={`transition-colors font-medium ${!selectedSeries ? "text-[#27265C]" : "hover:text-[#27265C]"}`}>
-              {selectedCategory.name}
-            </Link>
-          </>
-        )}
-        {selectedSeries && (
-          <>
-            <Icon name="ChevronRight" size={13} className="opacity-40" />
-            <span className="text-[#27265C] font-semibold">{selectedSeries.name}</span>
-          </>
-        )}
+        {selectedCategory && <>
+          <Icon name="ChevronRight" size={12} className="opacity-30" />
+          <Link to={`/catalog/${selectedCategory.id}`} className={`transition-colors font-medium hover:text-[#27265C] ${!selectedSeries ? "text-[#27265C]" : ""}`}>
+            {selectedCategory.name}
+          </Link>
+        </>}
+        {selectedSeries && <>
+          <Icon name="ChevronRight" size={12} className="opacity-30" />
+          <span className="text-[#27265C] font-semibold">{selectedSeries.name}</span>
+        </>}
       </nav>
 
-      {/* ── Page header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">
+      {/* ── Page title row ── */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-[#27265C] leading-tight">
             {selectedSeries?.name ?? selectedCategory?.name ?? "Каталог"}
           </h1>
           {(selectedSeries?.description ?? selectedCategory?.description) && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               {selectedSeries?.description ?? selectedCategory?.description}
             </p>
           )}
+          {selectedSeries && (
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-xs text-muted-foreground">{products.length} позиций</span>
+              <span className="text-xs text-emerald-600 font-medium">
+                {products.filter(p => p.availability === "in-stock").length} в наличии
+              </span>
+            </div>
+          )}
         </div>
-        {/* Desktop cart button in header */}
-        {totalItems > 0 && (
+        {/* Desktop — кнопка корзины */}
+        {totalQty > 0 && (
           <Button
             onClick={createOrder}
-            className="hidden sm:flex bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-10 shrink-0 shadow-sm"
+            className="hidden sm:flex shrink-0 bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-10 shadow-sm gap-2"
           >
-            <Icon name="ShoppingCart" size={16} className="mr-2" />
-            Оформить — {totalItems} шт · ₽{totalAmount.toLocaleString()}
+            <Icon name="ShoppingCart" size={16} />
+            {cartLineCount} позиц. · ₽{fmt(totalAmount)}
           </Button>
         )}
       </div>
 
-      {/* ════════════════════════════════════════════
-          ROOT — список категорий
-      ════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════
+          ROOT — категории
+      ══════════════════════════════════════════════════ */}
       {!selectedCategory && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {catalogData.map(cat => (
-            <Card
-              key={cat.id}
-              className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md hover:border-[#27265C]/20 transition-all cursor-pointer group"
-              onClick={() => navigate(`/catalog/${cat.id}`)}
-            >
-              <CardContent className="p-6">
-                <div className="w-10 h-10 rounded-xl bg-[#27265C]/6 flex items-center justify-center mb-4 group-hover:bg-[#27265C]/10 transition-colors">
-                  <Icon name="Package" size={20} className="text-[#27265C]" />
-                </div>
-                <h3 className="text-base font-bold text-[#27265C] mb-1.5">{cat.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{cat.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Icon name="Layers" size={13} />
-                    {cat.series.length} серий
-                  </div>
-                  <Icon name="ChevronRight" size={16} className="text-[#27265C]/40 group-hover:text-[#27265C] transition-colors" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════
-          CATEGORY LEVEL — список серий
-      ════════════════════════════════════════════ */}
-      {selectedCategory && !selectedSeries && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {selectedCategory.series.map(series => {
-            const inStockCount = series.products.filter(p => p.availability === "in-stock").length;
+          {catalogData.map(cat => {
+            const total = cat.series.reduce((s, sr) => s + sr.products.length, 0);
+            const icons: Record<string, string> = { "motor-oils": "Droplets", "transmission-oils": "Cog", "additives": "FlaskConical" };
             return (
-              <Card
-                key={series.id}
-                className="border border-[#E8E8E8] rounded-2xl shadow-sm hover:shadow-md hover:border-[#27265C]/20 transition-all cursor-pointer group"
-                onClick={() => navigate(`/catalog/${categoryId}/${series.id}`)}
+              <button
+                key={cat.id}
+                onClick={() => navigate(`/catalog/${cat.id}`)}
+                className="text-left bg-white border border-[#E8E8E8] rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-[#27265C]/25 transition-all group"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3 className="text-base font-bold text-[#27265C]">{series.name}</h3>
-                    <Badge className="bg-[#27265C]/5 text-[#27265C] border-0 text-xs shrink-0">
-                      {series.products.length} поз.
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{series.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                        <Icon name="CheckCircle" size={12} />
-                        {inStockCount} в наличии
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[#27265C] text-xs font-semibold group-hover:gap-2.5 transition-all">
-                      Перейти
-                      <Icon name="ArrowRight" size={14} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="w-11 h-11 rounded-xl bg-[#27265C]/6 flex items-center justify-center mb-4 group-hover:bg-[#27265C]/10 transition-colors">
+                  <Icon name={(icons[cat.id] ?? "Package") as never} size={22} className="text-[#27265C]" />
+                </div>
+                <p className="font-bold text-[#27265C] text-base mb-1">{cat.name}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{cat.description}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{cat.series.length} серии · {total} товаров</span>
+                  <Icon name="ArrowRight" size={15} className="text-[#27265C]/30 group-hover:text-[#27265C] group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </button>
             );
           })}
         </div>
       )}
 
-      {/* ════════════════════════════════════════════
-          SERIES LEVEL — товары
-      ════════════════════════════════════════════ */}
-      {selectedSeries && (
-        <div className="space-y-4">
+      {/* ══════════════════════════════════════════════════
+          CATEGORY — серии
+      ══════════════════════════════════════════════════ */}
+      {selectedCategory && !selectedSeries && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {selectedCategory.series.map(series => {
+            const inStock = series.products.filter(p => p.availability === "in-stock").length;
+            const preorder = series.products.filter(p => p.availability === "pre-order").length;
+            return (
+              <button
+                key={series.id}
+                onClick={() => navigate(`/catalog/${categoryId}/${series.id}`)}
+                className="text-left bg-white border border-[#E8E8E8] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#27265C]/25 transition-all group"
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <p className="font-bold text-[#27265C] text-base leading-snug">{series.name}</p>
+                  <Badge className="bg-[#27265C]/6 text-[#27265C] border-0 text-xs shrink-0 mt-0.5">
+                    {series.products.length} поз.
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{series.description}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {inStock > 0 && <span className="flex items-center gap-1 text-emerald-600 text-xs font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{inStock} в наличии</span>}
+                    {preorder > 0 && <span className="flex items-center gap-1 text-blue-600 text-xs font-medium"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{preorder} предзаказ</span>}
+                  </div>
+                  <span className="flex items-center gap-1 text-[#27265C] text-xs font-semibold opacity-60 group-hover:opacity-100 group-hover:gap-1.5 transition-all">
+                    Открыть <Icon name="ArrowRight" size={13} />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-          {/* ── MOBILE: карточки товаров ── */}
-          <div className="sm:hidden space-y-3">
-            {displayProducts.map(product => {
-              const pkg     = product.packaging.find(p => p.size === getPkg(product.id)) ?? product.packaging[0];
-              const qty     = getQty(product.id, pkg.size);
-              const pallets = calcPallets(qty, pkg.palletQty);
-              const isAdded = added[product.id];
+      {/* ══════════════════════════════════════════════════
+          SERIES — список товаров
+      ══════════════════════════════════════════════════ */}
+      {selectedSeries && (
+        <div className="pb-28 sm:pb-0 space-y-3">
+
+          {/* ─── MOBILE: карточки ─── */}
+          <div className="sm:hidden space-y-0 bg-white rounded-2xl border border-[#E8E8E8] shadow-sm overflow-hidden divide-y divide-[#F0F0F0]">
+            {products.map((product, idx) => {
+              const activePkg = getActivePkg(product);
+              const qty       = getQty(product.id, activePkg.size);
+              const pallets   = calcPallets(qty, activePkg.palletQty);
+              const isBumped  = bump[product.id];
+              const lineTotal = qty * activePkg.price;
 
               return (
-                <Card
-                  key={product.id}
-                  className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                    qty > 0
-                      ? "border-[#27265C]/30 shadow-md"
-                      : "border-[#E8E8E8] shadow-sm"
-                  }`}
-                >
-                  <CardContent className="p-0">
-
-                    {/* Card header */}
-                    <div className={`px-4 pt-4 pb-3 ${qty > 0 ? "bg-[#27265C]/[0.03]" : ""}`}>
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                <div key={product.id}>
+                  {/* ── Product header ── */}
+                  <div className={`px-4 pt-4 pb-3 transition-colors ${qty > 0 ? "bg-[#27265C]/[0.025]" : ""}`}>
+                    {/* Name row */}
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-bold text-[#27265C]/30 bg-[#27265C]/6 rounded px-1.5 py-0.5 shrink-0">
+                            #{idx + 1}
+                          </span>
+                          <AvailDot a={product.availability} />
+                        </div>
                         <Link
                           to={`/product/${product.id}`}
-                          className="font-semibold text-[#27265C] hover:underline text-sm leading-snug flex-1"
+                          className="font-bold text-[#27265C] text-[15px] leading-snug hover:underline block"
                         >
                           {product.name}
                         </Link>
-                        {availBadge(product.availability)}
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Арт. {product.id}</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {product.viscosity && (
-                          <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0.5">
-                            {product.viscosity}
-                          </Badge>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">Арт: {product.id}</span>
-                      </div>
-                      {product.specifications.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
-                          {product.specifications.slice(0, 3).join(" · ")}
-                        </p>
+                      {qty > 0 && (
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-extrabold text-[#27265C]">₽{fmt(lineTotal)}</p>
+                          <p className="text-[10px] text-muted-foreground">{qty} шт</p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Packaging tabs */}
-                    <div className="px-4 pb-2 flex gap-1.5 flex-wrap border-t border-[#F4F4F4] pt-3">
+                    {/* Specs chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {product.viscosity && (
+                        <span className="font-mono text-[10px] bg-[#27265C] text-white px-2 py-0.5 rounded-md font-semibold">
+                          {product.viscosity}
+                        </span>
+                      )}
+                      {product.specifications.map((s, i) => (
+                        <span key={i} className="text-[10px] bg-[#F4F4F4] text-muted-foreground px-2 py-0.5 rounded-md">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Packaging tabs ── */}
+                  <div className="px-4 py-3 bg-[#FAFAFA] border-t border-[#F0F0F0]">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Выберите упаковку</p>
+                    <div className="grid grid-cols-4 gap-1.5">
                       {product.packaging.map(pk => {
-                        const isActive = pk.size === getPkg(product.id);
+                        const isActive = pk.size === activePkg.size;
                         const pkQty    = getQty(product.id, pk.size);
                         return (
                           <button
                             key={pk.size}
                             onClick={() => setSelPkg(p => ({ ...p, [product.id]: pk.size }))}
-                            className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                            className={`relative flex flex-col items-center justify-center rounded-xl border py-2 px-1 transition-all ${
                               isActive
-                                ? "border-[#27265C] bg-[#27265C] text-white shadow-sm"
-                                : "border-[#E8E8E8] text-[#27265C] hover:border-[#27265C]/40 bg-white"
+                                ? "bg-[#27265C] border-[#27265C] shadow-sm"
+                                : "bg-white border-[#E8E8E8] hover:border-[#27265C]/30"
                             }`}
                           >
-                            <span>{pk.size}</span>
-                            <span className={`text-[10px] font-normal ${isActive ? "text-white/70" : "text-muted-foreground"}`}>
-                              ₽{pk.price.toLocaleString()}
+                            <span className={`text-xs font-bold ${isActive ? "text-white" : "text-[#27265C]"}`}>
+                              {pk.size}
+                            </span>
+                            <span className={`text-[9px] mt-0.5 font-medium ${isActive ? "text-white/70" : "text-muted-foreground"}`}>
+                              ₽{fmt(pk.price)}
                             </span>
                             {pkQty > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 bg-[#FCC71E] text-[#27265C] text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                              <span className="absolute -top-1.5 -right-1.5 bg-[#FCC71E] text-[#27265C] text-[8px] font-extrabold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
                                 {pkQty}
                               </span>
                             )}
@@ -265,234 +298,251 @@ const Catalog = () => {
                         );
                       })}
                     </div>
+                  </div>
 
-                    {/* Price + qty controls */}
-                    <div className="px-4 pb-4 pt-2 flex items-center gap-3">
-                      <div className="mr-auto">
-                        <p className="text-base font-extrabold text-[#27265C]">
-                          ₽{pkg.price.toLocaleString()}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">за 1 шт · {pkg.size}</p>
-                      </div>
-
-                      {qty === 0 ? (
-                        <Button
-                          size="sm"
-                          className={`h-9 px-4 font-bold text-sm transition-all duration-200 ${
-                            isAdded
-                              ? "bg-emerald-500 text-white scale-95"
-                              : "bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a]"
-                          }`}
-                          onClick={() => setQty(product.id, pkg.size, pkg.palletQty)}
-                        >
-                          <Icon name="Plus" size={15} className="mr-1.5" />
-                          +{pkg.palletQty} шт
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-9 w-9 p-0 border-[#27265C]/20"
-                            onClick={() => setQty(product.id, pkg.size, qty - pkg.palletQty)}
-                          >
-                            <Icon name="Minus" size={13} />
-                          </Button>
-                          <Input
-                            type="number"
-                            value={qty || ""}
-                            onChange={e => setQty(product.id, pkg.size, parseInt(e.target.value) || 0)}
-                            className="w-16 text-center font-bold h-9 text-sm border-[#27265C]/20"
-                            placeholder="0"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-9 w-9 p-0 border-[#27265C]/20"
-                            onClick={() => setQty(product.id, pkg.size, qty + pkg.palletQty)}
-                          >
-                            <Icon name="Plus" size={13} />
-                          </Button>
-                        </div>
-                      )}
-
-                      <Link to={`/product/${product.id}`} className="shrink-0">
-                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-[#27265C] hover:text-white">
-                          <Icon name="Info" size={15} />
-                        </Button>
-                      </Link>
+                  {/* ── Price + qty controls ── */}
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    {/* Price block */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg font-extrabold text-[#27265C] leading-none">
+                        ₽{fmt(activePkg.price)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        за шт · паллета {activePkg.palletQty} шт
+                      </p>
                     </div>
 
-                    {/* Pallet info */}
-                    {qty > 0 && (
-                      <div className={`px-4 py-2 border-t border-[#F4F4F4] flex items-center gap-1.5 ${
-                        pallets.exact ? "bg-emerald-50" : "bg-orange-50"
-                      }`}>
-                        <Icon
-                          name={pallets.exact ? "CheckCircle" : "AlertCircle"}
-                          size={11}
-                          className={pallets.exact ? "text-emerald-600" : "text-orange-600"}
+                    {/* Qty stepper */}
+                    {qty === 0 ? (
+                      <Button
+                        onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
+                        className={`h-10 px-4 font-bold text-sm shrink-0 transition-all duration-200 ${
+                          isBumped
+                            ? "bg-emerald-500 text-white scale-95"
+                            : "bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a]"
+                        }`}
+                      >
+                        <Icon name={isBumped ? "Check" : "Plus"} size={15} className="mr-1" />
+                        {isBumped ? "Добавлено" : `+1 паллета`}
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => addQty(product.id, activePkg.size, -activePkg.palletQty, activePkg.palletQty)}
+                          className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
+                        >
+                          <Icon name="Minus" size={14} />
+                        </button>
+                        <Input
+                          type="number"
+                          value={qty}
+                          onChange={e => setQtyDirect(product.id, activePkg.size, e.target.value)}
+                          className="w-16 text-center font-bold h-9 text-sm border-[#E0E0E0]"
                         />
-                        <span className={`text-[11px] font-medium ${pallets.exact ? "text-emerald-700" : "text-orange-700"}`}>
-                          {pallets.full > 0 && `${pallets.full} паллет`}
-                          {pallets.remainder > 0 && ` + ${pallets.remainder} шт`}
-                          {pallets.exact && pallets.full > 0 && " — кратно паллете"}
-                          {!pallets.exact && " — некратно паллете"}
-                        </span>
-                        <span className="ml-auto text-[11px] font-bold text-[#27265C]">
-                          ₽{(qty * pkg.price).toLocaleString()}
-                        </span>
+                        <button
+                          onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
+                          className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors"
+                        >
+                          <Icon name="Plus" size={14} />
+                        </button>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+
+                    <Link to={`/product/${product.id}`} className="shrink-0">
+                      <button className="w-9 h-9 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C]/50 hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors">
+                        <Icon name="Info" size={14} />
+                      </button>
+                    </Link>
+                  </div>
+
+                  {/* ── Pallet hint ── */}
+                  {qty > 0 && (
+                    <div className={`mx-4 mb-3 rounded-xl px-3 py-2 flex items-center gap-2 ${
+                      pallets.exact ? "bg-emerald-50 border border-emerald-100" : "bg-amber-50 border border-amber-100"
+                    }`}>
+                      <Icon
+                        name={pallets.exact ? "PackageCheck" : "AlertCircle"}
+                        size={13}
+                        className={pallets.exact ? "text-emerald-600 shrink-0" : "text-amber-600 shrink-0"}
+                      />
+                      <span className={`text-[11px] font-medium flex-1 ${pallets.exact ? "text-emerald-700" : "text-amber-700"}`}>
+                        {pallets.full > 0 && `${pallets.full} паллет`}
+                        {pallets.rem  > 0 && ` + ${pallets.rem} шт`}
+                        {pallets.exact ? " — кратно паллете" : " — некратно паллете"}
+                      </span>
+                      <span className="text-[11px] font-extrabold text-[#27265C] shrink-0">
+                        ₽{fmt(lineTotal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
 
-          {/* ── DESKTOP: таблица ── */}
-          <Card className="hidden sm:block border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#27265C]">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap">Наименование</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap">Вязкость</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap hidden md:table-cell">Характеристики</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap">Упаковка</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap">Цена</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase tracking-wide whitespace-nowrap">Наличие</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-white/80 uppercase tracking-wide min-w-[160px]">Количество</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F4F4F4] bg-white">
-                    {displayProducts.map(product => {
-                      const pkg     = product.packaging.find(p => p.size === getPkg(product.id)) ?? product.packaging[0];
-                      const qty     = getQty(product.id, pkg.size);
-                      const pallets = calcPallets(qty, pkg.palletQty);
+          {/* ─── DESKTOP: таблица ─── */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-[#E8E8E8] shadow-sm overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#27265C]">
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-white/70 uppercase tracking-wider whitespace-nowrap">Наименование</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-white/70 uppercase tracking-wider whitespace-nowrap">Вязкость</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-white/70 uppercase tracking-wider whitespace-nowrap hidden md:table-cell">Спецификации</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-white/70 uppercase tracking-wider">Упаковка</th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold text-white/70 uppercase tracking-wider whitespace-nowrap">Цена / шт</th>
+                  <th className="px-4 py-3 text-center text-[11px] font-semibold text-white/70 uppercase tracking-wider whitespace-nowrap">Наличие</th>
+                  <th className="px-4 py-3 text-center text-[11px] font-semibold text-white/70 uppercase tracking-wider min-w-[170px]">Количество</th>
+                  <th className="px-3 py-3 w-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F4F4F4]">
+                {products.map(product => {
+                  const activePkg = getActivePkg(product);
+                  const qty       = getQty(product.id, activePkg.size);
+                  const pallets   = calcPallets(qty, activePkg.palletQty);
+                  const lineTotal = qty * activePkg.price;
+                  const inCart    = qty > 0;
 
-                      return (
-                        <>
-                          <tr
-                            key={product.id}
-                            className={`transition-colors ${qty > 0 ? "bg-[#27265C]/[0.025]" : "hover:bg-gray-50/60"}`}
+                  return (
+                    <>
+                      <tr
+                        key={product.id}
+                        className={`transition-colors ${inCart ? "bg-[#27265C]/[0.025]" : "hover:bg-[#FAFAFA]"}`}
+                      >
+                        {/* Название */}
+                        <td className="px-5 py-4">
+                          <Link
+                            to={`/product/${product.id}`}
+                            className="font-semibold text-[#27265C] hover:underline text-sm leading-snug block"
                           >
-                            <td className="px-4 py-3.5 min-w-[160px]">
-                              <Link to={`/product/${product.id}`} className="font-semibold text-[#27265C] hover:underline text-sm block leading-snug">
-                                {product.name}
-                              </Link>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">Арт: {product.id}</p>
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <Badge variant="outline" className="font-mono text-xs">{product.viscosity}</Badge>
-                            </td>
-                            <td className="px-4 py-3.5 hidden md:table-cell">
-                              <div className="text-xs text-muted-foreground space-y-0.5">
-                                {product.specifications.slice(0, 2).map((s, i) => <div key={i}>{s}</div>)}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <select
-                                className="text-sm border border-[#E8E8E8] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#27265C] cursor-pointer"
-                                value={getPkg(product.id)}
-                                onChange={e => setSelPkg(p => ({ ...p, [product.id]: e.target.value }))}
-                              >
-                                {product.packaging.map(pk => (
-                                  <option key={pk.size} value={pk.size}>
-                                    {pk.size} — ₽{pk.price.toLocaleString()}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-4 py-3.5 text-right">
-                              <p className="font-bold text-[#27265C] text-sm">₽{pkg.price.toLocaleString()}</p>
-                              <p className="text-[11px] text-muted-foreground">за 1 шт</p>
-                            </td>
-                            <td className="px-4 py-3.5 text-center">
-                              {availBadge(product.availability)}
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <div className="flex items-center gap-1.5 justify-center">
-                                <Button size="sm" variant="outline" className="h-8 w-8 p-0"
-                                  onClick={() => setQty(product.id, pkg.size, qty - pkg.palletQty)}>
-                                  <Icon name="Minus" size={13} />
-                                </Button>
-                                <Input
-                                  type="number"
-                                  value={qty || ""}
-                                  onChange={e => setQty(product.id, pkg.size, parseInt(e.target.value) || 0)}
-                                  className="w-16 text-center font-bold h-8 text-sm"
-                                  placeholder="0"
-                                />
-                                <Button size="sm" variant="outline" className="h-8 w-8 p-0"
-                                  onClick={() => setQty(product.id, pkg.size, qty + pkg.palletQty)}>
-                                  <Icon name="Plus" size={13} />
-                                </Button>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-center">
-                              <Link to={`/product/${product.id}`}>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-[#27265C] hover:text-white" title="Подробнее">
-                                  <Icon name="Info" size={15} />
-                                </Button>
-                              </Link>
-                            </td>
-                          </tr>
-                          {/* Inline pallet info row */}
-                          {qty > 0 && (
-                            <tr key={`${product.id}-info`} className={pallets.exact ? "bg-emerald-50" : "bg-orange-50"}>
-                              <td colSpan={8} className="px-4 py-1.5">
-                                <div className="flex items-center gap-2 text-[11px]">
-                                  <Icon
-                                    name={pallets.exact ? "CheckCircle" : "AlertCircle"}
-                                    size={11}
-                                    className={pallets.exact ? "text-emerald-600" : "text-orange-600"}
-                                  />
-                                  <span className={`font-medium ${pallets.exact ? "text-emerald-700" : "text-orange-700"}`}>
-                                    {pallets.full > 0 && `${pallets.full} паллет`}
-                                    {pallets.remainder > 0 && ` + ${pallets.remainder} шт`}
-                                    {pallets.exact ? " — кратно паллете" : " — некратно паллете"}
-                                  </span>
-                                  <span className="ml-auto font-bold text-[#27265C]">
-                                    Итого: ₽{(qty * pkg.price).toLocaleString()}
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                            {product.name}
+                          </Link>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Арт. {product.id}</p>
+                        </td>
+                        {/* Вязкость */}
+                        <td className="px-4 py-4">
+                          <span className="font-mono text-xs bg-[#27265C] text-white px-2 py-0.5 rounded font-bold whitespace-nowrap">
+                            {product.viscosity}
+                          </span>
+                        </td>
+                        {/* Спецификации */}
+                        <td className="px-4 py-4 hidden md:table-cell">
+                          <div className="flex flex-col gap-0.5">
+                            {product.specifications.slice(0, 2).map((s, i) => (
+                              <span key={i} className="text-[11px] text-muted-foreground leading-snug">{s}</span>
+                            ))}
+                          </div>
+                        </td>
+                        {/* Упаковка */}
+                        <td className="px-4 py-4">
+                          <select
+                            value={activePkg.size}
+                            onChange={e => setSelPkg(p => ({ ...p, [product.id]: e.target.value }))}
+                            className="text-sm border border-[#E2E2E2] rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#27265C] cursor-pointer min-w-[120px]"
+                          >
+                            {product.packaging.map(pk => (
+                              <option key={pk.size} value={pk.size}>
+                                {pk.size} — ₽{fmt(pk.price)}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        {/* Цена */}
+                        <td className="px-4 py-4 text-right">
+                          <p className="font-bold text-[#27265C] text-sm">₽{fmt(activePkg.price)}</p>
+                          <p className="text-[11px] text-muted-foreground">пал. {activePkg.palletQty} шт</p>
+                        </td>
+                        {/* Наличие */}
+                        <td className="px-4 py-4 text-center">
+                          <AvailBadge a={product.availability} />
+                        </td>
+                        {/* Количество */}
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => addQty(product.id, activePkg.size, -activePkg.palletQty, activePkg.palletQty)}
+                              className="w-8 h-8 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
+                            >
+                              <Icon name="Minus" size={12} />
+                            </button>
+                            <Input
+                              type="number"
+                              value={qty || ""}
+                              placeholder="0"
+                              onChange={e => setQtyDirect(product.id, activePkg.size, e.target.value)}
+                              className="w-16 text-center font-bold h-8 text-sm border-[#E0E0E0]"
+                            />
+                            <button
+                              onClick={() => addQty(product.id, activePkg.size, activePkg.palletQty, activePkg.palletQty)}
+                              className="w-8 h-8 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-[#27265C] hover:border-[#27265C] hover:text-white transition-colors"
+                            >
+                              <Icon name="Plus" size={12} />
+                            </button>
+                          </div>
+                        </td>
+                        {/* Info */}
+                        <td className="px-3 py-4 text-center">
+                          <Link to={`/product/${product.id}`}>
+                            <button className="w-8 h-8 rounded-lg border border-transparent flex items-center justify-center text-[#27265C]/30 hover:text-[#27265C] hover:border-[#E0E0E0] transition-colors">
+                              <Icon name="Info" size={14} />
+                            </button>
+                          </Link>
+                        </td>
+                      </tr>
 
-          {/* ── Desktop total summary ── */}
-          {totalItems > 0 && (
-            <div className="hidden sm:flex items-center justify-between gap-4 bg-[#27265C] text-white rounded-2xl px-5 py-4 shadow-md">
-              <div className="flex items-center gap-6">
+                      {/* ── Inline pallet info ── */}
+                      {inCart && (
+                        <tr key={`${product.id}-info`} className={pallets.exact ? "bg-emerald-50" : "bg-amber-50"}>
+                          <td colSpan={8} className="px-5 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <Icon
+                                name={pallets.exact ? "PackageCheck" : "AlertCircle"}
+                                size={11}
+                                className={pallets.exact ? "text-emerald-600" : "text-amber-600"}
+                              />
+                              <span className={`text-[11px] font-medium ${pallets.exact ? "text-emerald-700" : "text-amber-700"}`}>
+                                {pallets.full > 0 && `${pallets.full} паллет`}
+                                {pallets.rem  > 0 && ` + ${pallets.rem} шт`}
+                                {pallets.exact ? " — кратно паллете" : " — некратно паллете"}
+                              </span>
+                              <Separator orientation="vertical" className="h-3 mx-1" />
+                              <span className="text-[11px] text-muted-foreground">
+                                {qty} шт × ₽{fmt(activePkg.price)}
+                              </span>
+                              <span className="ml-auto text-[11px] font-extrabold text-[#27265C]">
+                                = ₽{fmt(lineTotal)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ─── Desktop итог + кнопка ─── */}
+          {totalQty > 0 && (
+            <div className="hidden sm:flex items-center gap-6 bg-[#27265C] text-white rounded-2xl px-6 py-4 shadow-lg">
+              <div className="grid grid-cols-3 gap-6 flex-1">
                 <div>
-                  <p className="text-xs text-white/60 mb-0.5">Позиций выбрано</p>
-                  <p className="text-lg font-extrabold">{Object.values(cart).flatMap(s => Object.entries(s).filter(([, v]) => v > 0)).length}</p>
+                  <p className="text-[11px] text-white/50 uppercase tracking-wider mb-0.5">Позиций</p>
+                  <p className="text-xl font-extrabold">{cartLineCount}</p>
                 </div>
-                <div className="w-px h-8 bg-white/20" />
                 <div>
-                  <p className="text-xs text-white/60 mb-0.5">Итого штук</p>
-                  <p className="text-lg font-extrabold">{totalItems}</p>
+                  <p className="text-[11px] text-white/50 uppercase tracking-wider mb-0.5">Штук</p>
+                  <p className="text-xl font-extrabold">{fmt(totalQty)}</p>
                 </div>
-                <div className="w-px h-8 bg-white/20" />
                 <div>
-                  <p className="text-xs text-white/60 mb-0.5">Сумма</p>
-                  <p className="text-xl font-extrabold text-[#FCC71E]">₽{totalAmount.toLocaleString()}</p>
+                  <p className="text-[11px] text-white/50 uppercase tracking-wider mb-0.5">Сумма</p>
+                  <p className="text-xl font-extrabold text-[#FCC71E]">₽{fmt(totalAmount)}</p>
                 </div>
               </div>
               <Button
                 onClick={createOrder}
-                className="bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-11 px-6 text-[15px] shadow-sm shrink-0"
+                className="bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-12 px-8 text-base shadow-sm shrink-0"
               >
                 <Icon name="ShoppingCart" size={18} className="mr-2" />
                 Оформить заказ
@@ -502,35 +552,42 @@ const Catalog = () => {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════
-          MOBILE STICKY FOOTER — корзина
-      ════════════════════════════════════════════ */}
-      {selectedSeries && totalItems > 0 && (
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40">
-          <div className="bg-[#27265C] px-4 py-2 flex items-center gap-3 border-t border-white/10">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="text-center shrink-0">
-                <p className="text-white font-extrabold text-base leading-none">{totalItems}</p>
-                <p className="text-white/50 text-[10px] leading-none mt-0.5">шт</p>
+      {/* ══════════════════════════════════════════════════
+          MOBILE sticky footer
+      ══════════════════════════════════════════════════ */}
+      {selectedSeries && totalQty > 0 && (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 shadow-2xl">
+          <div className="bg-[#27265C] px-4 pt-3 pb-3">
+            <div className="flex items-center gap-3">
+              {/* Мини-итог */}
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div>
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide leading-none">Позиций</p>
+                  <p className="text-base font-extrabold text-white leading-tight">{cartLineCount}</p>
+                </div>
+                <div className="w-px h-8 bg-white/15 shrink-0" />
+                <div>
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide leading-none">Штук</p>
+                  <p className="text-base font-extrabold text-white leading-tight">{fmt(totalQty)}</p>
+                </div>
+                <div className="w-px h-8 bg-white/15 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-white/50 uppercase tracking-wide leading-none">Сумма</p>
+                  <p className="text-base font-extrabold text-[#FCC71E] leading-tight truncate">₽{fmt(totalAmount)}</p>
+                </div>
               </div>
-              <div className="w-px h-7 bg-white/20 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[#FCC71E] font-extrabold text-base leading-none truncate">₽{totalAmount.toLocaleString()}</p>
-                <p className="text-white/50 text-[10px] leading-none mt-0.5">выбрано товаров</p>
-              </div>
+              {/* CTA */}
+              <Button
+                onClick={createOrder}
+                className="bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-11 px-5 shrink-0 text-sm"
+              >
+                Оформить
+                <Icon name="ChevronRight" size={16} className="ml-1" />
+              </Button>
             </div>
-            <Button
-              onClick={createOrder}
-              className="bg-[#FCC71E] text-[#27265C] hover:bg-[#e6b41a] font-bold h-10 px-4 shrink-0 text-sm shadow-sm"
-            >
-              Оформить
-              <Icon name="ArrowRight" size={15} className="ml-1.5" />
-            </Button>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default Catalog;
+}
