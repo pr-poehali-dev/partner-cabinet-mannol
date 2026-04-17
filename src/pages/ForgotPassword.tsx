@@ -14,7 +14,7 @@ const ForgotPassword = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setEmailSent(true);
+    navigate("/forgot-password/sent", { state: { email } });
   };
 
   const handleResend = () => {

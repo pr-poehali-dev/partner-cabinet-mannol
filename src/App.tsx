@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import RegisterVerify from "./pages/RegisterVerify";
 import Activation from "./pages/Activation";
 import ForgotPassword from "./pages/ForgotPassword";
+import ForgotPasswordSent from "./pages/ForgotPasswordSent";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Catalog from "./pages/Catalog";
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/register/verify" element={<RegisterVerify />} />
           <Route path="/activation" element={<Activation />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/forgot-password/sent" element={<ForgotPasswordSent />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/b2b" element={<B2BPortal />} />
         </Routes>
