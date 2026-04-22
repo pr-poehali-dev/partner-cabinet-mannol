@@ -22,6 +22,11 @@ import OrderReview from "./pages/OrderReview";
 import OrderAdjust from "./pages/OrderAdjust";
 import OrderConfirm from "./pages/OrderConfirm";
 import OrderSuccess from "./pages/OrderSuccess";
+import OrderScreening from "./pages/OrderScreening";
+import OrderAdjustNew from "./pages/OrderAdjustNew";
+import OrderConfirmNew from "./pages/OrderConfirmNew";
+import OrderAccepted from "./pages/OrderAccepted";
+import OrderBackorder from "./pages/OrderBackorder";
 import Orders from "./pages/Orders";
 import Backorders from "./pages/Backorders";
 import Schedule from "./pages/Schedule";
@@ -71,6 +76,11 @@ const App = () => (
             <Route path="/order/:orderId/adjust" element={<OrderAdjust />} />
             <Route path="/order/:orderId/confirm" element={<OrderConfirm />} />
             <Route path="/order/:orderId/success" element={<OrderSuccess />} />
+            <Route path="/order/:orderId/screening" element={<OrderScreening />} />
+            <Route path="/order/:orderId/adjust-new" element={<OrderAdjustNew />} />
+            <Route path="/order/:orderId/confirm-new" element={<OrderConfirmNew />} />
+            <Route path="/order/:orderId/accepted" element={<OrderAccepted />} />
+            <Route path="/order/:orderId/backorder" element={<OrderBackorder />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:orderId/details" element={<Orders />} />
             <Route path="/backorders" element={<Backorders />} />
