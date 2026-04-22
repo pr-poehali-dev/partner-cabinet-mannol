@@ -19,17 +19,17 @@ const ITEMS = [
 
 export default function OrderScreening() {
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-4 px-4 md:px-0">
 
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
         <Link to="/orders" className="hover:text-[#27265C] font-medium transition-colors">Все заказы</Link>
         <Icon name="ChevronRight" size={14} />
         <span className="text-[#27265C] font-semibold">{ORDER_ID}</span>
       </nav>
 
       {/* Stepper */}
-      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-6 py-4 shadow-sm">
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl px-4 md:px-6 py-4 shadow-sm">
         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Этапы оформления заказа
         </p>
@@ -38,7 +38,7 @@ export default function OrderScreening() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#27265C]">{ORDER_ID}</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-[#27265C]">{ORDER_ID}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Создан 17.02.2026 · Москва · Иванова М.С.
         </p>
@@ -47,23 +47,41 @@ export default function OrderScreening() {
       {/* Info banner */}
       <Alert className="border-blue-200 bg-blue-50">
         <Icon name="Info" size={18} className="text-blue-600" />
-        <AlertDescription className="text-blue-800">
+        <AlertDescription className="text-blue-800 text-sm">
           <strong>Заказ на рассмотрении у менеджера.</strong> Редактирование недоступно до получения ответа. Ожидаемый срок: 1–2 рабочих дня.
         </AlertDescription>
       </Alert>
 
-      <div className="flex gap-6 items-start">
+      {/* Layout: stacked on mobile, side-by-side on desktop */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
+
         {/* Main content */}
-        <div className="flex-1 min-w-0">
+        <div className="w-full lg:flex-1 min-w-0">
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm overflow-hidden">
-            <CardHeader className="px-6 py-4 bg-[#27265C]">
+            <CardHeader className="px-4 md:px-6 py-4 bg-[#27265C]">
               <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
                 <Icon name="Package" size={15} className="text-[#FCC71E]" />
                 Состав заказа
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Mobile: card list */}
+              <div className="md:hidden divide-y divide-[#F4F4F4]">
+                {ITEMS.map((item, idx) => (
+                  <div key={idx} className="px-4 py-3 space-y-1">
+                    <p className="text-sm font-medium text-[#27265C] leading-snug">{item.name}</p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-mono text-xs text-muted-foreground bg-[#F4F4F4] px-2 py-0.5 rounded">{item.sku}</span>
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="text-muted-foreground">{item.qty.toLocaleString("ru-RU")} шт.</span>
+                        <span className="font-semibold text-[#27265C]">{item.sum.toLocaleString("ru-RU")} ₽</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[#F7F8FA] border-b border-[#E8E8E8]">
@@ -77,13 +95,11 @@ export default function OrderScreening() {
                     {ITEMS.map((item, idx) => (
                       <tr key={idx} className="hover:bg-[#FAFAFA]">
                         <td className="px-5 py-3.5 font-medium text-[#27265C]">{item.name}</td>
-                        <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground bg-transparent">
-                          <span className="bg-[#F4F4F4] px-2 py-0.5 rounded">{item.sku}</span>
+                        <td className="px-4 py-3.5">
+                          <span className="font-mono text-xs text-muted-foreground bg-[#F4F4F4] px-2 py-0.5 rounded">{item.sku}</span>
                         </td>
                         <td className="px-4 py-3.5 text-right text-[#27265C] font-medium">{item.qty.toLocaleString("ru-RU")} шт.</td>
-                        <td className="px-5 py-3.5 text-right font-semibold text-[#27265C]">
-                          {item.sum.toLocaleString("ru-RU")} ₽
-                        </td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-[#27265C]">{item.sum.toLocaleString("ru-RU")} ₽</td>
                       </tr>
                     ))}
                   </tbody>
@@ -93,35 +109,35 @@ export default function OrderScreening() {
           </Card>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-[260px] flex-shrink-0 space-y-4">
+        {/* Sidebar — full width on mobile */}
+        <div className="w-full lg:w-[260px] lg:flex-shrink-0 space-y-4">
           {/* Summary */}
           <Card className="border border-[#E8E8E8] rounded-2xl shadow-sm">
             <CardHeader className="px-5 py-4 border-b border-[#F0F0F0]">
               <CardTitle className="text-sm font-semibold text-[#27265C]">Сводка заказа</CardTitle>
             </CardHeader>
-            <CardContent className="px-5 py-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Позиций</span>
-                <span className="font-semibold text-[#27265C]">7</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Штук</span>
-                <span className="font-semibold text-[#27265C]">2 230</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Сумма</span>
-                <span className="font-bold text-[#27265C]">389 500 ₽</span>
-              </div>
-              <div className="h-px bg-[#F0F0F0]" />
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Дата отгрузки</span>
-                <span className="font-medium text-[#27265C]">28.02.2026</span>
-              </div>
-              <div className="text-xs text-muted-foreground -mt-1">(желаемая)</div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Склад</span>
-                <span className="font-medium text-[#27265C]">Москва</span>
+            <CardContent className="px-5 py-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:gap-0 md:space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Позиций</span>
+                  <span className="font-semibold text-[#27265C]">7</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Штук</span>
+                  <span className="font-semibold text-[#27265C]">2 230</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Сумма</span>
+                  <span className="font-bold text-[#27265C]">389 500 ₽</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Дата отгрузки</span>
+                  <span className="font-medium text-[#27265C]">28.02.2026</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Склад</span>
+                  <span className="font-medium text-[#27265C]">Москва</span>
+                </div>
               </div>
             </CardContent>
           </Card>
