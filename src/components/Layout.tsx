@@ -99,7 +99,7 @@ const Layout = ({ children }: LayoutProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   const SidebarNav = ({ onItemClick }: { onItemClick?: () => void }) => (
-    <nav className="p-4 space-y-1">
+    <nav className="p-3 space-y-1">
       {menuItems.map((item) => (
         <Link key={item.path} to={item.path} onClick={onItemClick}>
           <Button
@@ -126,10 +126,10 @@ const Layout = ({ children }: LayoutProps) => {
           isSidebarOpen ? "w-64" : "w-20"
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between p-5 border-b border-white/10">
           {isSidebarOpen && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#FCC71E] rounded-lg flex items-center justify-center font-bold text-[#27265C] text-xl">
+              <div className="w-9 h-9 bg-[#FCC71E] rounded-lg flex items-center justify-center font-bold text-[#27265C] text-lg">
                 M
               </div>
               <span className="font-bold text-lg">MANNOL</span>
@@ -139,13 +139,13 @@ const Layout = ({ children }: LayoutProps) => {
             variant="ghost"
             size="sm"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white/10 ml-auto"
           >
             <Icon name={isSidebarOpen ? "ChevronLeft" : "ChevronRight"} size={20} />
           </Button>
         </div>
 
-        <nav className="p-4 space-y-2">
+        <nav className="p-3 space-y-1">
           {menuItems.map((item) => (
             <Link key={item.path} to={item.path}>
               <Button
@@ -174,22 +174,22 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Mobile sidebar drawer */}
       <aside
-        className={`fixed left-0 top-0 h-full w-72 bg-[#27265C] text-white z-50 transition-transform duration-300 md:hidden ${
+        className={`fixed left-0 top-0 h-full w-[280px] bg-[#27265C] text-white z-50 transition-transform duration-300 md:hidden ${
           isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#FCC71E] rounded-lg flex items-center justify-center font-bold text-[#27265C] text-xl">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-[#FCC71E] rounded-lg flex items-center justify-center font-bold text-[#27265C] text-base">
               M
             </div>
-            <span className="font-bold text-lg">MANNOL</span>
+            <span className="font-bold text-base">MANNOL</span>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white/10 p-1.5"
           >
             <Icon name="X" size={20} />
           </Button>
@@ -203,41 +203,52 @@ const Layout = ({ children }: LayoutProps) => {
         <DebtBanner />
 
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-          <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
-            <div className="flex items-center gap-3">
-              {/* Mobile burger */}
+          <div className="flex items-center gap-2 px-3 sm:px-4 md:px-8 py-2.5 md:py-3.5">
+
+            {/* Left: burger + logo */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden text-[#27265C] hover:bg-gray-100 p-2"
+                className="md:hidden text-[#27265C] hover:bg-gray-100 p-1.5"
                 onClick={() => setIsMobileSidebarOpen(true)}
               >
-                <Icon name="Menu" size={22} />
+                <Icon name="Menu" size={21} />
               </Button>
-              <h2 className="text-base md:text-xl font-semibold text-[#27265C] hidden sm:block">
+              <h2 className="text-base md:text-lg font-semibold text-[#27265C] hidden sm:block whitespace-nowrap">
                 Личный кабинет партнера
               </h2>
-              {/* Mobile logo */}
-              <div className="flex items-center gap-2 sm:hidden">
-                <div className="w-7 h-7 bg-[#FCC71E] rounded flex items-center justify-center font-bold text-[#27265C] text-sm">
+              <div className="flex items-center gap-1.5 sm:hidden">
+                <div className="w-6 h-6 bg-[#FCC71E] rounded flex items-center justify-center font-bold text-[#27265C] text-xs">
                   M
                 </div>
-                <span className="font-bold text-[#27265C]">MANNOL</span>
+                <span className="font-bold text-sm text-[#27265C]">MANNOL</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
+            {/* Center: search button */}
+            <button
+              onClick={() => navigate("/search")}
+              className="flex-1 mx-2 sm:mx-3 flex items-center gap-2 h-9 px-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-muted-foreground transition-colors text-left min-w-0"
+            >
+              <Icon name="Search" size={15} className="flex-shrink-0" />
+              <span className="truncate hidden xs:block sm:block">Поиск товаров и заказов...</span>
+              <span className="truncate xs:hidden">Поиск...</span>
+            </button>
+
+            {/* Right: bell + avatar */}
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Sheet open={isNotificationPanelOpen} onOpenChange={(open) => !open && handleCloseNotificationPanel()}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="relative text-[#27265C] hover:bg-gray-100"
+                    className="relative text-[#27265C] hover:bg-gray-100 p-2"
                     onClick={handleOpenNotificationPanel}
                   >
                     <Icon name="Bell" size={20} />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                         {unreadCount}
                       </span>
                     )}
@@ -252,23 +263,21 @@ const Layout = ({ children }: LayoutProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 hover:bg-gray-100 px-2"
+                    className="flex items-center gap-1.5 hover:bg-gray-100 px-1.5 py-1"
                   >
-                    <Avatar className="w-8 h-8 bg-[#27265C]">
-                      <AvatarFallback className="bg-[#27265C] text-white font-semibold text-xs">
+                    <Avatar className="w-7 h-7 bg-[#27265C]">
+                      <AvatarFallback className="bg-[#27265C] text-white font-semibold text-[10px]">
                         ИП
                       </AvatarFallback>
                     </Avatar>
                     <div className="text-left hidden md:block">
-                      <p className="text-sm font-semibold text-[#27265C]">
-                        ИП Петров
-                      </p>
-                      <p className="text-xs text-gray-500">Партнер</p>
+                      <p className="text-sm font-semibold text-[#27265C] leading-tight">ИП Петров</p>
+                      <p className="text-xs text-gray-500 leading-tight">Партнер</p>
                     </div>
-                    <Icon name="ChevronDown" size={16} className="text-gray-500 hidden sm:block" />
+                    <Icon name="ChevronDown" size={14} className="text-gray-500 hidden md:block" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <Link to="/profile">
@@ -302,7 +311,7 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </header>
 
-        <main className="p-4 md:p-8">
+        <main className="p-3 sm:p-4 md:p-8">
           {children}
         </main>
       </div>

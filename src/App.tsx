@@ -40,6 +40,7 @@ import Help from "./pages/Help";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import B2BPortal from "./pages/B2BPortal";
+import Search from "./pages/Search";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Help />} />
