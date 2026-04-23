@@ -1,22 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Icon from "@/components/ui/icon";
-import { catalogData } from "@/data/catalogData";
+import { catalogData, type Product } from "@/data/catalogData";
 
-interface SearchResult {
-  type: "product" | "category" | "series" | "order";
-  title: string;
-  subtitle: string;
-  badge?: string;
-  badgeColor?: string;
-  link: string;
-  availability?: "in-stock" | "pre-order" | "out-of-stock";
-  price?: number;
-  sku?: string;
+interface ProductResult {
+  product: Product;
+  categoryId: string;
+  categoryName: string;
+  seriesId: string;
+  seriesName: string;
 }
 
 const RECENT_SEARCHES = ["5W-30", "ATF AG52", "Classic 10W-40", "Antifreeze"];
@@ -27,45 +22,58 @@ const ORDERS_MOCK = [
   { id: "ORD-2026-0175", status: "Отгружен", date: "01.02.2026", sum: "1 120 000 ₽" },
 ];
 
-function getAllProducts(): SearchResult[] {
-  const results: SearchResult[] = [];
+function getAllProducts(): ProductResult[] {
+  const results: ProductResult[] = [];
   catalogData.forEach((cat) => {
     cat.series.forEach((series) => {
       series.products.forEach((product) => {
-        results.push({
-          type: "product",
-          title: product.name,
-          subtitle: `${cat.name} · ${series.name} · ${product.viscosity}`,
-          badge: product.availability === "in-stock" ? "В наличии" : product.availability === "pre-order" ? "Предзаказ" : "Нет",
-          badgeColor: product.availability === "in-stock" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : product.availability === "pre-order" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-red-100 text-red-700 border-red-200",
-          link: `/catalog/${cat.id}/${series.id}`,
-          availability: product.availability,
-          price: product.packaging[1]?.price,
-          sku: product.id,
-        });
+        results.push({ product, categoryId: cat.id, categoryName: cat.name, seriesId: series.id, seriesName: series.name });
       });
     });
   });
   return results;
 }
 
-function searchResults(query: string): { products: SearchResult[]; orders: typeof ORDERS_MOCK } {
+function doSearch(query: string): { products: ProductResult[]; orders: typeof ORDERS_MOCK } {
   const q = query.toLowerCase().trim();
   if (!q) return { products: [], orders: [] };
 
-  const allProducts = getAllProducts();
-  const products = allProducts.filter(
-    (p) =>
-      p.title.toLowerCase().includes(q) ||
-      p.subtitle.toLowerCase().includes(q) ||
-      (p.sku?.toLowerCase().includes(q))
-  ).slice(0, 8);
+  const all = getAllProducts();
+  const products = all.filter(({ product, categoryName, seriesName }) =>
+    product.name.toLowerCase().includes(q) ||
+    product.id.toLowerCase().includes(q) ||
+    product.viscosity?.toLowerCase().includes(q) ||
+    product.specifications.some(s => s.toLowerCase().includes(q)) ||
+    categoryName.toLowerCase().includes(q) ||
+    seriesName.toLowerCase().includes(q)
+  ).slice(0, 20);
 
   const orders = ORDERS_MOCK.filter(
     (o) => o.id.toLowerCase().includes(q) || o.status.toLowerCase().includes(q)
   );
 
   return { products, orders };
+}
+
+const fmt = (n: number) => n.toLocaleString("ru-RU");
+
+function AvailBadge({ a }: { a: Product["availability"] }) {
+  if (a === "in-stock")  return <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-medium px-1.5">В наличии</Badge>;
+  if (a === "pre-order") return <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] font-medium px-1.5">Предзаказ</Badge>;
+  return                        <Badge className="bg-red-100 text-red-700 border-0 text-[10px] font-medium px-1.5">Нет</Badge>;
+}
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase().trim());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-[#FCC71E]/40 text-[#27265C] rounded-sm not-italic font-semibold">{text.slice(idx, idx + query.trim().length)}</mark>
+      {text.slice(idx + query.trim().length)}
+    </>
+  );
 }
 
 export default function Search() {
@@ -76,17 +84,16 @@ export default function Search() {
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const [cart, setCart] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(query), 200);
+    const t = setTimeout(() => setDebouncedQuery(query), 180);
     return () => clearTimeout(t);
   }, [query]);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const { products, orders } = searchResults(debouncedQuery);
+  const { products, orders } = doSearch(debouncedQuery);
   const total = products.length + orders.length;
   const isEmpty = debouncedQuery.length >= 1 && total === 0;
   const showEmpty = debouncedQuery.length === 0;
@@ -95,10 +102,27 @@ export default function Search() {
     if (e.key === "Escape") navigate(-1);
   };
 
+  const addToCart = (productId: string) => {
+    setCart(prev => ({ ...prev, [productId]: (prev[productId] ?? 0) + 1 }));
+  };
+  const removeFromCart = (productId: string) => {
+    setCart(prev => {
+      const next = (prev[productId] ?? 0) - 1;
+      if (next <= 0) { const c = { ...prev }; delete c[productId]; return c; }
+      return { ...prev, [productId]: next };
+    });
+  };
+
+  const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
+
+  const goToCatalogWithSearch = () => {
+    navigate(`/catalog?search=${encodeURIComponent(debouncedQuery)}`);
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-4 md:px-0 pb-8">
 
-      {/* Search input bar */}
+      {/* ── Sticky search bar ── */}
       <div className="sticky top-0 bg-[#F4F4F4] pt-3 pb-3 z-10">
         <div className="flex items-center gap-2">
           <button
@@ -114,7 +138,7 @@ export default function Search() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Товар, артикул, номер заказа..."
+              placeholder="Товар, артикул, вязкость, номер заказа..."
               className="pl-9 pr-9 h-11 bg-white border-[#E8E8E8] rounded-xl text-sm focus-visible:ring-[#27265C]/20 shadow-sm"
             />
             {query && (
@@ -126,13 +150,24 @@ export default function Search() {
               </button>
             )}
           </div>
+          {/* Cart badge */}
+          {cartCount > 0 && (
+            <button
+              onClick={() => navigate("/order/new")}
+              className="relative w-9 h-9 flex items-center justify-center bg-[#FCC71E] rounded-xl text-[#27265C] flex-shrink-0 hover:bg-[#e6b41a] transition-colors shadow-sm"
+            >
+              <Icon name="ShoppingCart" size={18} />
+              <span className="absolute -top-1 -right-1 bg-[#27265C] text-white text-[9px] font-extrabold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                {cartCount}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Empty state — no query yet */}
+      {/* ── Empty state — no query ── */}
       {showEmpty && (
         <div className="space-y-5 mt-2">
-          {/* Recent searches */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
               Недавние запросы
@@ -151,7 +186,6 @@ export default function Search() {
             </div>
           </div>
 
-          {/* Quick links */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
               Быстрый переход
@@ -178,31 +212,33 @@ export default function Search() {
             </div>
           </div>
 
-          {/* Popular categories */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
               Популярные категории
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {catalogData.map((cat) => (
-                <Link key={cat.id} to={`/catalog/${cat.id}`}>
-                  <div className="flex items-center gap-2.5 px-3 py-3 bg-white rounded-xl border border-[#E8E8E8] hover:border-[#27265C]/20 hover:bg-[#27265C]/5 transition-colors">
-                    <div className="w-8 h-8 bg-[#FCC71E]/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon name="Droplets" size={16} className="text-[#27265C]" />
+              {catalogData.map((cat) => {
+                const icons: Record<string, string> = { "motor-oils": "Droplets", "transmission-oils": "Cog", "additives": "FlaskConical" };
+                return (
+                  <Link key={cat.id} to={`/catalog/${cat.id}`}>
+                    <div className="flex items-center gap-2.5 px-3 py-3 bg-white rounded-xl border border-[#E8E8E8] hover:border-[#27265C]/20 hover:bg-[#27265C]/5 transition-colors">
+                      <div className="w-8 h-8 bg-[#FCC71E]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon name={(icons[cat.id] ?? "Package") as never} size={16} className="text-[#27265C]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#27265C] leading-tight truncate">{cat.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{cat.series.length} серий</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-[#27265C] leading-tight truncate">{cat.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{cat.series.length} серий</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* No results */}
+      {/* ── No results ── */}
       {isEmpty && (
         <div className="mt-12 flex flex-col items-center text-center px-4">
           <div className="w-16 h-16 bg-[#27265C]/8 rounded-2xl flex items-center justify-center mb-4">
@@ -226,58 +262,154 @@ export default function Search() {
         </div>
       )}
 
-      {/* Results */}
+      {/* ── Results ── */}
       {debouncedQuery.length >= 1 && !isEmpty && (
-        <div className="space-y-4 mt-2">
+        <div className="space-y-5 mt-2">
 
-          {/* Result count */}
           <p className="text-xs text-muted-foreground px-1">
             Найдено: <span className="font-semibold text-[#27265C]">{total}</span> результатов по запросу «{debouncedQuery}»
           </p>
 
-          {/* Products */}
+          {/* ─── Products ─── */}
           {products.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2 px-1">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Товары ({products.length})
                 </p>
-                <Link to={`/catalog`} className="text-xs text-[#27265C] font-medium hover:underline">
-                  Весь каталог
-                </Link>
+                <button
+                  onClick={goToCatalogWithSearch}
+                  className="text-xs text-[#27265C] font-medium hover:underline flex items-center gap-1"
+                >
+                  Весь каталог <Icon name="ArrowRight" size={12} />
+                </button>
               </div>
-              <div className="space-y-1.5">
-                {products.map((item, idx) => (
-                  <Link key={idx} to={item.link}>
-                    <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-[#E8E8E8] hover:border-[#27265C]/20 hover:bg-[#27265C]/5 transition-colors group">
-                      {/* Icon */}
-                      <div className="w-9 h-9 bg-[#FCC71E]/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Icon name="Droplets" size={17} className="text-[#27265C]" />
+
+              <div className="space-y-2">
+                {products.map(({ product, categoryId, categoryName, seriesId, seriesName }) => {
+                  const defaultPkg = product.packaging[1] ?? product.packaging[0];
+                  const qty = cart[product.id] ?? 0;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={`bg-white rounded-xl border transition-all ${qty > 0 ? "border-[#27265C]/30 shadow-sm" : "border-[#E8E8E8] hover:border-[#27265C]/20"}`}
+                    >
+                      {/* ── Main row ── */}
+                      <div className="flex items-start gap-3 px-4 pt-3 pb-2">
+                        {/* Icon */}
+                        <div className="w-10 h-10 bg-[#FCC71E]/15 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Icon name="Droplets" size={18} className="text-[#27265C]" />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <Link to={`/product/${product.id}`} className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-[#27265C] leading-snug hover:underline">
+                                <Highlight text={product.name} query={debouncedQuery} />
+                              </p>
+                            </Link>
+                            <AvailBadge a={product.availability} />
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {product.viscosity && (
+                              <span className="font-mono text-[10px] bg-[#27265C] text-white px-1.5 py-0.5 rounded font-bold">
+                                {product.viscosity}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-muted-foreground truncate">
+                              {categoryName} · {seriesName}
+                            </span>
+                          </div>
+
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Арт. {product.id}</p>
+                        </div>
                       </div>
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#27265C] leading-snug truncate">{item.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-                      </div>
-                      {/* Right side */}
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <Badge className={`text-[10px] px-1.5 py-0 border ${item.badgeColor}`}>
-                          {item.badge}
-                        </Badge>
-                        {item.price && (
-                          <span className="text-xs font-semibold text-[#27265C]">
-                            {item.price.toLocaleString("ru-RU")} ₽ / 4л
-                          </span>
+
+                      {/* ── Bottom: specs + prices + add btn ── */}
+                      <div className="px-4 pb-3">
+                        {/* Specs */}
+                        {product.specifications.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2.5">
+                            {product.specifications.slice(0, 3).map((s, i) => (
+                              <span key={i} className="text-[10px] bg-[#F4F4F4] text-muted-foreground px-2 py-0.5 rounded">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
                         )}
+
+                        {/* Prices row + add to order */}
+                        <div className="flex items-center justify-between gap-3">
+                          {/* Packaging prices */}
+                          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                            {product.packaging.slice(0, 3).map((pk) => (
+                              <div key={pk.size} className="text-center">
+                                <p className="text-xs font-bold text-[#27265C] leading-none">₽{fmt(pk.price)}</p>
+                                <p className="text-[9px] text-muted-foreground mt-0.5">{pk.size}</p>
+                              </div>
+                            ))}
+                            {product.packaging.length > 3 && (
+                              <span className="text-[10px] text-muted-foreground">+{product.packaging.length - 3}</span>
+                            )}
+                          </div>
+
+                          {/* Qty stepper / add button */}
+                          {qty === 0 ? (
+                            <button
+                              onClick={() => addToCart(product.id)}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-[#27265C] text-white rounded-lg text-xs font-semibold hover:bg-[#1f1e4a] transition-colors flex-shrink-0"
+                            >
+                              <Icon name="Plus" size={13} />
+                              В заказ
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => removeFromCart(product.id)}
+                                className="w-7 h-7 rounded-lg border border-[#E0E0E0] flex items-center justify-center text-[#27265C] hover:bg-red-50 hover:border-red-200 transition-colors"
+                              >
+                                <Icon name="Minus" size={12} />
+                              </button>
+                              <span className="w-7 text-center text-sm font-bold text-[#27265C]">{qty}</span>
+                              <button
+                                onClick={() => addToCart(product.id)}
+                                className="w-7 h-7 rounded-lg bg-[#27265C] flex items-center justify-center text-white hover:bg-[#1f1e4a] transition-colors"
+                              >
+                                <Icon name="Plus" size={12} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Link to catalog series */}
+                        <Link
+                          to={`/catalog/${categoryId}/${seriesId}`}
+                          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-[#27265C] mt-2 w-fit transition-colors"
+                        >
+                          <Icon name="FolderOpen" size={11} />
+                          Перейти в серию: {seriesName}
+                        </Link>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* CTA to catalog */}
+              <button
+                onClick={goToCatalogWithSearch}
+                className="w-full mt-3 flex items-center justify-center gap-2 h-11 border border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 rounded-xl text-sm font-medium transition-colors"
+              >
+                <Icon name="Package" size={15} />
+                Смотреть в каталоге: «{debouncedQuery}»
+              </button>
             </div>
           )}
 
-          {/* Orders */}
+          {/* ─── Orders ─── */}
           {orders.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
@@ -294,7 +426,7 @@ export default function Search() {
                         <p className="text-sm font-semibold text-[#27265C] font-mono">{order.id}</p>
                         <p className="text-xs text-muted-foreground">{order.date} · {order.status}</p>
                       </div>
-                      <span className="text-sm font-bold text-[#27265C] flex-shrink-0 text-right">{order.sum}</span>
+                      <span className="text-sm font-bold text-[#27265C] flex-shrink-0">{order.sum}</span>
                     </div>
                   </Link>
                 ))}
@@ -302,15 +434,6 @@ export default function Search() {
             </div>
           )}
 
-          {/* CTA to catalog */}
-          {products.length >= 6 && (
-            <Link to={`/catalog`}>
-              <Button variant="outline" className="w-full h-11 border-[#27265C]/20 text-[#27265C] hover:bg-[#27265C]/5 mt-1">
-                <Icon name="Package" size={15} className="mr-2" />
-                Смотреть весь каталог
-              </Button>
-            </Link>
-          )}
         </div>
       )}
     </div>

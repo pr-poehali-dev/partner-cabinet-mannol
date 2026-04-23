@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +26,18 @@ function AvailBadge({ a }: { a: Product["availability"] }) {
 export default function Catalog() {
   const { categoryId, seriesId } = useParams<{ categoryId?: string; seriesId?: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   /* ── state ── */
   const [cart,   setCart]   = useState<Record<string, Record<string, number>>>({});
   const [selPkg, setSelPkg] = useState<Record<string, string>>({});
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+
+  /* подхватываем ?search= из URL при переходе из страницы поиска */
+  useEffect(() => {
+    const q = searchParams.get("search");
+    if (q) setSearch(q);
+  }, [searchParams]);
 
   /* ── derived data ── */
   const selectedCategory = useMemo(() => categoryId ? catalogData.find(c => c.id === categoryId) ?? null : null, [categoryId]);
