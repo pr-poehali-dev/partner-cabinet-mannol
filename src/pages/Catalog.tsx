@@ -30,6 +30,7 @@ export default function Catalog() {
   /* ── state ── */
   const [cart,   setCart]   = useState<Record<string, Record<string, number>>>({});
   const [selPkg, setSelPkg] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
 
   /* ── derived data ── */
   const selectedCategory = useMemo(() => categoryId ? catalogData.find(c => c.id === categoryId) ?? null : null, [categoryId]);
@@ -37,6 +38,35 @@ export default function Catalog() {
     seriesId && selectedCategory ? selectedCategory.series.find(s => s.id === seriesId) ?? null : null,
     [seriesId, selectedCategory]);
   const products = selectedSeries?.products ?? [];
+
+  /* сброс поиска при смене уровня */
+  const prevLevelKey = `${categoryId ?? ""}-${seriesId ?? ""}`;
+  React.useEffect(() => { setSearch(""); }, [prevLevelKey]);
+
+  /* фильтрация */
+  const sq = search.toLowerCase().trim();
+  const filteredCategories = useMemo(() =>
+    !sq ? catalogData : catalogData.filter(c =>
+      c.name.toLowerCase().includes(sq) ||
+      c.description.toLowerCase().includes(sq) ||
+      c.series.some(s => s.name.toLowerCase().includes(sq) || s.products.some(p => p.name.toLowerCase().includes(sq)))
+    ), [sq]);
+
+  const filteredSeries = useMemo(() =>
+    !sq || !selectedCategory ? selectedCategory?.series ?? [] :
+    selectedCategory.series.filter(s =>
+      s.name.toLowerCase().includes(sq) ||
+      s.description.toLowerCase().includes(sq) ||
+      s.products.some(p => p.name.toLowerCase().includes(sq) || p.id.toLowerCase().includes(sq))
+    ), [sq, selectedCategory]);
+
+  const filteredProducts = useMemo(() =>
+    !sq ? products : products.filter(p =>
+      p.name.toLowerCase().includes(sq) ||
+      p.id.toLowerCase().includes(sq) ||
+      p.viscosity?.toLowerCase().includes(sq) ||
+      p.specifications.some(s => s.toLowerCase().includes(sq))
+    ), [sq, products]);
 
   /* ── cart helpers ── */
   const getQty = (id: string, size: string) => cart[id]?.[size] ?? 0;
@@ -105,6 +135,29 @@ export default function Catalog() {
         </>}
       </nav>
 
+      {/* ── Search bar ── */}
+      <div className="relative mb-4">
+        <Icon name="Search" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={
+            selectedSeries ? "Поиск по названию, артикулу, вязкости..." :
+            selectedCategory ? "Поиск по сериям..." :
+            "Поиск по каталогу..."
+          }
+          className="pl-9 pr-9 h-10 bg-white border-[#E8E8E8] rounded-xl text-sm focus-visible:ring-[#27265C]/20 shadow-sm"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#27265C]"
+          >
+            <Icon name="X" size={15} />
+          </button>
+        )}
+      </div>
+
       {/* ── Page title row ── */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="min-w-0">
@@ -140,9 +193,20 @@ export default function Catalog() {
       {/* ══════════════════════════════════════════════════
           ROOT — категории
       ══════════════════════════════════════════════════ */}
+      {!selectedCategory && filteredCategories.length === 0 && sq && (
+        <div className="flex flex-col items-center py-16 text-center">
+          <div className="w-14 h-14 bg-[#27265C]/8 rounded-2xl flex items-center justify-center mb-4">
+            <Icon name="SearchX" size={28} className="text-[#27265C]/30" />
+          </div>
+          <p className="font-semibold text-[#27265C]">Ничего не найдено</p>
+          <p className="text-sm text-muted-foreground mt-1">По запросу «{search}» категорий нет</p>
+          <button onClick={() => setSearch("")} className="mt-3 text-sm text-[#27265C] font-medium hover:underline">Сбросить поиск</button>
+        </div>
+      )}
+
       {!selectedCategory && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {catalogData.map(cat => {
+          {filteredCategories.map(cat => {
             const total = cat.series.reduce((s, sr) => s + sr.products.length, 0);
             const icons: Record<string, string> = { "motor-oils": "Droplets", "transmission-oils": "Cog", "additives": "FlaskConical" };
             return (
@@ -169,9 +233,20 @@ export default function Catalog() {
       {/* ══════════════════════════════════════════════════
           CATEGORY — серии
       ══════════════════════════════════════════════════ */}
+      {selectedCategory && !selectedSeries && filteredSeries.length === 0 && sq && (
+        <div className="flex flex-col items-center py-16 text-center">
+          <div className="w-14 h-14 bg-[#27265C]/8 rounded-2xl flex items-center justify-center mb-4">
+            <Icon name="SearchX" size={28} className="text-[#27265C]/30" />
+          </div>
+          <p className="font-semibold text-[#27265C]">Серии не найдены</p>
+          <p className="text-sm text-muted-foreground mt-1">По запросу «{search}» ничего нет</p>
+          <button onClick={() => setSearch("")} className="mt-3 text-sm text-[#27265C] font-medium hover:underline">Сбросить поиск</button>
+        </div>
+      )}
+
       {selectedCategory && !selectedSeries && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {selectedCategory.series.map(series => {
+          {filteredSeries.map(series => {
             const inStock = series.products.filter(p => p.availability === "in-stock").length;
             const preorder = series.products.filter(p => p.availability === "pre-order").length;
             return (
@@ -208,9 +283,33 @@ export default function Catalog() {
       {selectedSeries && (
         <div className="pb-28 sm:pb-0 space-y-3">
 
+          {/* ─── Счётчик/пусто при поиске ─── */}
+          {sq && (
+            <div className="flex items-center justify-between text-sm px-1">
+              {filteredProducts.length > 0 ? (
+                <span className="text-muted-foreground">
+                  Найдено: <span className="font-semibold text-[#27265C]">{filteredProducts.length}</span> из {products.length}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">По запросу «{search}» ничего не найдено</span>
+              )}
+              <button onClick={() => setSearch("")} className="text-[#27265C] font-medium hover:underline text-xs">Сбросить</button>
+            </div>
+          )}
+
+          {filteredProducts.length === 0 && sq && (
+            <div className="flex flex-col items-center py-16 text-center bg-white rounded-2xl border border-[#E8E8E8]">
+              <div className="w-14 h-14 bg-[#27265C]/8 rounded-2xl flex items-center justify-center mb-4">
+                <Icon name="SearchX" size={28} className="text-[#27265C]/30" />
+              </div>
+              <p className="font-semibold text-[#27265C]">Товары не найдены</p>
+              <p className="text-sm text-muted-foreground mt-1">Попробуйте другое название или артикул</p>
+            </div>
+          )}
+
           {/* ─── MOBILE: карточки ─── */}
           <div className="sm:hidden space-y-0 bg-white rounded-2xl border border-[#E8E8E8] shadow-sm overflow-hidden divide-y divide-[#F0F0F0]">
-            {products.map((product, idx) => {
+            {filteredProducts.map((product, idx) => {
               const activePkg = getActivePkg(product);
               const qty       = getQty(product.id, activePkg.size);
               const pallets   = calcPallets(qty, activePkg.palletQty);
@@ -378,7 +477,7 @@ export default function Catalog() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F4F4F4]">
-                {products.map(product => {
+                {filteredProducts.map(product => {
                   const activePkg = getActivePkg(product);
                   const qty       = getQty(product.id, activePkg.size);
                   const pallets   = calcPallets(qty, activePkg.palletQty);
