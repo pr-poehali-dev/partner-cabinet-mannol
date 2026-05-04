@@ -15,12 +15,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/* ─── packaging types ─── */
+type PkgType = "unit" | "box" | "pallet";
+
+interface PkgOption {
+  type: PkgType;
+  label: string;
+  shortLabel: string;
+  step: number;       // кратность в штуках
+  hint: string;       // "1 коробка = 20 шт"
+  disabled?: boolean; // недоступно для клиента
+}
+
+const PKG_OPTIONS: PkgOption[] = [
+  { type: "unit",   shortLabel: "ШТ",     label: "Штука",   step: 1,   hint: "минимум 1 шт" },
+  { type: "box",    shortLabel: "Короб.",  label: "Коробка", step: 20,  hint: "1 коробка = 20 шт" },
+  { type: "pallet", shortLabel: "Паллет", label: "Паллета", step: 200, hint: "1 паллета = 200 шт (10 коробок)", disabled: false },
+];
+
+function getPkgOption(type: PkgType) {
+  return PKG_OPTIONS.find(o => o.type === type)!;
+}
+
 /* ─── types ─── */
 interface CartItem {
   id: string;
   sku: string;
   name: string;
   qty: number;
+  pkg: PkgType;
   pricePerUnit: number;
   weightPerUnit: number;
 }
@@ -80,6 +103,7 @@ export default function B2BPortal() {
         sku: item.sku,
         name: item.name,
         qty: 1,
+        pkg: "unit" as PkgType,
         pricePerUnit: item.price,
         weightPerUnit: item.weight,
       }];
@@ -95,6 +119,15 @@ export default function B2BPortal() {
 
   function removeItem(id: string) {
     setCartItems((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function updatePkg(id: string, pkg: PkgType) {
+    const opt = getPkgOption(pkg);
+    setCartItems((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      const newQty = Math.max(opt.step, Math.ceil(c.qty / opt.step) * opt.step);
+      return { ...c, pkg, qty: newQty };
+    }));
   }
 
   const totalQty    = cartItems.reduce((s, c) => s + c.qty, 0);
@@ -372,6 +405,7 @@ export default function B2BPortal() {
                         <thead>
                           <tr className="bg-[#F5F6F8] border-b border-[#ECEEF4]">
                             <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">Товар</th>
+                            <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 min-w-[230px]">Упаковка</th>
                             <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Кол-во</th>
                             <th className="text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Цена</th>
                             <th className="text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Сумма</th>
@@ -379,68 +413,155 @@ export default function B2BPortal() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#F0F1F5]">
-                          {cartItems.map((item, idx) => (
-                            <tr key={item.id} className="group hover:bg-[#FAFBFC] transition-colors">
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-8 h-8 rounded-lg bg-[#2F2C6A]/6 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-xs font-bold text-[#2F2C6A]/30">{idx + 1}</span>
+                          {cartItems.map((item, idx) => {
+                            const activePkg = getPkgOption(item.pkg);
+                            const pkgCount = item.pkg === "unit" ? item.qty : Math.floor(item.qty / activePkg.step);
+                            const totalUnits = item.qty;
+
+                            return (
+                              <tr key={item.id} className="group hover:bg-[#FAFBFC] transition-colors">
+
+                                {/* ── Товар ── */}
+                                <td className="px-6 py-3.5">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-8 h-8 rounded-lg bg-[#2F2C6A]/6 flex items-center justify-center flex-shrink-0">
+                                      <span className="text-xs font-bold text-[#2F2C6A]/30">{idx + 1}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-[#2F2C6A] truncate">{item.name}</p>
+                                      <p className="text-xs font-mono text-gray-400 mt-0.5">{item.sku}</p>
+                                    </div>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-[#2F2C6A] truncate">{item.name}</p>
-                                    <p className="text-xs font-mono text-gray-400 mt-0.5">{item.sku}</p>
+                                </td>
+
+                                {/* ── Упаковка — segmented control ── */}
+                                <td className="px-4 py-3.5">
+                                  {/* Switcher */}
+                                  <div className="flex items-stretch gap-0.5 bg-[#ECEEF4] rounded-lg p-0.5 w-fit">
+                                    {PKG_OPTIONS.map((opt) => {
+                                      const isActive = item.pkg === opt.type;
+                                      return (
+                                        <div key={opt.type} className="relative group/tip">
+                                          <button
+                                            onClick={() => !opt.disabled && updatePkg(item.id, opt.type)}
+                                            disabled={opt.disabled}
+                                            className={`
+                                              relative flex flex-col items-center justify-center px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all select-none leading-tight
+                                              ${isActive
+                                                ? "bg-[#2F2C6A] text-white shadow-sm"
+                                                : opt.disabled
+                                                  ? "text-gray-300 cursor-not-allowed opacity-50"
+                                                  : "text-[#2F2C6A]/60 hover:text-[#2F2C6A] hover:bg-white/60 cursor-pointer"
+                                              }
+                                            `}
+                                          >
+                                            <span className="font-bold">{opt.shortLabel}</span>
+                                            {opt.type !== "unit" && (
+                                              <span className={`text-[9px] font-medium mt-0.5 ${isActive ? "text-white/70" : "text-gray-400"}`}>
+                                                {opt.step} шт
+                                              </span>
+                                            )}
+                                          </button>
+                                          {/* Tooltip для disabled */}
+                                          {opt.disabled && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-[#2F2C6A] text-white text-[10px] rounded-lg whitespace-nowrap pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-lg">
+                                              Недоступно для данного клиента
+                                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#2F2C6A]" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4">
-                                <div className="flex items-center justify-center gap-1.5">
+                                  {/* Hint under switcher */}
+                                  <p className="text-[10px] text-gray-400 mt-1.5 pl-0.5">
+                                    {activePkg.hint}
+                                  </p>
+                                </td>
+
+                                {/* ── Кол-во ── */}
+                                <td className="px-4 py-3.5">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => updateQty(item.id, Math.max(activePkg.step, item.qty - activePkg.step))}
+                                        className="w-7 h-7 rounded border border-[#DDE0EA] flex items-center justify-center text-[#2F2C6A] hover:border-[#2F2C6A] hover:bg-[#2F2C6A]/5 transition disabled:opacity-30"
+                                        disabled={item.qty <= activePkg.step}
+                                      >
+                                        <Icon name="Minus" size={12} />
+                                      </button>
+                                      <Input
+                                        type="number"
+                                        min={activePkg.step}
+                                        step={activePkg.step}
+                                        value={item.qty}
+                                        onChange={(e) => {
+                                          const raw = parseInt(e.target.value) || activePkg.step;
+                                          const snapped = Math.max(activePkg.step, Math.round(raw / activePkg.step) * activePkg.step);
+                                          updateQty(item.id, snapped);
+                                        }}
+                                        className="w-14 h-7 text-center font-bold text-sm border-[#DDE0EA] focus:border-[#2F2C6A] rounded px-1"
+                                      />
+                                      <button
+                                        onClick={() => updateQty(item.id, item.qty + activePkg.step)}
+                                        className="w-7 h-7 rounded border border-[#DDE0EA] flex items-center justify-center text-[#2F2C6A] hover:border-[#2F2C6A] hover:bg-[#2F2C6A]/5 transition"
+                                      >
+                                        <Icon name="Plus" size={12} />
+                                      </button>
+                                    </div>
+                                    {/* Пересчёт */}
+                                    {item.pkg !== "unit" && (
+                                      <p className="text-[10px] text-[#2F2C6A]/60 font-medium whitespace-nowrap">
+                                        {pkgCount} {item.pkg === "box"
+                                          ? pkgCount === 1 ? "короб." : "короб."
+                                          : pkgCount === 1 ? "паллет" : "паллет"
+                                        } = {totalUnits} шт
+                                      </p>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* ── Цена ── */}
+                                <td className="px-4 py-3.5 text-right">
+                                  <p className="text-sm font-semibold text-[#2F2C6A] whitespace-nowrap">
+                                    {new Intl.NumberFormat("ru-RU").format(item.pricePerUnit)} ₽
+                                  </p>
+                                  <p className="text-xs text-gray-400">за шт.</p>
+                                </td>
+
+                                {/* ── Сумма ── */}
+                                <td className="px-4 py-3.5 text-right">
+                                  <p className="text-sm font-bold text-[#2F2C6A] whitespace-nowrap">
+                                    {new Intl.NumberFormat("ru-RU").format(item.qty * item.pricePerUnit)} ₽
+                                  </p>
+                                </td>
+
+                                {/* ── Удалить ── */}
+                                <td className="px-4 py-3.5">
                                   <button
-                                    onClick={() => updateQty(item.id, item.qty - 1)}
-                                    className="w-7 h-7 rounded border border-[#DDE0EA] flex items-center justify-center text-[#2F2C6A] hover:border-[#2F2C6A] hover:bg-[#2F2C6A]/5 transition disabled:opacity-30"
-                                    disabled={item.qty <= 1}
+                                    onClick={() => removeItem(item.id)}
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
                                   >
-                                    <Icon name="Minus" size={12} />
+                                    <Icon name="Trash2" size={15} />
                                   </button>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    value={item.qty}
-                                    onChange={(e) => updateQty(item.id, parseInt(e.target.value) || 1)}
-                                    className="w-14 h-7 text-center font-bold text-sm border-[#DDE0EA] focus:border-[#2F2C6A] rounded px-1"
-                                  />
-                                  <button
-                                    onClick={() => updateQty(item.id, item.qty + 1)}
-                                    className="w-7 h-7 rounded border border-[#DDE0EA] flex items-center justify-center text-[#2F2C6A] hover:border-[#2F2C6A] hover:bg-[#2F2C6A]/5 transition"
-                                  >
-                                    <Icon name="Plus" size={12} />
-                                  </button>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="text-sm font-semibold text-[#2F2C6A] whitespace-nowrap">
-                                  {new Intl.NumberFormat("ru-RU").format(item.pricePerUnit)} ₽
-                                </p>
-                                <p className="text-xs text-gray-400">за шт.</p>
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                <p className="text-sm font-bold text-[#2F2C6A] whitespace-nowrap">
-                                  {new Intl.NumberFormat("ru-RU").format(item.qty * item.pricePerUnit)} ₽
-                                </p>
-                              </td>
-                              <td className="px-4 py-4">
-                                <button
-                                  onClick={() => removeItem(item.id)}
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                                >
-                                  <Icon name="Trash2" size={15} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
+
+                        {/* ── Подпись об упаковке ── */}
                         <tfoot>
-                          <tr className="bg-[#F5F6F8] border-t-2 border-[#E2E4EE]">
-                            <td colSpan={2} className="px-6 py-3.5">
+                          <tr className="border-t border-[#F0F1F5]">
+                            <td colSpan={6} className="px-6 py-2.5">
+                              <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                                <Icon name="Info" size={13} className="text-[#2F2C6A]/30 flex-shrink-0" />
+                                Упаковка определяет минимальный кратный объём заказа
+                              </div>
+                            </td>
+                          </tr>
+                          <tr className="bg-[#F5F6F8] border-t border-[#E2E4EE]">
+                            <td colSpan={3} className="px-6 py-3.5">
                               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 Итого позиций: {cartItems.length}
                               </span>
