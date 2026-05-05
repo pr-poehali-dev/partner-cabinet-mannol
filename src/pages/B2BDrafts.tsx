@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { draftStore, type Draft } from "@/lib/draftStore";
 
 /* ─── sidebar menu ─── */
 const MENU = [
@@ -26,111 +28,68 @@ const MENU = [
   { icon: "Settings",        label: "Настройки",   path: "/settings" },
 ];
 
-/* ─── mock drafts ─── */
-interface DraftItem { sku: string; name: string; qty: number; pkg: string; price: number }
-interface Draft {
-  id: string;
-  title: string;
-  updatedAt: string;
-  createdAt: string;
-  items: DraftItem[];
-  totalAmount: number;
-  totalQty: number;
-  comment?: string;
-  shipDate?: string;
-  orderType: "regular" | "direct";
-  autoSaved: boolean;
-}
-
-const MOCK_DRAFTS: Draft[] = [
-  {
-    id: "draft-001",
-    title: "Заказ на апрель — моторные масла",
-    updatedAt: "Сегодня, 14:32",
-    createdAt: "04.05.2026",
-    autoSaved: false,
-    orderType: "regular",
-    shipDate: "2026-05-12",
-    comment: "Согласовать с логистом перед отправкой",
-    totalAmount: 487500,
-    totalQty: 220,
-    items: [
-      { sku: "MN7707-4", name: "MANNOL Energy Formula OP 5W-30 4L", qty: 80,  pkg: "Коробка", price: 2490 },
-      { sku: "MN7914-4", name: "MANNOL Extreme 5W-40 4L",            qty: 60,  pkg: "Коробка", price: 2750 },
-      { sku: "MN7501-4", name: "MANNOL Classic 10W-40 4L",           qty: 80,  pkg: "Штука",   price: 1890 },
-    ],
-  },
-  {
-    id: "draft-002",
-    title: "Черновик",
-    updatedAt: "Вчера, 09:15",
-    createdAt: "03.05.2026",
-    autoSaved: true,
-    orderType: "direct",
-    totalAmount: 68540,
-    totalQty: 32,
-    items: [
-      { sku: "MN8212-1",   name: "MANNOL ATF AG52 1L",        qty: 20, pkg: "Штука",   price: 890 },
-      { sku: "MN4012-1",   name: "MANNOL Antifreeze AG12 1L", qty: 12, pkg: "Штука",   price: 420 },
-    ],
-  },
-  {
-    id: "draft-003",
-    title: "Спецзаказ — допродажи май",
-    updatedAt: "02.05.2026",
-    createdAt: "02.05.2026",
-    autoSaved: false,
-    orderType: "regular",
-    shipDate: "2026-05-20",
-    comment: "",
-    totalAmount: 1120000,
-    totalQty: 600,
-    items: [
-      { sku: "MN7707-4", name: "MANNOL Energy Formula OP 5W-30 4L", qty: 200, pkg: "Паллета", price: 2490 },
-      { sku: "MN7501-4", name: "MANNOL Classic 10W-40 4L",           qty: 400, pkg: "Паллета", price: 1890 },
-    ],
-  },
-  {
-    id: "draft-004",
-    title: "Черновик",
-    updatedAt: "28.04.2026",
-    createdAt: "28.04.2026",
-    autoSaved: true,
-    orderType: "regular",
-    totalAmount: 11200,
-    totalQty: 20,
-    items: [
-      { sku: "MN9900-035", name: "MANNOL Motor Flush 0.35L", qty: 20, pkg: "Штука", price: 560 },
-    ],
-  },
-];
+const PKG_LABEL: Record<string, string> = { unit: "Штука", box: "Коробка", pallet: "Паллета" };
 
 const fmt = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
+
+function relativeDate(iso: string) {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 2)  return "Только что";
+  if (mins < 60) return `${mins} мин. назад`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Сегодня, ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return `Вчера, ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+}
 
 export default function B2BDrafts() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [drafts, setDrafts] = useState<Draft[]>(MOCK_DRAFTS);
+  const [drafts, setDrafts] = useState<Draft[]>(() => draftStore.getAll());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const reload = () => setDrafts(draftStore.getAll());
 
   function deleteDraft(id: string) {
-    setDrafts(prev => prev.filter(d => d.id !== id));
+    draftStore.delete(id);
     setDeletingId(null);
+    reload();
   }
 
-  function duplicateDraft(draft: Draft) {
-    const copy: Draft = {
-      ...draft,
-      id: `draft-copy-${Date.now()}`,
-      title: `${draft.title} (копия)`,
-      updatedAt: "Только что",
-      createdAt: new Date().toLocaleDateString("ru-RU"),
-      autoSaved: false,
-    };
-    setDrafts(prev => [copy, ...prev]);
+  function duplicateDraft(id: string) {
+    draftStore.duplicate(id);
+    reload();
   }
+
+  function startRenaming(draft: Draft) {
+    setEditingTitleId(draft.id);
+    setTitleInput(draft.title);
+  }
+
+  function saveRename(id: string) {
+    const draft = draftStore.get(id);
+    if (!draft) return;
+    draftStore.save({ ...draft, title: titleInput.trim() || draft.title });
+    setEditingTitleId(null);
+    reload();
+  }
+
+  const totalAmount = (d: Draft) => d.items.reduce((s, i) => s + i.qty * i.pricePerUnit, 0);
+  const totalQty    = (d: Draft) => d.items.reduce((s, i) => s + i.qty, 0);
+
+  const filtered = drafts.filter(d =>
+    !searchQuery.trim() ||
+    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    d.items.some(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()) || i.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const autoSavedCount = drafts.filter(d => d.autoSaved).length;
 
@@ -138,7 +97,6 @@ export default function B2BDrafts() {
   return (
     <div className="min-h-screen bg-[#F5F6F8] flex font-sans">
 
-      {/* ──── Mobile overlay ──── */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />
       )}
@@ -234,16 +192,16 @@ export default function B2BDrafts() {
 
         {/* ──────────────────── CONTENT ──────────────────── */}
         <main className="flex-1 overflow-y-auto p-5 md:p-7 lg:p-8">
-          <div className="max-w-[1000px] mx-auto space-y-6">
+          <div className="max-w-[960px] mx-auto space-y-6">
 
-            {/* Page heading */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            {/* ── Page heading ── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Заказы</p>
-                <h2 className="text-2xl font-extrabold text-[#2F2C6A] leading-tight">Черновики заказов</h2>
+                <h2 className="text-2xl font-extrabold text-[#2F2C6A] leading-tight">Черновики</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   {drafts.length > 0
-                    ? `${drafts.length} черновик${drafts.length === 1 ? "" : drafts.length < 5 ? "а" : "ов"} · ${autoSavedCount > 0 ? `${autoSavedCount} автосохранено` : ""}`
+                    ? `${drafts.length} черновик${drafts.length === 1 ? "" : drafts.length < 5 ? "а" : "ов"}${autoSavedCount > 0 ? ` · ${autoSavedCount} автосохранено` : ""}`
                     : "Нет сохранённых черновиков"}
                 </p>
               </div>
@@ -256,22 +214,40 @@ export default function B2BDrafts() {
               </Button>
             </div>
 
+            {/* ── Search ── */}
+            {drafts.length > 0 && (
+              <div className="relative">
+                <Icon name="Search" size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Поиск по названию, товару, артикулу..."
+                  className="pl-10 h-10 border-[#DDE0EA] rounded-xl text-sm focus:border-[#2F2C6A] bg-white"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <Icon name="X" size={15} />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* ── Autosave notice ── */}
             {autoSavedCount > 0 && (
               <div className="flex items-start gap-3 bg-[#FFF8E1] border border-[#FFC107]/40 rounded-xl px-4 py-3.5">
                 <Icon name="Info" size={16} className="text-[#F59E0B] flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-[#7A5C00]">
-                    {autoSavedCount} черновик{autoSavedCount === 1 ? " автосохранён" : "а автосохранено"}
+                    {autoSavedCount === 1 ? "1 черновик автосохранён" : `${autoSavedCount} черновика автосохранено`}
                   </p>
                   <p className="text-xs text-[#9A7400] mt-0.5">
-                    Система автоматически сохраняет незавершённые заказы. Вы можете продолжить их в любое время.
+                    Система сохраняет незавершённые заказы автоматически. Продолжите в любое время.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* ── Empty state ── */}
+            {/* ── Empty ── */}
             {drafts.length === 0 && (
               <div className="bg-white rounded-xl border border-[#E8E9EF] shadow-sm py-24 flex flex-col items-center gap-4 text-center px-6">
                 <div className="w-16 h-16 rounded-2xl bg-[#F5F6F8] flex items-center justify-center">
@@ -279,7 +255,7 @@ export default function B2BDrafts() {
                 </div>
                 <div>
                   <p className="text-base font-bold text-[#2F2C6A]/50">Черновиков нет</p>
-                  <p className="text-sm text-gray-400 mt-1">Начните формировать заказ — он автоматически сохранится как черновик</p>
+                  <p className="text-sm text-gray-400 mt-1">Начните формировать заказ — он автоматически сохранится</p>
                 </div>
                 <Button onClick={() => navigate("/b2b")} className="bg-[#2F2C6A] hover:bg-[#2F2C6A]/90 text-white font-bold h-10 px-6 rounded-lg mt-1">
                   <Icon name="Plus" size={15} className="mr-2" />
@@ -288,12 +264,24 @@ export default function B2BDrafts() {
               </div>
             )}
 
-            {/* ── Drafts list ── */}
-            {drafts.length > 0 && (
+            {/* ── No search results ── */}
+            {drafts.length > 0 && filtered.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#E8E9EF] py-14 flex flex-col items-center gap-3 text-center px-6">
+                <Icon name="SearchX" size={28} className="text-[#2F2C6A]/20" />
+                <p className="text-sm font-semibold text-[#2F2C6A]/50">Ничего не найдено</p>
+                <button onClick={() => setSearchQuery("")} className="text-xs text-[#2F2C6A] underline">Сбросить фильтр</button>
+              </div>
+            )}
+
+            {/* ── Draft list ── */}
+            {filtered.length > 0 && (
               <div className="space-y-3">
-                {drafts.map((draft) => {
+                {filtered.map((draft) => {
                   const isExpanded = expandedId === draft.id;
                   const isDeleting = deletingId === draft.id;
+                  const isRenamingThis = editingTitleId === draft.id;
+                  const amt = totalAmount(draft);
+                  const qty = totalQty(draft);
 
                   return (
                     <div
@@ -302,50 +290,73 @@ export default function B2BDrafts() {
                     >
                       {/* ── Card header ── */}
                       <div className="px-5 py-4">
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3">
 
                           {/* Icon */}
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${draft.autoSaved ? "bg-[#FFF8E1]" : "bg-[#2F2C6A]/6"}`}>
-                            <Icon
-                              name={draft.autoSaved ? "RefreshCw" : "FilePen"}
-                              size={18}
-                              className={draft.autoSaved ? "text-[#F59E0B]" : "text-[#2F2C6A]"}
-                            />
+                            <Icon name={draft.autoSaved ? "RefreshCw" : "FilePen"} size={17} className={draft.autoSaved ? "text-[#F59E0B]" : "text-[#2F2C6A]"} />
                           </div>
 
                           {/* Title + meta */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-bold text-[#2F2C6A] truncate">{draft.title}</p>
-                              {draft.autoSaved && (
-                                <Badge className="bg-[#FFF8E1] text-[#B07C00] border-0 text-[10px] font-semibold px-2">
-                                  Автосохранение
+                            {/* Title: editable inline */}
+                            {isRenamingThis ? (
+                              <div className="flex items-center gap-2 mb-1">
+                                <input
+                                  autoFocus
+                                  value={titleInput}
+                                  onChange={e => setTitleInput(e.target.value)}
+                                  onBlur={() => saveRename(draft.id)}
+                                  onKeyDown={e => {
+                                    if (e.key === "Enter") saveRename(draft.id);
+                                    if (e.key === "Escape") setEditingTitleId(null);
+                                  }}
+                                  className="text-sm font-bold text-[#2F2C6A] bg-transparent border-b-2 border-[#2F2C6A]/40 focus:border-[#2F2C6A] outline-none min-w-0 flex-1 py-0.5"
+                                  maxLength={60}
+                                />
+                                <button onClick={() => saveRename(draft.id)} className="text-[11px] font-semibold text-white bg-[#2F2C6A] px-2.5 py-1 rounded-lg flex-shrink-0">ОК</button>
+                                <button onClick={() => setEditingTitleId(null)} className="text-[11px] text-gray-400 hover:text-gray-600 px-1 flex-shrink-0">✕</button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="text-sm font-bold text-[#2F2C6A] truncate max-w-[280px]">{draft.title}</p>
+                                <button
+                                  onClick={() => startRenaming(draft)}
+                                  className="text-gray-300 hover:text-[#2F2C6A]/50 transition flex-shrink-0"
+                                  title="Переименовать"
+                                >
+                                  <Icon name="Pencil" size={12} />
+                                </button>
+                                {draft.autoSaved && (
+                                  <Badge className="bg-[#FFF8E1] text-[#B07C00] border-0 text-[10px] font-semibold px-2">
+                                    Авто
+                                  </Badge>
+                                )}
+                                <Badge className={`border-0 text-[10px] font-medium px-2 ${draft.orderType === "direct" ? "bg-purple-100 text-purple-700" : "bg-blue-50 text-blue-600"}`}>
+                                  {draft.orderType === "direct" ? "Прямой" : "Со склада"}
                                 </Badge>
-                              )}
-                              <Badge className={`border-0 text-[10px] font-medium px-2 ${draft.orderType === "direct" ? "bg-purple-100 text-purple-700" : "bg-blue-50 text-blue-600"}`}>
-                                {draft.orderType === "direct" ? "Прямой заказ" : "Стандартный"}
-                              </Badge>
-                            </div>
+                              </div>
+                            )}
 
-                            {/* Stats row */}
-                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                              <span className="flex items-center gap-1 text-xs text-gray-500">
-                                <Icon name="Clock" size={11} className="text-gray-400" />
-                                {draft.updatedAt}
+                            {/* Meta row */}
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="flex items-center gap-1 text-xs text-gray-400">
+                                <Icon name="Clock" size={11} />
+                                {relativeDate(draft.updatedAt)}
                               </span>
-                              <span className="text-gray-300">·</span>
+                              <span className="text-gray-200">·</span>
                               <span className="text-xs text-gray-500">
                                 <span className="font-semibold text-[#2F2C6A]">{draft.items.length}</span> позиц.
                               </span>
-                              <span className="text-gray-300">·</span>
+                              <span className="text-gray-200">·</span>
                               <span className="text-xs text-gray-500">
-                                <span className="font-semibold text-[#2F2C6A]">{draft.totalQty}</span> шт
+                                <span className="font-semibold text-[#2F2C6A]">{qty}</span> шт
                               </span>
                               {draft.shipDate && (
                                 <>
-                                  <span className="text-gray-300">·</span>
-                                  <span className="flex items-center gap-1 text-xs text-gray-500">
-                                    <Icon name="CalendarDays" size={11} className="text-gray-400" />
+                                  <span className="text-gray-200">·</span>
+                                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                                    <Icon name="CalendarDays" size={11} />
                                     {new Date(draft.shipDate).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
                                   </span>
                                 </>
@@ -355,55 +366,80 @@ export default function B2BDrafts() {
 
                           {/* Amount */}
                           <div className="text-right flex-shrink-0 hidden sm:block">
-                            <p className="text-lg font-extrabold text-[#2F2C6A] leading-none">{fmt(draft.totalAmount)} ₽</p>
-                            <p className="text-[11px] text-gray-400 mt-1">{draft.totalQty} шт</p>
+                            <p className="text-lg font-extrabold text-[#2F2C6A] leading-none">{fmt(amt)} ₽</p>
+                            <p className="text-[11px] text-gray-400 mt-1">{qty} шт</p>
                           </div>
                         </div>
 
-                        {/* ── Action buttons ── */}
+                        {/* ── Actions ── */}
                         {!isDeleting ? (
                           <div className="flex items-center gap-2 mt-4">
+                            {/* Primary: Edit */}
                             <Button
-                              onClick={() => navigate("/b2b")}
-                              className="h-9 bg-[#2F2C6A] hover:bg-[#2F2C6A]/90 text-white text-sm font-bold px-4 rounded-lg flex-1 sm:flex-none"
+                              onClick={() => navigate(`/b2b?draftId=${draft.id}`)}
+                              className="h-9 bg-[#2F2C6A] hover:bg-[#26236b] text-white text-xs font-bold px-4 rounded-lg gap-1.5"
                             >
-                              <Icon name="PenLine" size={14} className="mr-1.5" />
-                              Продолжить
+                              <Icon name="PenLine" size={13} />
+                              Редактировать
                             </Button>
+
+                            {/* Secondary: expand */}
                             <Button
                               variant="outline"
                               onClick={() => setExpandedId(isExpanded ? null : draft.id)}
-                              className="h-9 border-[#DDE0EA] text-[#2F2C6A] text-sm font-medium px-3 rounded-lg hover:bg-[#F5F6F8]"
+                              className="h-9 border-[#DDE0EA] text-[#2F2C6A] text-xs font-medium px-3 rounded-lg hover:bg-[#F5F6F8] gap-1"
                             >
-                              <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={14} className="mr-1" />
+                              <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={13} />
                               {isExpanded ? "Скрыть" : "Состав"}
                             </Button>
-                            <div className="ml-auto flex items-center gap-1">
-                              <button
-                                onClick={() => duplicateDraft(draft)}
-                                title="Дублировать"
-                                className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#2F2C6A] hover:bg-[#F5F6F8] transition"
-                              >
-                                <Icon name="Copy" size={15} />
-                              </button>
-                              <button
-                                onClick={() => setDeletingId(draft.id)}
-                                title="Удалить"
-                                className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
-                              >
-                                <Icon name="Trash2" size={15} />
-                              </button>
+
+                            {/* Amount mobile */}
+                            <span className="sm:hidden ml-auto text-base font-extrabold text-[#2F2C6A]">{fmt(amt)} ₽</span>
+
+                            {/* Context menu */}
+                            <div className="ml-auto sm:ml-2 flex items-center gap-1">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#2F2C6A] hover:bg-[#F5F6F8] transition">
+                                    <Icon name="MoreHorizontal" size={16} />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  <DropdownMenuItem onClick={() => navigate(`/b2b?draftId=${draft.id}`)}>
+                                    <Icon name="PenLine" size={14} className="mr-2" />
+                                    Редактировать
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => startRenaming(draft)}>
+                                    <Icon name="Pencil" size={14} className="mr-2" />
+                                    Переименовать
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => duplicateDraft(draft.id)}>
+                                    <Icon name="Copy" size={14} className="mr-2" />
+                                    Дублировать
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setDeletingId(draft.id)}
+                                    className="text-red-500 focus:text-red-500"
+                                  >
+                                    <Icon name="Trash2" size={14} className="mr-2" />
+                                    Удалить
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
                         ) : (
-                          /* ── Delete confirm ── */
+                          /* Delete confirm */
                           <div className="flex items-center gap-3 mt-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                            <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0" />
-                            <p className="text-sm text-red-700 font-medium flex-1">Удалить черновик «{draft.title}»?</p>
+                            <Icon name="AlertTriangle" size={15} className="text-red-400 flex-shrink-0" />
+                            <p className="text-sm text-red-700 font-medium flex-1 min-w-0 truncate">
+                              Удалить «{draft.title}»?
+                            </p>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <button
                                 onClick={() => setDeletingId(null)}
-                                className="h-8 px-3 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition"
+                                className="h-8 px-3 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition"
                               >
                                 Отмена
                               </button>
@@ -418,15 +454,14 @@ export default function B2BDrafts() {
                         )}
                       </div>
 
-                      {/* ── Expanded: items preview ── */}
+                      {/* ── Expanded: composition ── */}
                       {isExpanded && (
                         <div className="border-t border-[#F0F1F5]">
-                          {/* Items table */}
                           <table className="w-full">
                             <thead>
                               <tr className="bg-[#F5F6F8]">
                                 <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-5 py-2.5">Товар</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-2.5">Упаковка</th>
+                                <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-2.5 hidden sm:table-cell">Упаковка</th>
                                 <th className="text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-2.5">Кол-во</th>
                                 <th className="text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-5 py-2.5">Сумма</th>
                               </tr>
@@ -435,18 +470,20 @@ export default function B2BDrafts() {
                               {draft.items.map((item, i) => (
                                 <tr key={i} className="hover:bg-[#FAFBFC] transition-colors">
                                   <td className="px-5 py-3">
-                                    <p className="text-sm font-semibold text-[#2F2C6A] truncate max-w-[280px]">{item.name}</p>
+                                    <p className="text-sm font-semibold text-[#2F2C6A] truncate max-w-[240px]">{item.name}</p>
                                     <p className="text-xs font-mono text-gray-400 mt-0.5">{item.sku}</p>
                                   </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span className="text-xs text-gray-500 bg-[#F5F6F8] px-2 py-1 rounded-lg">{item.pkg}</span>
+                                  <td className="px-4 py-3 text-center hidden sm:table-cell">
+                                    <span className="text-xs text-gray-500 bg-[#F5F6F8] px-2 py-1 rounded-lg">
+                                      {PKG_LABEL[item.pkg] ?? item.pkg}
+                                    </span>
                                   </td>
                                   <td className="px-4 py-3 text-center">
                                     <span className="text-sm font-bold text-[#2F2C6A]">{item.qty}</span>
                                     <span className="text-xs text-gray-400 ml-1">шт</span>
                                   </td>
                                   <td className="px-5 py-3 text-right">
-                                    <span className="text-sm font-bold text-[#2F2C6A]">{fmt(item.qty * item.price)} ₽</span>
+                                    <span className="text-sm font-bold text-[#2F2C6A]">{fmt(item.qty * item.pricePerUnit)} ₽</span>
                                   </td>
                                 </tr>
                               ))}
@@ -457,19 +494,32 @@ export default function B2BDrafts() {
                                   Итого
                                 </td>
                                 <td className="px-5 py-3 text-right">
-                                  <span className="text-base font-extrabold text-[#2F2C6A]">{fmt(draft.totalAmount)} ₽</span>
+                                  <span className="text-base font-extrabold text-[#2F2C6A]">{fmt(amt)} ₽</span>
                                 </td>
                               </tr>
                             </tfoot>
                           </table>
 
-                          {/* Comment if present */}
+                          {/* Comment */}
                           {draft.comment && (
                             <div className="px-5 py-3 border-t border-[#F0F1F5] flex items-start gap-2 bg-[#FAFBFC]">
                               <Icon name="MessageSquare" size={13} className="text-gray-400 mt-0.5 flex-shrink-0" />
                               <p className="text-xs text-gray-500 italic">{draft.comment}</p>
                             </div>
                           )}
+
+                          {/* Quick edit CTA inside expanded */}
+                          <div className="px-5 py-3.5 border-t border-[#F0F1F5] bg-[#FAFBFC] flex items-center justify-between gap-3">
+                            <p className="text-xs text-gray-400">Хотите изменить состав или параметры?</p>
+                            <Button
+                              onClick={() => navigate(`/b2b?draftId=${draft.id}`)}
+                              size="sm"
+                              className="h-8 bg-[#2F2C6A] hover:bg-[#26236b] text-white text-xs font-bold px-3 gap-1.5 flex-shrink-0"
+                            >
+                              <Icon name="PenLine" size={12} />
+                              Открыть редактор
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -478,45 +528,28 @@ export default function B2BDrafts() {
               </div>
             )}
 
-            {/* ── How drafts work ── */}
+            {/* ── How it works ── */}
             <div className="bg-white rounded-xl border border-[#E8E9EF] shadow-sm p-6">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 rounded-lg bg-[#2F2C6A]/6 flex items-center justify-center flex-shrink-0">
                   <Icon name="HelpCircle" size={17} className="text-[#2F2C6A]" />
                 </div>
-                <h3 className="text-sm font-bold text-[#2F2C6A]">Как работают черновики</h3>
+                <h3 className="text-sm font-bold text-[#2F2C6A]">Как работать с черновиками</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 {[
-                  {
-                    icon: "RefreshCw",
-                    color: "bg-[#FFF8E1]",
-                    iconColor: "text-[#F59E0B]",
-                    title: "Автосохранение",
-                    desc: "Система сохраняет незавершённый заказ автоматически каждые 2 минуты и при уходе со страницы",
-                  },
-                  {
-                    icon: "PenLine",
-                    color: "bg-[#EEF0FF]",
-                    iconColor: "text-[#2F2C6A]",
-                    title: "Продолжение работы",
-                    desc: "Откройте любой черновик и продолжите с того места, где остановились — все позиции сохранены",
-                  },
-                  {
-                    icon: "Send",
-                    color: "bg-emerald-50",
-                    iconColor: "text-emerald-600",
-                    title: "Отправка заказа",
-                    desc: "После отправки черновик автоматически удаляется и превращается в реальный заказ",
-                  },
-                ].map((step) => (
+                  { icon: "RefreshCw",  color: "bg-[#FFF8E1]", ic: "text-[#F59E0B]", title: "Автосохранение",   desc: "Заказ сохраняется автоматически каждые 2 минуты" },
+                  { icon: "Pencil",     color: "bg-[#EEF0FF]", ic: "text-[#2F2C6A]", title: "Переименование",   desc: "Нажмите карандашик рядом с названием" },
+                  { icon: "PenLine",    color: "bg-[#EEF0FF]", ic: "text-[#2F2C6A]", title: "Редактирование",   desc: "Кнопка «Редактировать» открывает полный редактор" },
+                  { icon: "Send",       color: "bg-emerald-50", ic: "text-emerald-600", title: "Отправка",       desc: "После отправки черновик удаляется автоматически" },
+                ].map(step => (
                   <div key={step.title} className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${step.color}`}>
-                      <Icon name={step.icon as never} size={16} className={step.iconColor} />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${step.color}`}>
+                      <Icon name={step.icon as never} size={15} className={step.ic} />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-[#2F2C6A]">{step.title}</p>
-                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
                 ))}

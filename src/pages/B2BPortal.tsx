@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { draftStore, type Draft, type DraftItem } from "@/lib/draftStore";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,16 +38,8 @@ function getPkgOption(type: PkgType) {
   return PKG_OPTIONS.find(o => o.type === type)!;
 }
 
-/* ─── types ─── */
-interface CartItem {
-  id: string;
-  sku: string;
-  name: string;
-  qty: number;
-  pkg: PkgType;
-  pricePerUnit: number;
-  weightPerUnit: number;
-}
+/* CartItem = DraftItem (переиспользуем тип из хранилища) */
+type CartItem = DraftItem;
 
 /* ─── sidebar menu ─── */
 const MENU = [
@@ -76,6 +69,9 @@ type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
 
 export default function B2BPortal() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editingDraftId = searchParams.get("draftId");
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -91,18 +87,49 @@ export default function B2BPortal() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("Черновик");
   const [editingTitle, setEditingTitle] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string>(draftStore.newId());
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
 
-  const saveDraft = useCallback(() => {
+  /* ─── Загрузка черновика при ?draftId= ─── */
+  useEffect(() => {
+    if (!editingDraftId) return;
+    const draft = draftStore.get(editingDraftId);
+    if (!draft) return;
+    setCurrentDraftId(draft.id);
+    setDraftTitle(draft.title);
+    setCartItems(draft.items);
+    setOrderType(draft.orderType);
+    setShipDate(draft.shipDate ?? "");
+    setComment(draft.comment ?? "");
+    setSaveStatus("saved");
+    const d = new Date(draft.updatedAt);
+    setLastSaved(`${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`);
+  }, [editingDraftId]);
+
+  const buildDraft = useCallback((): Draft => ({
+    id: currentDraftId,
+    title: draftTitle,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    autoSaved: false,
+    orderType,
+    shipDate: shipDate || undefined,
+    comment: comment || undefined,
+    items: cartItems,
+  }), [currentDraftId, draftTitle, orderType, shipDate, comment, cartItems]);
+
+  const saveDraft = useCallback((auto = false) => {
     if (cartItems.length === 0) return;
     setSaveStatus("saving");
     setTimeout(() => {
+      const saved = draftStore.save({ ...buildDraft(), autoSaved: auto });
+      setCurrentDraftId(saved.id);
       setSaveStatus("saved");
       const now = new Date();
       setLastSaved(`${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`);
-    }, 600);
-  }, [cartItems]);
+    }, 500);
+  }, [cartItems, buildDraft]);
 
   /* auto-save every 2 min when cart has items */
   useEffect(() => {
@@ -110,7 +137,7 @@ export default function B2BPortal() {
     if (cartItems.length === 0) { setSaveStatus("idle"); return; }
     setSaveStatus("unsaved");
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => { saveDraft(); }, 120_000);
+    autoSaveTimer.current = setTimeout(() => { saveDraft(true); }, 120_000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [cartItems, orderType, shipDate, comment]);
 
@@ -358,7 +385,7 @@ export default function B2BPortal() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={saveDraft}
+                    onClick={() => saveDraft(false)}
                     className="h-8 border-[#2F2C6A]/20 text-[#2F2C6A] hover:bg-[#2F2C6A]/5 text-xs font-semibold px-3 gap-1.5"
                   >
                     <Icon name="Save" size={13} />
@@ -379,6 +406,26 @@ export default function B2BPortal() {
                 )}
               </div>
             </div>
+
+            {/* ── Режим редактирования черновика ── */}
+            {editingDraftId && (
+              <div className="flex items-center gap-3 bg-[#2F2C6A] text-white rounded-xl px-5 py-3.5 shadow-sm">
+                <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name="FilePen" size={16} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold leading-tight">Режим редактирования черновика</p>
+                  <p className="text-xs text-white/60 mt-0.5">Изменения применятся при сохранении. Отгрузить заказ можно прямо отсюда.</p>
+                </div>
+                <button
+                  onClick={() => navigate("/b2b/drafts")}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition flex-shrink-0"
+                >
+                  <Icon name="ArrowLeft" size={13} />
+                  К черновикам
+                </button>
+              </div>
+            )}
 
             {/* Source tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -861,9 +908,11 @@ export default function B2BPortal() {
                       <Button
                         variant="outline"
                         className="w-full border-[#2F2C6A]/20 text-[#2F2C6A] hover:bg-[#2F2C6A]/5 h-10 rounded-lg font-medium text-sm"
+                        onClick={() => saveDraft(false)}
+                        disabled={cartItems.length === 0 || saveStatus === "saving"}
                       >
                         <Icon name="Save" size={15} className="mr-2" />
-                        Сохранить черновик
+                        {editingDraftId ? "Обновить черновик" : "Сохранить черновик"}
                       </Button>
                     </div>
                   </div>
