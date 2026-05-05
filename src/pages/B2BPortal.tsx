@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,14 +50,15 @@ interface CartItem {
 
 /* ─── sidebar menu ─── */
 const MENU = [
-  { icon: "LayoutDashboard", label: "Главная",      path: "/" },
-  { icon: "Package",         label: "Каталог",       path: "/catalog" },
-  { icon: "ShoppingCart",    label: "Корзина",        path: "/b2b",    active: true },
-  { icon: "FileText",        label: "Мои заказы",    path: "/orders" },
-  { icon: "FileSpreadsheet", label: "Прайс-листы",   path: "/payments" },
-  { icon: "BarChart3",       label: "Аналитика",     path: "/analytics" },
-  { icon: "Banknote",        label: "Оплаты",        path: "/payments" },
-  { icon: "Settings",        label: "Настройки",     path: "/settings" },
+  { icon: "LayoutDashboard", label: "Главная",    path: "/" },
+  { icon: "Package",         label: "Каталог",     path: "/catalog" },
+  { icon: "ShoppingCart",    label: "Корзина",      path: "/b2b",        active: true },
+  { icon: "FileText",        label: "Мои заказы",  path: "/orders" },
+  { icon: "FilePen",         label: "Черновики",   path: "/b2b/drafts" },
+  { icon: "FileSpreadsheet", label: "Прайс-листы", path: "/payments" },
+  { icon: "BarChart3",       label: "Аналитика",   path: "/analytics" },
+  { icon: "Banknote",        label: "Оплаты",      path: "/payments" },
+  { icon: "Settings",        label: "Настройки",   path: "/settings" },
 ];
 
 /* ─── mock catalog for search ─── */
@@ -70,7 +71,11 @@ const CATALOG_ITEMS = [
   { sku: "MN9900-035", name: "MANNOL Motor Flush 0.35L",         price:  560, weight: 0.5 },
 ];
 
+/* ─── draft save status ─── */
+type SaveStatus = "idle" | "saving" | "saved" | "unsaved";
+
 export default function B2BPortal() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -80,6 +85,34 @@ export default function B2BPortal() {
   const [shipDate, setShipDate] = useState("");
   const [comment, setComment] = useState("");
   const [activeTab, setActiveTab] = useState("manual");
+
+  /* ─── draft state ─── */
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("Черновик");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
+
+  const saveDraft = useCallback(() => {
+    if (cartItems.length === 0) return;
+    setSaveStatus("saving");
+    setTimeout(() => {
+      setSaveStatus("saved");
+      const now = new Date();
+      setLastSaved(`${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`);
+    }, 600);
+  }, [cartItems]);
+
+  /* auto-save every 2 min when cart has items */
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (cartItems.length === 0) { setSaveStatus("idle"); return; }
+    setSaveStatus("unsaved");
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => { saveDraft(); }, 120_000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [cartItems, orderType, shipDate, comment]);
 
   /* ─── search handler ─── */
   function handleSearch(val: string) {
@@ -268,18 +301,83 @@ export default function B2BPortal() {
           <div className="max-w-[1200px] mx-auto space-y-6">
 
             {/* Page heading */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Заказы</p>
-                <h2 className="text-2xl font-extrabold text-[#2F2C6A] leading-tight">Формирование заказа</h2>
+
+                {/* Editable draft title */}
+                {editingTitle ? (
+                  <input
+                    autoFocus
+                    value={draftTitle}
+                    onChange={(e) => setDraftTitle(e.target.value)}
+                    onBlur={() => setEditingTitle(false)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingTitle(false); }}
+                    className="text-2xl font-extrabold text-[#2F2C6A] bg-transparent border-b-2 border-[#2F2C6A]/30 focus:border-[#2F2C6A] outline-none w-full max-w-xs leading-tight"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setEditingTitle(true)}>
+                    <h2 className="text-2xl font-extrabold text-[#2F2C6A] leading-tight">{draftTitle}</h2>
+                    <Icon name="Pencil" size={14} className="text-gray-300 group-hover:text-[#2F2C6A]/50 transition mt-1" />
+                  </div>
+                )}
+
                 <p className="text-sm text-gray-500 mt-1">Создание нового заказа</p>
               </div>
-              {cartItems.length > 0 && (
-                <Badge className="bg-[#FFC107]/15 text-[#2F2C6A] border border-[#FFC107]/40 font-bold text-sm px-3 py-1.5 h-auto">
-                  <Icon name="ShoppingCart" size={14} className="mr-1.5" />
-                  {totalQty} позиций · {new Intl.NumberFormat("ru-RU").format(totalAmount)} ₽
-                </Badge>
-              )}
+
+              {/* Right side: draft status + actions */}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                {cartItems.length > 0 && (
+                  <Badge className="bg-[#FFC107]/15 text-[#2F2C6A] border border-[#FFC107]/40 font-bold text-sm px-3 py-1.5 h-auto">
+                    <Icon name="ShoppingCart" size={14} className="mr-1.5" />
+                    {totalQty} поз. · {new Intl.NumberFormat("ru-RU").format(totalAmount)} ₽
+                  </Badge>
+                )}
+
+                {/* Draft save status */}
+                {saveStatus === "saving" && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <Icon name="Loader" size={13} className="animate-spin" />
+                    Сохранение...
+                  </div>
+                )}
+                {saveStatus === "saved" && (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                    <Icon name="CheckCircle" size={13} />
+                    Сохранено {lastSaved}
+                  </div>
+                )}
+                {saveStatus === "unsaved" && cartItems.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                    <Icon name="Circle" size={10} className="fill-amber-500 text-amber-500" />
+                    Не сохранено
+                  </div>
+                )}
+
+                {cartItems.length > 0 && saveStatus !== "saving" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={saveDraft}
+                    className="h-8 border-[#2F2C6A]/20 text-[#2F2C6A] hover:bg-[#2F2C6A]/5 text-xs font-semibold px-3 gap-1.5"
+                  >
+                    <Icon name="Save" size={13} />
+                    Сохранить черновик
+                  </Button>
+                )}
+
+                {cartItems.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/b2b/drafts")}
+                    className="h-8 text-gray-400 hover:text-[#2F2C6A] text-xs px-2 gap-1"
+                  >
+                    <Icon name="FolderOpen" size={13} />
+                    Все черновики
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Source tabs */}

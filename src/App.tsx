@@ -40,6 +40,7 @@ import Help from "./pages/Help";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import B2BPortal from "./pages/B2BPortal";
+import B2BDrafts from "./pages/B2BDrafts";
 import Search from "./pages/Search";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/forgot-password/sent" element={<ForgotPasswordSent />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/b2b" element={<B2BPortal />} />
+          <Route path="/b2b/drafts" element={<B2BDrafts />} />
         </Routes>
         <Layout>
           <Routes>
