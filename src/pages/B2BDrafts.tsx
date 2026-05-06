@@ -374,10 +374,20 @@ export default function B2BDrafts() {
                         {/* ── Actions ── */}
                         {!isDeleting ? (
                           <div className="flex items-center gap-2 mt-4">
-                            {/* Primary: Edit */}
+                            {/* Primary: open draft page */}
                             <Button
-                              onClick={() => navigate(`/b2b?draftId=${draft.id}`)}
+                              onClick={() => navigate(`/orders/drafts/${draft.id}`)}
                               className="h-9 bg-[#2F2C6A] hover:bg-[#26236b] text-white text-xs font-bold px-4 rounded-lg gap-1.5"
+                            >
+                              <Icon name="ExternalLink" size={13} />
+                              Открыть
+                            </Button>
+
+                            {/* Edit in cart editor */}
+                            <Button
+                              variant="outline"
+                              onClick={() => navigate(`/b2b?draftId=${draft.id}`)}
+                              className="h-9 border-[#DDE0EA] text-[#2F2C6A] text-xs font-medium px-3 rounded-lg hover:bg-[#F5F6F8] gap-1.5"
                             >
                               <Icon name="PenLine" size={13} />
                               Редактировать
@@ -404,7 +414,11 @@ export default function B2BDrafts() {
                                     <Icon name="MoreHorizontal" size={16} />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem onClick={() => navigate(`/orders/drafts/${draft.id}`)}>
+                                    <Icon name="ExternalLink" size={14} className="mr-2" />
+                                    Открыть черновик
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => navigate(`/b2b?draftId=${draft.id}`)}>
                                     <Icon name="PenLine" size={14} className="mr-2" />
                                     Редактировать
@@ -511,14 +525,16 @@ export default function B2BDrafts() {
                           {/* Quick edit CTA inside expanded */}
                           <div className="px-5 py-3.5 border-t border-[#F0F1F5] bg-[#FAFBFC] flex items-center justify-between gap-3">
                             <p className="text-xs text-gray-400">Хотите изменить состав или параметры?</p>
-                            <Button
-                              onClick={() => navigate(`/b2b?draftId=${draft.id}`)}
-                              size="sm"
-                              className="h-8 bg-[#2F2C6A] hover:bg-[#26236b] text-white text-xs font-bold px-3 gap-1.5 flex-shrink-0"
-                            >
-                              <Icon name="PenLine" size={12} />
-                              Открыть редактор
-                            </Button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Button
+                                onClick={() => navigate(`/orders/drafts/${draft.id}`)}
+                                size="sm"
+                                className="h-8 bg-[#2F2C6A] hover:bg-[#26236b] text-white text-xs font-bold px-3 gap-1.5"
+                              >
+                                <Icon name="ExternalLink" size={12} />
+                                Открыть
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}

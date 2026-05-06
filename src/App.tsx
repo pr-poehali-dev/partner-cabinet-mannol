@@ -41,6 +41,7 @@ import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import B2BPortal from "./pages/B2BPortal";
 import B2BDrafts from "./pages/B2BDrafts";
+import DraftOrderPage from "./pages/DraftOrderPage";
 import Search from "./pages/Search";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/b2b" element={<B2BPortal />} />
           <Route path="/b2b/drafts" element={<B2BDrafts />} />
+          <Route path="/orders/drafts/:id" element={<DraftOrderPage />} />
         </Routes>
         <Layout>
           <Routes>
